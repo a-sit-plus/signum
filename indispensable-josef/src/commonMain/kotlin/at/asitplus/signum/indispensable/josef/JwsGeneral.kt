@@ -158,7 +158,7 @@ fun <H : JwsHeader, P> JwsGeneral.Raw.typed(
     headerSerializer: KSerializer<H>,
     serialFormat: Json = joseCompliantSerializer,
 ): JwsGeneral<H, P> {
-    val payload = getPayload(payloadSerializer, serialFormat).getOrThrow()
+    val payload = getPayload(payloadSerializer, serialFormat)
     val signatureViews = signatureElements.map { element ->
         val wrappedHeader = JwsHeaderWrapped.fromParts(
             serializer = headerSerializer,

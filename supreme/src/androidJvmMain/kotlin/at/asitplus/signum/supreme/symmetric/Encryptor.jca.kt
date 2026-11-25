@@ -79,7 +79,7 @@ internal class JcaPlatformCipher<A : AuthCapability<out K>, I : NonceTrait, K : 
                 else -> algorithm.sealedBox.from(ciphertext)
             }
 
-        }.getOrThrow() as SealedBox<A, I, out K>
+        } as SealedBox<A, I, out K>
     }
 
     override suspend fun doDecrypt(data: ByteArray, authTag: ByteArray?): ByteArray {

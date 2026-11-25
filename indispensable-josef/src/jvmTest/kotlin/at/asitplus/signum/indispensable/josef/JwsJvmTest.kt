@@ -37,7 +37,7 @@ val JwsJvmTest by matrixSuite {
         val verifiers = signers.map { ECDSAVerifier(it.publicKey.toJcaPublicKey() as ECPublicKey) }
         val headers = signers.mapIndexed { index, signer ->
             SigningHeader(
-                algorithm = signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
+                algorithm = signer.signatureAlgorithm.toJwsAlgorithm(),
                 keyId = "kid-${index + 1}",
                 type = "application/example+jws",
             )

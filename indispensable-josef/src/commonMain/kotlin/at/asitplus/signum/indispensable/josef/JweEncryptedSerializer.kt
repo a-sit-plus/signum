@@ -18,6 +18,6 @@ object JweEncryptedSerializer : KSerializer<JweEncrypted> {
     }
 
     override fun deserialize(decoder: Decoder): JweEncrypted {
-        return JweEncrypted.deserialize(decoder.decodeString()).getOrThrow()
+        return JweEncrypted.deserialize(decoder.decodeString())
     }
 }

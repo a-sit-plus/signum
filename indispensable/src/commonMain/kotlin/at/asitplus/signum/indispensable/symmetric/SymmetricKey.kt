@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable.symmetric
 
-import at.asitplus.KmmResult
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.SecretExposure
@@ -45,7 +44,7 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
          * The actual encryption key bytes
          */
         @SecretExposure
-        val secretKey: KmmResult<ByteArray>
+        val secretKey: ByteArray
 
 
         sealed class Authenticating<I : NonceTrait>(
@@ -61,7 +60,7 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
 
                 if (algorithm != other.algorithm) return false
                 @OptIn(SecretExposure::class)
-                if (!secretKey.getOrNull().contentEquals(other.secretKey.getOrNull())) return false
+                if (!secretKey.contentEquals(other.secretKey)) return false
 
                 return true
             }
@@ -69,12 +68,12 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
             override fun hashCode(): Int {
                 var result = algorithm.hashCode()
                 @OptIn(SecretExposure::class)
-                result = 31 * result + secretKey.getOrNull().contentHashCode()
+                result = 31 * result + secretKey.contentHashCode()
                 return result
             }
 
             @SecretExposure
-            override val secretKey = KmmResult.success(secretKey)
+            override val secretKey = secretKey
 
             class RequiringNonce internal constructor(
                 algorithm: SymmetricEncryptionAlgorithm<AuthCapability.Authenticated.Integrated, NonceTrait.Required, KeyType.Integrated>,
@@ -101,7 +100,7 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
             SymmetricKey.NonAuthenticating<I> {
 
             @SecretExposure
-            override val secretKey = KmmResult.success(secretKey)
+            override val secretKey = secretKey
 
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true
@@ -109,7 +108,7 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
 
                 if (algorithm != other.algorithm) return false
                 @OptIn(SecretExposure::class)
-                if (!secretKey.getOrNull().contentEquals(other.secretKey.getOrNull())) return false
+                if (!secretKey.contentEquals(other.secretKey)) return false
 
                 return true
             }
@@ -117,7 +116,7 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
             override fun hashCode(): Int {
                 var result = algorithm.hashCode()
                 @OptIn(SecretExposure::class)
-                result = 31 * result + secretKey.getOrNull().contentHashCode()
+                result = 31 * result + secretKey.contentHashCode()
                 return result
             }
 
@@ -154,13 +153,13 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
          * The actual encryption key bytes
          */
         @SecretExposure
-        val encryptionKey: KmmResult<ByteArray>
+        val encryptionKey: ByteArray
 
         /**
          * The actual dedicated MAC key bytes
          */
         @SecretExposure
-        val macKey: KmmResult<ByteArray>
+        val macKey: ByteArray
 
 
         class RequiringNonce @SignumInternals("This constructor is public to enable testing. DO NOT USE IT!") constructor(
@@ -176,7 +175,7 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
              * This will fail for hardware-backed keys!
              */
             @SecretExposure
-            override val encryptionKey: KmmResult<ByteArray> = KmmResult.success(encryptionKey)
+            override val encryptionKey: ByteArray = encryptionKey
 
             /**
              * The actual dedicated MAC key bytes
@@ -184,7 +183,7 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
              * This will fail for hardware-backed keys!
              */
             @SecretExposure
-            override val macKey: KmmResult<ByteArray> = KmmResult.success(dedicatedMacKey)
+            override val macKey: ByteArray = dedicatedMacKey
 
             @OptIn(SecretExposure::class)
             override fun equals(other: Any?): Boolean {
@@ -192,8 +191,8 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
                 if (other !is WithDedicatedMac<*>) return false
 
                 if (algorithm != other.algorithm) return false
-                if (!encryptionKey.getOrNull().contentEquals(other.encryptionKey.getOrNull())) return false
-                if (!macKey.getOrNull().contentEquals(other.macKey.getOrNull())) return false
+                if (!encryptionKey.contentEquals(other.encryptionKey)) return false
+                if (!macKey.contentEquals(other.macKey)) return false
                 if (additionalProperties != other.additionalProperties) return false
 
                 return true
@@ -202,8 +201,8 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
             @OptIn(SecretExposure::class)
             override fun hashCode(): Int {
                 var result = algorithm.hashCode()
-                result = 31 * result + encryptionKey.getOrNull().contentHashCode()
-                result = 31 * result + macKey.getOrNull().contentHashCode()
+                result = 31 * result + encryptionKey.contentHashCode()
+                result = 31 * result + macKey.contentHashCode()
                 return result
             }
 
@@ -223,7 +222,7 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
              * This will fail for hardware-backed keys!
              */
             @SecretExposure
-            override val encryptionKey: KmmResult<ByteArray> = KmmResult.success(encryptionKey)
+            override val encryptionKey: ByteArray = encryptionKey
 
             /**
              * The actual dedicated MAC key bytes
@@ -231,7 +230,7 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
              * This will fail for hardware-backed keys!
              */
             @SecretExposure
-            override val macKey: KmmResult<ByteArray> = KmmResult.success(dedicatedMacKey)
+            override val macKey: ByteArray = dedicatedMacKey
 
             @OptIn(SecretExposure::class)
             override fun equals(other: Any?): Boolean {
@@ -239,8 +238,8 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
                 if (other !is WithDedicatedMac<*>) return false
 
                 if (algorithm != other.algorithm) return false
-                if (!encryptionKey.getOrNull().contentEquals(other.encryptionKey.getOrNull())) return false
-                if (!macKey.getOrNull().contentEquals(other.macKey.getOrNull())) return false
+                if (!encryptionKey.contentEquals(other.encryptionKey)) return false
+                if (!macKey.contentEquals(other.macKey)) return false
                 if (additionalProperties != other.additionalProperties) return false
 
                 return true
@@ -249,8 +248,8 @@ sealed interface SymmetricKey<A : AuthCapability<out K>, I : NonceTrait, K : Key
             @OptIn(SecretExposure::class)
             override fun hashCode(): Int {
                 var result = algorithm.hashCode()
-                result = 31 * result + encryptionKey.getOrNull().contentHashCode()
-                result = 31 * result + macKey.getOrNull().contentHashCode()
+                result = 31 * result + encryptionKey.contentHashCode()
+                result = 31 * result + macKey.contentHashCode()
                 return result
             }
         }
@@ -323,5 +322,6 @@ val <I : NonceTrait> SymmetricKey<AuthCapability.Authenticated.WithDedicatedMac,
 
 
 interface SpecializedSymmetricKey {
-    fun toSymmetricKey(): KmmResult<SymmetricKey<*, *, *>>
+    @Throws(Throwable::class)
+    fun toSymmetricKey(): SymmetricKey<*, *, *>
 }

@@ -89,7 +89,7 @@ internal class Encryptor<A : AuthCapability<out K>, I : NonceTrait, K : KeyType>
                         encrypted.encryptedData,
                         authTag
                     )
-                    ).getOrThrow() as SealedBox<A, I, K>
+                    ) as SealedBox<A, I, K>
 
         } else @Suppress("UNCHECKED_CAST") return platformCipher.doEncrypt(data) as SealedBox<A, I, out K>
     }

@@ -10,7 +10,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import at.asitplus.awesn1.Asn1StructuralException
-import at.asitplus.catching
+import at.asitplus.catchingUnwrapped
 import at.asitplus.nonFatalOrThrow
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.UnsupportedCryptoException
@@ -292,7 +292,7 @@ object AndroidKeyStoreProvider:
         val publicKey: PublicKey
         val attestation: AndroidKeystoreAttestation?
         ks.getCertificateChain(alias).let { chain ->
-                        catching { chain.map { Certificate.fromAsn1(it.encoded) } }.let { r ->
+                        catchingUnwrapped { chain.map { Certificate.fromAsn1(it.encoded) } }.let { r ->
                 if (r.isSuccess) r.getOrThrow().let {
                     publicKey = it.leaf.publicKey
                     attestation = if (it.size > 1) AndroidKeystoreAttestation(it) else null

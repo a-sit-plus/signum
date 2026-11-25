@@ -127,7 +127,7 @@ fun <H : JwsHeader, P> JwsFlattened.Raw.typed(
     ).let { wrapped ->
         JwsFlattened(
             this,
-            getPayload(payloadSerializer, serialFormat).getOrThrow(),
+            getPayload(payloadSerializer, serialFormat),
             wrapped,
             JwsRaw.getSignature(wrapped.header.algorithm, plainSignature)
         )

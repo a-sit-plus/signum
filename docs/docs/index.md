@@ -153,19 +153,19 @@ To create a signature, obtain a `Signer` instance.
 You can do this using `Signer.Ephemeral` to create a signer for a throwaway keypair:
 
 ```kotlin
-val signer = Signer.Ephemeral {}.getOrThrow()
+val signer = Signer.Ephemeral {}
 val plaintext = "You have this.".encodeToByteArray()
 val signature = signer.sign(plaintext).signature
 println("Signed using ${signer.signatureAlgorithm}: $signature")
 ```
 
-If you want to create multiple signatures using the same ephemeral key, you can obtain an `EphemeralKey` instance, then
-create signers from it:
+To use the same key with multiple algorithms, export it from an ephemeral signer and create a signer for each algorithm.
 
 ```kotlin
-val key = EphemeralKey { rsa {} }.getOrThrow()
-val sha256Signer = key.getSigner { rsa { digest = Digests.SHA256 } }.getOrThrow()
-val sha384Signer = key.getSigner { rsa { digest = Digests.SHA384 } }.getOrThrow()
+@OptIn(SecretExposure::class)
+val key = Signer.Ephemeral { rsa {} }.exportPrivateKey()
+val sha256Signer = RsaAlgorithm.withSHA256andPSSPadding.signerFor(key)
+val sha384Signer = RsaAlgorithm.withSHA384andPSSPadding.signerFor(key)
 ```
 
 The instances can be configured using the configuration DSL.
@@ -184,7 +184,7 @@ val publicKey: EcdsaPublicKey = TODO("You have this and trust it.")
 val plaintext = "You want to trust this.".encodeToByteArray()
 val signature: Signature = TODO("This was sent alongside the plaintext.")
 val verifier = SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey)
-val isValid = verifier.verify(plaintext, signature).isSuccess
+val isValid = catchingUnwrapped { verifier.verify(plaintext, signature) }.isSuccess
 println("Looks good? $isValid")
 ```
 
@@ -196,21 +196,11 @@ val payload = "More matter, with less Art!".encodeToByteArray()
 
 //define parameters
 val algorithm = SymmetricEncryptionAlgorithm.AES_192.CBC.HMAC.SHA_512
-val secretKey = algorithm.randomKey()
-val macKey = algorithm.randomKey()
+val key = algorithm.randomKey()
 val aad = Clock.System.now().toString().encodeToByteArray()
 
-val ciphertext =
-    //You typically chain encryptorFor and encrypt
-    //because you should never re-use an IV
-    algorithm.encryptorFor(
-        secretKey = secretKey,
-        dedicatedMacKey = macKey,
-        aad = aad
-    ).getOrThrow(/*TODO Error handling*/)
-        .encrypt(payload).getOrThrow(/*TODO Error Handling*/)
-val recovered = ciphertext.decrypt(secretKey, macKey)
-    .getOrThrow(/*TODO Error handling*/)
+val ciphertext = key.encrypt(payload, aad)
+val recovered = ciphertext.decrypt(key, aad)
 
 recovered shouldBe payload //success!
 ```
@@ -350,8 +340,8 @@ val input = "d28443a10126a10442313154546869732069732074686520636f6e74656e" +
                 "742e58408eb33e4ca31d1c465ab05aac34cc6b23d58fef5c083106c4d25a" +
                 "91aef0b0117e2af9a291aa32e14ab834dc56ed2a223444547e01f11d3b09" +
                 "16e5a4c345cacb36"
-val cose = CoseSigned.deserialize(input.uppercase().decodeToByteArray(Base16Strict))
-    .also { println(it.getOrNull()) }
+val cose = CoseSigned.deserialize(ByteArraySerializer(), input.uppercase().decodeToByteArray(Base16Strict))
+println(cose)
 ```
 
 The output confirms that parsing was successful:
@@ -372,7 +362,7 @@ val parsedE = "AQAB".decodeToByteArray(Base64UrlStrict)
 val key = JsonWebKey(type = JwkType.RSA, n = parsedN, e = parsedE)
 
 key.jwkThumbprint //this is "urn:ietf:params:oauth:jwk-thumbprint:sha256:NzbLsXh8uDCcd-6MNwXF4W_7noWXFZAfHkxZsRGC9Xs"
-key.toPublicKey().getOrThrow() //<- this we can pass to a Supreme verifier
+key.toPublicKey() //<- this we can pass to a Supreme verifier
 ```
 
 ## Further Reading

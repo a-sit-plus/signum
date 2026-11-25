@@ -4,7 +4,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.security.keystore.KeyProperties
 import androidx.test.platform.app.InstrumentationRegistry
-import at.asitplus.catching
 import at.asitplus.signum.dsl.hardware
 import at.asitplus.signum.dsl.DISCOURAGED
 import at.asitplus.signum.dsl.FeaturePreference
@@ -83,7 +82,7 @@ val AndroidKeyStorePreferenceTests by matrixSuite {
                     ("device=${Build.MANUFACTURER}, " +
                             "SB=$hasStrongBox, default seclevel=$defaultSecurityLevel, ") - {
                         try {
-                            val result = catching { runBlocking {
+                            val result = runCatching { runBlocking {
                                 AndroidKeyStoreProvider.createSigningKey(alias) {
                                     hardware {
                                         this.backing = hardwareBacking.value

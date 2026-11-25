@@ -48,8 +48,7 @@ This type-safety goes so far as to expose platform-specific configuration option
 the actual calls to some DSL-configurable type reads the same as in common code.
 
 !!! warning
-    **Do not ignore the results returned by any operation!**  
-    We heavily rely  on `KmmResult` to communicate the success or failure of operations. Nothing ever throws!
+    Operations generally return values directly and throw on failure. Signing returns `SignatureResult` to represent success or user cancellation.
 
 
 ## Provider Initialization
@@ -271,7 +270,7 @@ Given a `PrivateKey.WithPublicKey` object and a `SignatureAlgorithm` object, a s
 val signer = sigAlg.signerFor(privateKey)
 ```
 
-This only works if key and signature algorithm are compatible. Otherwise, it returns `KmmResult.failure`. 
+`signerFor` throws if the key and signature algorithm are incompatible.
 If you have an EC private key at hand without a public key attached, simply convert it to a `EcdsaPrivateKey.WithPublicKey` as follows:
 
 ```kotlin
@@ -290,9 +289,7 @@ Private keys can be exported (typically to be DER or PEM-encoded) from ephemeral
 val privKey = signer.exportPrivateKey()
 ```
 
-While all signers feature an `exportPrivateKey()` method, only some signers allow for actually exporting private key material.
-Platform-native signers prevent it (i.e. always return a `KmmResult.failure`) when trying to export private keys.
-Keys from signers created from a `PrivateKey` (see above), as well as ephemeral signers can be exported.
+Signers implementing `Signer.WithExportableKey` expose `exportPrivateKey()`. This includes ephemeral signers and signers created from a `PrivateKey`.
 
 
 ## Signature Creation
@@ -325,7 +322,7 @@ val publicKey: EcdsaPublicKey = TODO("You have this and trust it.")
 val plaintext = "You want to trust this.".encodeToByteArray()
 val signature: Signature = TODO("This was sent alongside the plaintext.")
 val verifier = SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey)
-val isValid = verifier.verify(plaintext, signature).isSuccess
+val isValid = catchingUnwrapped { verifier.verify(plaintext, signature) }.isSuccess
 println("Looks good? $isValid")
 ```
 
@@ -343,10 +340,7 @@ They are just not persisted and work the same across platforms.
 
 To obtain an ephemeral signer, call `Signer.Ephemeral{}` and pass EC or RSA-specific configuration options as you would when creating a key using
 the `SigningProvider`.
-Alternatively, you can create an ephemeral key using `EphemeralKey{}`(and again, pass algorithm-specific configuration options).
-To obtain a signer from this ephemeral key, call `getSigner{}` on it. This, similarly to provider-backed keys, takes
-algorithm-specific configuration options, such as a specific hash algorithm or padding, in case more than one was
-specified when creating the ephemeral key.
+To use the same key with multiple algorithms, export it using `exportPrivateKey()` and call `signerFor(privateKey)` on each algorithm.
 
 ## Digest Calculation
 The Supreme KMP crypto provider introduces a `digest()` extension function on the `Digest` class.
@@ -489,8 +483,8 @@ Once you know decided on an encryption algorithm, encryption itself is straight-
 ```kotlin
 val secret = "Top Secret".encodeToByteArray()
 val secretKey = SymmetricEncryptionAlgorithm.ChaCha20Poly1305.randomKey()
-val encrypted = secretKey.encrypt(secret).getOrThrow(/*handle error*/)
-encrypted.decrypt(secretKey).getOrThrow(/*handle error*/) shouldBe secret
+val encrypted = secretKey.encrypt(secret)
+encrypted.decrypt(secretKey) shouldBe secret
 ```
 
 Encrypted data is always structured and the individual components are easily accessible:
@@ -498,16 +492,16 @@ Encrypted data is always structured and the individual components are easily acc
 val nonce = encrypted.nonce
 val ciphertext = encrypted.encryptedData
 val authTag = encrypted.authTag
-val keyBytes = secretKey.secretKey.getOrThrow() /*for algorithms with a dedicated MAC key, there's encryptionKey and macKey*/
+val keyBytes = secretKey.secretKey /*for algorithms with a dedicated MAC key, there's encryptionKey and macKey*/
 ```
 
 Decrypting data received from external sources is also straight-forward:
 ```kotlin
-val box = algo.sealedBox.withNonce(nonce).from(ciphertext, authTag).getOrThrow(/*handle error*/)
-box.decrypt(preSharedKey, /*also pass AAD*/ externalAAD).getOrThrow(/*handle error*/) shouldBe secret
+val box = algo.sealedBox.withNonce(nonce).from(ciphertext, authTag)
+box.decrypt(preSharedKey, /*also pass AAD*/ externalAAD) shouldBe secret
 
 //alternatively, pass raw data:
-preSharedKey.decrypt(nonce, ciphertext, authTag, externalAAD).getOrThrow(/*handle error*/) shouldBe secret
+preSharedKey.decrypt(nonce, ciphertext, authTag, externalAAD) shouldBe secret
 ```
 
 ### Custom AES-CBC-HMAC
@@ -534,10 +528,10 @@ val aad = Clock.System.now().toString().encodeToByteArray()
 val sealedBox = key.encrypt(
     payload,
     authenticatedData = aad,
-).getOrThrow(/*handle error*/)
+)
 
 //because everything is structured, decryption is simple
-val recovered = sealedBox.decrypt(key, aad).getOrThrow(/*handle error*/)
+val recovered = sealedBox.decrypt(key, aad)
 
 recovered shouldBe payload //success!
 
@@ -545,20 +539,20 @@ recovered shouldBe payload //success!
 val reconstructed = algorithm.sealedBox.withNonce(sealedBox.nonce).from(
     encryptedData = sealedBox.encryptedData, /*Could also access authenticatedCipherText*/
     authTag = sealedBox.authTag,
-).getOrThrow()
+)
 
 val manuallyRecovered = reconstructed.decrypt(
     key,
     authenticatedData = aad,
-).getOrThrow(/*handle error*/)
+)
 
 manuallyRecovered shouldBe payload //great success!
 
 //if we just know algorithm and key bytes, we can also construct a symmetric key
 reconstructed.decrypt(
-    algorithm.keyFrom(key.encryptionKey.getOrThrow(), key.macKey.getOrThrow()).getOrThrow(/*handle error*/),
+    algorithm.keyFrom(key.encryptionKey, key.macKey),
     aad
-).getOrThrow(/*handle error*/) shouldBe payload //greatest success!
+) shouldBe payload //greatest success!
 ```
 
 #### Contracts
@@ -647,7 +641,7 @@ Decryption works analogously:
     ```
     This works the same for encryptors.
 
-As with the rest of the API, `KmmResult` is used throughout and the encryption/decryption functions are suspending.
+`encrypt` and `decrypt` return byte arrays and throw on failure. `decrypt` is a suspending function.
 Textbook RSA (without padding; represented as `RsaPadding.NONE`) is supported, as is the vulnerable PKCS1 padding scheme.
 Both require a `HazardousMaterials` opt-in, as the latter may only to recover ciphertexts created by legacy systems
 and the former should only ever be used as a low-level primitive (usually for experiments but never in production)
@@ -690,7 +684,6 @@ Usage is the same across implementations:
     `SCrypt(cost, parallelization, blockSize)`.
 2. Invoke `deriveKey(salt, inputKeyMaterial, derivedKeyLength)` to obtain a derived key of length `derivedKeyLength` based on `inputKeyMaterial` and the provided `salt`.
 
-In line with other APIs, `deriveKey` returns a `KmmResult` indicating either success or failure.
 HKDF additionally exposes `extract(salt /*nullable*/, inputKeyMaterial)` and `expand(pseudoRandomKey, info, derivedKeyLength)` functions.
 
 ## Attestation
@@ -760,4 +753,4 @@ in the same manner as [for signing](#signature-creation).
 Once a private and a public value have been obtained, simply call `theOneValue.keyAgreement(theOtherValue)`.
 The `keyAgreement()` extension function is present on both `KeyAgreementPublicValue` and `KeyAgreementPrivateValue`, thus making it irrelevant
 whether the function is invoked on the public value or on the private value.
-The return value of a key agreement is always a (KmmResult-wrapped) `ByteArray` without additional semantics.
+`keyAgreement` returns the shared secret as a `ByteArray`.

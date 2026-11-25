@@ -41,7 +41,7 @@ val JweEncryptedTest by matrixSuite {
         val secretKey = KeyGenerator.getInstance("AES").apply { init(128) }.generateKey()
         jweNimbus.encrypt(AESEncrypter(secretKey))
 
-        val parsed = JweEncrypted.deserialize(jweNimbus.serialize()).getOrThrow()
+        val parsed = JweEncrypted.deserialize(jweNimbus.serialize())
 
         parsed.header.algorithm shouldBe JweAlgorithm.A128KW
         parsed.header.encryption shouldBe JweEncryption.A128GCM
@@ -76,7 +76,7 @@ val JweEncryptedTest by matrixSuite {
 
         jweNimbus.encrypt(ECDHEncrypter(ECKeyGenerator(Curve.P_256).generate()))
 
-        val parsed = JweEncrypted.deserialize(jweNimbus.serialize()).getOrThrow()
+        val parsed = JweEncrypted.deserialize(jweNimbus.serialize())
 
         parsed.header.algorithm shouldBe JweAlgorithm.ECDH_ES
         parsed.header.encryption shouldBe JweEncryption.A256CBC_HS512
@@ -97,9 +97,9 @@ val JweEncryptedTest by matrixSuite {
             val plain = Random.nextBytes(32)
             val key = alg.randomKey(random = object : CryptoRand() {
                 override fun nextBytes(buf: ByteArray) = Random.nextBytes(buf)
-            }).toJsonWebKey().getOrThrow()
-            val ciphertext = key.encrypt(plain).getOrThrow()
-            ciphertext.decrypt(key) shouldSucceedWith plain
+            }).toJsonWebKey()
+            val ciphertext = key.encrypt(plain)
+            ciphertext.decrypt(key) shouldBe plain
         }
     }
 

@@ -1,7 +1,5 @@
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -127,9 +125,9 @@ data class CoseBytes internal constructor(
     companion object {
 
         @Deprecated("To be removed in next release")
-        fun deserialize(it: ByteArray): KmmResult<CoseBytes> = catching {
+        @Throws(Throwable::class)
+        fun deserialize(it: ByteArray): CoseBytes =
             coseCompliantSerializer.decodeFromByteArray(it)
-        }
     }
 }
 

@@ -2,8 +2,7 @@
 
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.SecretExposure
@@ -196,7 +195,7 @@ data class JsonWebKey(
      * See [RFC9278](https://www.rfc-editor.org/rfc/rfc9278.html)
      */
     val jwkThumbprint: String by lazy {
-        val jsonEncoded = Json.encodeToString(this.toMinimalJsonWebKey().getOrNull() ?: this)
+        val jsonEncoded = Json.encodeToString(catchingUnwrapped { toMinimalJsonWebKey() }.getOrNull() ?: this)
         val thumbprint = jsonEncoded
             .encodeToByteArray().sha256().encodeToString(Base64UrlStrict)
         "urn:ietf:params:oauth:jwk-thumbprint:sha256:${thumbprint}"
@@ -206,7 +205,7 @@ data class JsonWebKey(
     @Deprecated("To be removed in next release")
     fun serialize() = joseCompliantSerializer.encodeToString(this)
 
-    val didEncoded: String? by lazy { toPublicKey().getOrNull()?.didEncoded }
+    val didEncoded: String? by lazy { catchingUnwrapped { toPublicKey() }.getOrNull()?.didEncoded }
 
     override fun toString(): String {
         return "JsonWebKey(curve=$curve," +
@@ -292,10 +291,9 @@ data class JsonWebKey(
     }
 
     /**
-     * @return a KmmResult wrapped [PublicKey] equivalent if conversion is possible
-     * (i.e. if all key params are set), or the first error.
+     * @throws IllegalArgumentException if the key type or its parameters are invalid.
      */
-    override fun toPublicKey(): KmmResult<PublicKey> = catching {
+    override fun toPublicKey(): PublicKey =
         when (type) {
             JwkType.EC -> {
                 EcdsaPublicKey.fromUncompressed(
@@ -318,20 +316,19 @@ data class JsonWebKey(
 
             else -> throw IllegalArgumentException("Illegal key type")
         }
-    }
 
     /**
      * @return a copy of this key with the minimal required members as listed in
      * [RFC7638 3.2](https://www.rfc-editor.org/rfc/rfc7638.html#section-3.2)
      */
-    fun toMinimalJsonWebKey(): KmmResult<JsonWebKey> = catching {
+    @Throws(Throwable::class)
+    fun toMinimalJsonWebKey(): JsonWebKey =
         when (type) {
             JwkType.EC -> JsonWebKey(type = JwkType.EC, curve = curve, x = x, y = y)
             JwkType.RSA -> JsonWebKey(type = JwkType.RSA, n = n, e = e)
             JwkType.SYM -> JsonWebKey(type = JwkType.SYM, k = k)
             else -> throw IllegalArgumentException("Illegal key type")
         }
-    }
 
     /**
      * Contains convenience functions
@@ -339,14 +336,17 @@ data class JsonWebKey(
     companion object {
 
         @Deprecated("To be removed in next release")
-        fun deserialize(it: String): KmmResult<JsonWebKey> =
-            catching { joseCompliantSerializer.decodeFromString<JsonWebKey>(it) }
+        @Throws(Throwable::class)
+        fun deserialize(it: String): JsonWebKey =
+            joseCompliantSerializer.decodeFromString<JsonWebKey>(it)
 
-        fun fromDid(input: String): KmmResult<JsonWebKey> =
-            catching { PublicKey.fromDid(input).also { it.jwkId = input }.toJsonWebKey() }
+        @Throws(Throwable::class)
+        fun fromDid(input: String): JsonWebKey =
+            PublicKey.fromDid(input).also { it.jwkId = input }.toJsonWebKey()
 
-        fun fromCoordinates(curve: ECCurve, x: ByteArray, y: ByteArray): KmmResult<JsonWebKey> =
-            catching { EcdsaPublicKey.fromUncompressed(curve, x, y).toJsonWebKey() }
+        @Throws(Throwable::class)
+        fun fromCoordinates(curve: ECCurve, x: ByteArray, y: ByteArray): JsonWebKey =
+            EcdsaPublicKey.fromUncompressed(curve, x, y).toJsonWebKey()
     }
 
     /**
@@ -357,45 +357,41 @@ data class JsonWebKey(
      * * [SymmetricEncryptionAlgorithm.AES.WRAP]
      *
      */
-    override fun toSymmetricKey(): KmmResult<SymmetricKey<*, *, *>> = catching {
+    override fun toSymmetricKey(): SymmetricKey<*, *, *> {
         require(algorithm is JweAlgorithm.Symmetric) { "Not a symmetric JweAlgorithm" }
         require(k != null) { "key bytes not present" }
-        when (val alg = algorithm.algorithm) {
-            is SymmetricEncryptionAlgorithm.AES.GCM -> alg.keyFrom(k).getOrThrow()
-            is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> alg.keyFrom(k).getOrThrow()
+        return when (val alg = algorithm.algorithm) {
+            is SymmetricEncryptionAlgorithm.AES.GCM -> alg.keyFrom(k)
+            is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> alg.keyFrom(k)
             else -> throw IllegalArgumentException("Unsupported algorithm $algorithm")
         }
     }
 }
 
 /**
- * Converts this symmetric key to a [JsonWebKey]. [algorithm] may be null for algorithms, which do not directly
- * correspond to a valid JWA `alg` identifier but will still be encoded.
- * * Allowed key operations can be restricted by specifying [includedOps]
- * */
-fun SymmetricKey<*, *, *>.toJsonWebKey(keyId: String? = this.jwkId, vararg includedOps: String): KmmResult<JsonWebKey> =
-    catching {
-        @OptIn(SecretExposure::class)
-        JsonWebKey(
-            k = jsonWebKeyBytes.getOrThrow(),
-            type = JwkType.SYM,
-            keyId = keyId,
-            algorithm = algorithm.toJweKwAlgorithm().getOrThrow(),
-            keyOperations = includedOps.toSet()
-        )
-    }
+ * Converts this symmetric key to a [JsonWebKey] with the allowed key operations in [includedOps].
+ * @throws UnsupportedCryptoException if the algorithm has no supported JWE key wrapping identifier.
+ */
+@Throws(Throwable::class)
+fun SymmetricKey<*, *, *>.toJsonWebKey(keyId: String? = this.jwkId, vararg includedOps: String): JsonWebKey =
+    JsonWebKey(
+        k = jsonWebKeyBytes,
+        type = JwkType.SYM,
+        keyId = keyId,
+        algorithm = algorithm.toJweKwAlgorithm(),
+        keyOperations = includedOps.toSet()
+    )
 
 /**
  * converts a symmetric key to its JWE serializable form (i.e. a single bytearray)
  */
 @OptIn(SecretExposure::class)
 val SymmetricKey<*, *, *>.jsonWebKeyBytes
-    get() = catching {
+    get() =
         when (hasDedicatedMacKey()) {
-            true -> macKey.getOrThrow() + encryptionKey.getOrThrow()
-            false -> secretKey.getOrThrow()
+            true -> macKey + encryptionKey
+            false -> secretKey
         }
-    }
 
 /**
  * Converts a [PublicKey] to a [JsonWebKey]
@@ -426,10 +422,9 @@ fun PublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
 /**
  * Converts a [at.asitplus.signum.indispensable.symmetric.SymmetricKey] to a [JsonWebKey]
  */
-fun SymmetricKey<*, *, *>.toJsonWebKey(keyId: String? = this.jwkId): KmmResult<JsonWebKey> = catching {
-    val jwAlg = this.algorithm.toJweKwAlgorithm().getOrThrow()
-    JsonWebKey(algorithm = jwAlg, keyId = keyId, k = jsonWebKeyBytes.getOrNull())
-}
+@Throws(Throwable::class)
+fun SymmetricKey<*, *, *>.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
+    JsonWebKey(algorithm = algorithm.toJweKwAlgorithm(), keyId = keyId, k = jsonWebKeyBytes)
 
 
 private const val JWK_ID = "jwkIdentifier"

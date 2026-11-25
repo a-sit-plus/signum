@@ -1,7 +1,5 @@
 package at.asitplus.signum.indispensable.symmetric
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.awesn1.encoding.bitLength
 import at.asitplus.signum.SignumInternals
@@ -112,44 +110,41 @@ private fun SymmetricEncryptionAlgorithm<*, *, *>.keyFromInternal(
 
 /**
  * Creates a [SymmetricKey] from the specified [secretKey].
- * Returns [KmmResult.failure] in case the provided bytes don't match [SymmetricEncryptionAlgorithm.keySize]
+ * @throws IllegalArgumentException if the provided bytes don't match [SymmetricEncryptionAlgorithm.keySize]
  */
 @JvmName("fixedKeyIntegrated")
 @Suppress("UNCHECKED_CAST")
+@Throws(Throwable::class)
 fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated>.keyFrom(
     secretKey: ByteArray
-): KmmResult<SymmetricKey<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated>> =
-    catching {
-        (this as SymmetricEncryptionAlgorithm<*, *, *>).keyFromInternal(secretKey, null)
-    } as KmmResult<SymmetricKey<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated>>
+): SymmetricKey<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated> =
+    keyFromInternal(secretKey, null) as SymmetricKey<AuthCapability<KeyType.Integrated>, I, KeyType.Integrated>
 
 
 /**
  * Creates a [SymmetricKey] from the specified [secretKey].
- * Returns [KmmResult.failure] in case the provided bytes don't match [SymmetricEncryptionAlgorithm.keySize]
+ * @throws IllegalArgumentException if the provided bytes don't match [SymmetricEncryptionAlgorithm.keySize]
  */
 @JvmName("fixedKeyAuthenticatedIntegrated")
 @Suppress("UNCHECKED_CAST")
+@Throws(Throwable::class)
 fun <I : NonceTrait> SymmetricEncryptionAlgorithm<AuthCapability.Authenticated<KeyType.Integrated>, I, KeyType.Integrated>.keyFrom(
     secretKey: ByteArray
-): KmmResult<SymmetricKey<AuthCapability.Authenticated.Integrated, I, KeyType.Integrated>> =
-    catching {
-        (this as SymmetricEncryptionAlgorithm<*, *, *>).keyFromInternal(secretKey, null)
-    } as KmmResult<SymmetricKey<AuthCapability.Authenticated.Integrated, I, KeyType.Integrated>>
+): SymmetricKey<AuthCapability.Authenticated.Integrated, I, KeyType.Integrated> =
+    keyFromInternal(secretKey, null) as SymmetricKey<AuthCapability.Authenticated.Integrated, I, KeyType.Integrated>
 
 /**
  * Creates a [SymmetricKey] from the specified [encryptionKey] and [macKey].
- * Returns [KmmResult.failure] in case the provided bytes don't match [SymmetricEncryptionAlgorithm.keySize] or the specified [macKey] is empty.
+ * @throws IllegalArgumentException if the provided bytes don't match [SymmetricEncryptionAlgorithm.keySize] or the specified [macKey] is empty.
  */
 @JvmName("fixedKeyDedicatedMacKey")
 @Suppress("UNCHECKED_CAST")
+@Throws(Throwable::class)
 fun <A : AuthCapability<KeyType.WithDedicatedMacKey>, I : NonceTrait> SymmetricEncryptionAlgorithm<A, I, KeyType.WithDedicatedMacKey>.keyFrom(
     encryptionKey: ByteArray,
     macKey: ByteArray
-): KmmResult<SymmetricKey<A, I, KeyType.WithDedicatedMacKey>> =
-    catching {
-        (this as SymmetricEncryptionAlgorithm<*, *, *>).keyFromInternal(encryptionKey, macKey)
-    } as KmmResult<SymmetricKey<A, I, KeyType.WithDedicatedMacKey>>
+): SymmetricKey<A, I, KeyType.WithDedicatedMacKey> =
+    keyFromInternal(encryptionKey, macKey) as SymmetricKey<A, I, KeyType.WithDedicatedMacKey>
 
 
 suspend fun SpecializedSymmetricEncryptionAlgorithm.randomKey() =

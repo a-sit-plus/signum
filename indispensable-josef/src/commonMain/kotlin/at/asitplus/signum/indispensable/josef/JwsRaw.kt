@@ -1,7 +1,5 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.KmmResult
-import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
@@ -39,22 +37,23 @@ sealed class JwsRaw {
      * According to [JWS RFC 7515](https://www.rfc-editor.org/info/rfc7515/#section-2) the payload may be any sequence
      * of octets
      */
+    @Throws(Throwable::class)
     fun <P> getPayload(
         serializer: KSerializer<P>,
         payloadFormat: SerialFormat = joseCompliantSerializer
-    ): KmmResult<P> = runCatching {
+    ): P =
         when (payloadFormat) {
             is StringFormat -> payloadFormat.decodeFromString(serializer, plainPayload.decodeToString())
             is BinaryFormat -> payloadFormat.decodeFromByteArray(serializer, plainPayload)
             else -> throw NotImplementedError("Unknown serial format $payloadFormat")
         }
-    }.wrap()
 
     /**
      * Find correct serializer at compile time. According to [JWS RFC 7515](https://www.rfc-editor.org/info/rfc7515/#section-2) the payload may be any sequence
      * of octets
      */
-    inline fun <reified P> getPayload(payloadFormat: SerialFormat = joseCompliantSerializer): KmmResult<P> =
+    @Throws(Throwable::class)
+    inline fun <reified P> getPayload(payloadFormat: SerialFormat = joseCompliantSerializer): P =
         getPayload(payloadFormat.serializersModule.serializer(), payloadFormat)
 
     object SerialNames {

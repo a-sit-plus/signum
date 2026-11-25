@@ -99,7 +99,7 @@ val JwsVerifierTest by matrixSuite {
         val headers = signers.mapIndexed { index, signer ->
             JwsHeaderWrapped(
                 SigningHeader(
-                    algorithm = signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow(), keyId = "key-$index",
+                    algorithm = signer.signatureAlgorithm.toJwsAlgorithm(), keyId = "key-$index",
                 ),
                 if (index == 0) setOf("kid") else setOf("alg", "kid"),
             )

@@ -46,28 +46,28 @@ val SymmetricAgainstReference  by matrixSuite {
                 "GCM" -> {
                     when (key.size) {
                         128 / 8 -> SymmetricEncryptionAlgorithm.AES_128.GCM.apply {
-                            val key = keyFrom(key).getOrThrow()
-                            val box = key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext, aad).getOrThrow()
+                            val key = keyFrom(key)
+                            val box = key.andPredefinedNonce(iv).encrypt(plaintext, aad)
                             withClue(encrypted.toHexString()) {
                                 box.encryptedData shouldBe encrypted
                                 box.authTag shouldBe authTag
                                 box.nonce shouldBe iv
                             }
-                            box.decrypt(key, aad?:byteArrayOf()).getOrThrow() shouldBe plaintext
+                            box.decrypt(key, aad?:byteArrayOf()) shouldBe plaintext
                         }
 
                         192 / 8 -> SymmetricEncryptionAlgorithm.AES_192.GCM.apply {
-                            val key = keyFrom(key).getOrThrow()
-                            val box = key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext).getOrThrow()
+                            val key = keyFrom(key)
+                            val box = key.andPredefinedNonce(iv).encrypt(plaintext)
                             box.encryptedData shouldBe encrypted
-                            box.decrypt(key).getOrThrow() shouldBe plaintext
+                            box.decrypt(key) shouldBe plaintext
                         }
 
                         256 / 8 -> SymmetricEncryptionAlgorithm.AES_256.GCM.apply {
-                            val key = keyFrom(key).getOrThrow()
-                            val box = key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext).getOrThrow()
+                            val key = keyFrom(key)
+                            val box = key.andPredefinedNonce(iv).encrypt(plaintext)
                             box.encryptedData shouldBe encrypted
-                            box.decrypt(key).getOrThrow() shouldBe plaintext
+                            box.decrypt(key) shouldBe plaintext
                         }
                     }
                 }
@@ -75,40 +75,40 @@ val SymmetricAgainstReference  by matrixSuite {
                 "CBC" -> {
                     when (key.size) {
                         128 / 8 -> SymmetricEncryptionAlgorithm.AES_128.CBC.PLAIN.apply {
-                            val key = keyFrom(key).getOrThrow()
-                            val box = key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext).getOrThrow()
+                            val key = keyFrom(key)
+                            val box = key.andPredefinedNonce(iv).encrypt(plaintext)
                             box.encryptedData shouldBe encrypted
-                            box.decrypt(key).getOrThrow() shouldBe plaintext
+                            box.decrypt(key) shouldBe plaintext
 
 
                         }
 
                         192 / 8 -> SymmetricEncryptionAlgorithm.AES_192.CBC.PLAIN.apply {
-                            val key = keyFrom(key).getOrThrow()
-                            val box = key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext).getOrThrow()
+                            val key = keyFrom(key)
+                            val box = key.andPredefinedNonce(iv).encrypt(plaintext)
                             box.encryptedData shouldBe encrypted
-                            box.decrypt(key).getOrThrow() shouldBe plaintext
+                            box.decrypt(key) shouldBe plaintext
                         }
 
                         256 / 8 -> SymmetricEncryptionAlgorithm.AES_256.CBC.PLAIN.apply {
-                            val key = keyFrom(key).getOrThrow()
-                            val box = key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext).getOrThrow()
+                            val key = keyFrom(key)
+                            val box = key.andPredefinedNonce(iv).encrypt(plaintext)
                             box.encryptedData shouldBe encrypted
-                            box.decrypt(key).getOrThrow() shouldBe plaintext
+                            box.decrypt(key) shouldBe plaintext
                         }
                     }
                 }
 
                 "CHACHA" -> {
                     SymmetricEncryptionAlgorithm.ChaCha20Poly1305.apply {
-                        val key = keyFrom(key).getOrThrow()
-                        val box = key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext, aad).getOrThrow()
+                        val key = keyFrom(key)
+                        val box = key.andPredefinedNonce(iv).encrypt(plaintext, aad)
                         withClue(encrypted.toHexString()) {
                             box.encryptedData shouldBe encrypted
                             box.authTag shouldBe authTag
                             box.nonce shouldBe iv
                         }
-                        box.decrypt(key, aad?:byteArrayOf()).getOrThrow() shouldBe plaintext
+                        box.decrypt(key, aad?:byteArrayOf()) shouldBe plaintext
                     }
                 }
 
@@ -131,30 +131,30 @@ val SymmetricAgainstReference  by matrixSuite {
 
             when (key.size) {
                 128 / 8 -> SymmetricEncryptionAlgorithm.AES_128.ECB.apply {
-                    val key = keyFrom(key).getOrThrow()
-                    val box = key.encrypt(plaintext).getOrThrow()
+                    val key = keyFrom(key)
+                    val box = key.encrypt(plaintext)
                     withClue(encrypted.toHexString()) {
                         box.encryptedData shouldBe encrypted
                     }
-                    box.decrypt(key).getOrThrow() shouldBe plaintext
+                    box.decrypt(key) shouldBe plaintext
                 }
 
                 192 / 8 -> SymmetricEncryptionAlgorithm.AES_192.ECB.apply {
-                    val key = keyFrom(key).getOrThrow()
-                    val box = key.encrypt(plaintext).getOrThrow()
+                    val key = keyFrom(key)
+                    val box = key.encrypt(plaintext)
                     withClue(encrypted.toHexString()) {
                         box.encryptedData shouldBe encrypted
                     }
-                    box.decrypt(key).getOrThrow() shouldBe plaintext
+                    box.decrypt(key) shouldBe plaintext
                 }
 
                 256 / 8 -> SymmetricEncryptionAlgorithm.AES_256.ECB.apply {
-                    val key = keyFrom(key).getOrThrow()
-                    val box = key.encrypt(plaintext).getOrThrow()
+                    val key = keyFrom(key)
+                    val box = key.encrypt(plaintext)
                     withClue(encrypted.toHexString()) {
                         box.encryptedData shouldBe encrypted
                     }
-                    box.decrypt(key).getOrThrow() shouldBe plaintext
+                    box.decrypt(key) shouldBe plaintext
                 }
             }
 
@@ -175,30 +175,30 @@ val SymmetricAgainstReference  by matrixSuite {
 
             when (key.size) {
                 128 / 8 -> SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394.apply {
-                    val key = keyFrom(key).getOrThrow()
-                    val box = key.encrypt(plaintext).getOrThrow()
+                    val key = keyFrom(key)
+                    val box = key.encrypt(plaintext)
                     withClue(encrypted.toHexString()) {
                         box.encryptedData shouldBe encrypted
                     }
-                    box.decrypt(key).getOrThrow() shouldBe plaintext
+                    box.decrypt(key) shouldBe plaintext
                 }
 
                 192 / 8 -> SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394.apply {
-                    val key = keyFrom(key).getOrThrow()
-                    val box = key.encrypt(plaintext).getOrThrow()
+                    val key = keyFrom(key)
+                    val box = key.encrypt(plaintext)
                     withClue(encrypted.toHexString()) {
                         box.encryptedData shouldBe encrypted
                     }
-                    box.decrypt(key).getOrThrow() shouldBe plaintext
+                    box.decrypt(key) shouldBe plaintext
                 }
 
                 256 / 8 -> SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394.apply {
-                    val key = keyFrom(key).getOrThrow()
-                    val box = key.encrypt(plaintext).getOrThrow()
+                    val key = keyFrom(key)
+                    val box = key.encrypt(plaintext)
                     withClue(encrypted.toHexString()) {
                         box.encryptedData shouldBe encrypted
                     }
-                    box.decrypt(key).getOrThrow() shouldBe plaintext
+                    box.decrypt(key) shouldBe plaintext
                 }
             }
 

@@ -26,7 +26,7 @@ internal actual fun encryptRSAImpl(
     publicKey: RsaPublicKey,
     data: ByteArray,
     config: PlatformEncryptorConfiguration
-): ByteArray = algorithm.getJCAEncryptorInstance(publicKey, config.provider).getOrThrow().run {
+): ByteArray = algorithm.getJCAEncryptorInstance(publicKey, config.provider).run {
     doFinal(data)
 }
 
@@ -39,6 +39,6 @@ internal actual suspend fun decryptRSAImpl(
     algorithm.getJCADecryptorInstance(
         privateKey,
         config.provider /*TODO provider config like biometrics, once we support HW-backed storage*/
-    ).getOrThrow().run {
+    ).run {
         doFinal(data)
     }

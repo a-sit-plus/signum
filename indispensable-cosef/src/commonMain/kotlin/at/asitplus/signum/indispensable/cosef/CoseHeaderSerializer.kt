@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.catching
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -106,7 +106,7 @@ object CoseHeaderSerializer : KSerializer<CoseHeader> {
                         ByteArraySerializer()
                     )
                     // may be a list of byte array or a single byte array
-                    labels["x5chain"] -> x5chain = catching {
+                    labels["x5chain"] -> x5chain = catchingUnwrapped {
                         decodeNullableSerializableElement(
                             ListSerializer(ByteArraySerializer()).descriptor,
                             index,

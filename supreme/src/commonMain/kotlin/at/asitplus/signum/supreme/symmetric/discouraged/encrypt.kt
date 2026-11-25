@@ -1,7 +1,5 @@
 package at.asitplus.signum.supreme.symmetric.discouraged
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.symmetric.*
@@ -17,23 +15,23 @@ import kotlin.jvm.JvmName
  *
  * It is safe to discard the reference to [nonce], as it will be added to any  [SealedBox.Authenticated] resulting from an encryption.
  *
- * @return [KmmResult.success] containing a [SealedBox.Authenticated] if valid parameters were provided or [KmmResult.failure] in case of
- * invalid parameters (e.g., key or nonce length)
+ * @throws IllegalArgumentException for invalid parameters
  */
 @HazardousMaterials("NEVER re-use a nonce/IV! Have them auto-generated instead!")
 @JvmName("encryptAuthenticatedWithNonce")
+@Throws(Throwable::class)
 suspend fun <K : KeyType, A : AuthCapability.Authenticated<out K>> KeyWithNonceAuthenticating<A, out K>.encrypt(
     data: ByteArray,
     authenticatedData: ByteArray? = null
-): KmmResult<SealedBox<A, NonceTrait.Required, out K>> = catching {
-    @OptIn(SecretExposure::class) Encryptor(
+): SealedBox<A, NonceTrait.Required, out K> =
+    @OptIn(SecretExposure::class)
+    Encryptor(
         second.algorithm,
-        if (second.hasDedicatedMacKey()) (second as WithDedicatedMac<NonceTrait.Required>).encryptionKey.getOrThrow() else (second as SymmetricKey.Integrated<out A, NonceTrait.Required>).secretKey.getOrThrow(),
-        if (second.hasDedicatedMacKey()) (second as WithDedicatedMac<NonceTrait.Required>).macKey.getOrThrow() else (second as SymmetricKey.Integrated<out A, NonceTrait.Required>).secretKey.getOrThrow(),
+        if (second.hasDedicatedMacKey()) (second as WithDedicatedMac<NonceTrait.Required>).encryptionKey else (second as SymmetricKey.Integrated<out A, NonceTrait.Required>).secretKey,
+        if (second.hasDedicatedMacKey()) (second as WithDedicatedMac<NonceTrait.Required>).macKey else (second as SymmetricKey.Integrated<out A, NonceTrait.Required>).secretKey,
         first,
         authenticatedData,
     ).encrypt(data) as SealedBox<A, NonceTrait.Required, K>
-}
 
 /**
  * Encrypts [data] using the manually specified [nonce]. Check yourself, before you really, really wreck yourself!
@@ -41,22 +39,22 @@ suspend fun <K : KeyType, A : AuthCapability.Authenticated<out K>> KeyWithNonceA
  *
  * It is safe to discard the reference to [nonce], as it will be added to any  [SealedBox.Authenticated] resulting from an encryption.
  *
- * @return [KmmResult.success] containing a [SealedBox.Authenticated] if valid parameters were provided or [KmmResult.failure] in case of
- * invalid parameters (e.g., key or nonce length)
+ * @throws IllegalArgumentException for invalid parameters
  */
 @HazardousMaterials("NEVER re-use a nonce/IV! Have them auto-generated instead!")
 @JvmName("encryptWithNonce")
+@Throws(Throwable::class)
 suspend fun <K : KeyType, A : AuthCapability<out K>> KeyWithNonce<A, out K>.encrypt(
     data: ByteArray
-): KmmResult<SealedBox.WithNonce<A, out K>> = catching {
-    @OptIn(SecretExposure::class) Encryptor(
+): SealedBox.WithNonce<A, out K> =
+    @OptIn(SecretExposure::class)
+    Encryptor(
         first.algorithm,
-        if (first.hasDedicatedMacKey()) (first as WithDedicatedMac<NonceTrait.Required>).encryptionKey.getOrThrow() else (first as SymmetricKey.Integrated<out A, NonceTrait.Required>).secretKey.getOrThrow(),
-        if (first.hasDedicatedMacKey()) (first as WithDedicatedMac<NonceTrait.Required>).macKey.getOrThrow() else null,
+        if (first.hasDedicatedMacKey()) (first as WithDedicatedMac<NonceTrait.Required>).encryptionKey else (first as SymmetricKey.Integrated<out A, NonceTrait.Required>).secretKey,
+        if (first.hasDedicatedMacKey()) (first as WithDedicatedMac<NonceTrait.Required>).macKey else null,
         second,
         null,
     ).encrypt(data) as SealedBox.WithNonce<A, out K>
-}
 
 /**
  * This function can be used to feed a pre-set nonce into encryption functions.
@@ -64,11 +62,11 @@ suspend fun <K : KeyType, A : AuthCapability<out K>> KeyWithNonce<A, out K>.encr
  * @see at.asitplus.signum.supreme.symmetric.randomNonce
  */
 @HazardousMaterials("Nonce/IV re-use can have catastrophic consequences!")
-fun <K : KeyType, A : AuthCapability<out K>> SymmetricKey<A, NonceTrait.Required, out K>.andPredefinedNonce(nonce: ByteArray) =
-    catching {
-        require(nonce.size == algorithm.nonceSize.bytes.toInt()) { "$algorithm requires a nonce of size ${algorithm.nonceSize}!" }
-        KeyWithNonce(this, nonce)
-    }
+@Throws(Throwable::class)
+fun <K : KeyType, A : AuthCapability<out K>> SymmetricKey<A, NonceTrait.Required, out K>.andPredefinedNonce(nonce: ByteArray): KeyWithNonce<A, out K> {
+    require(nonce.size == algorithm.nonceSize.bytes.toInt()) { "$algorithm requires a nonce of size ${algorithm.nonceSize}!" }
+    return KeyWithNonce(this, nonce)
+}
 
 /**
  * This function can be used to feed a pre-set nonce into encryption functions.
@@ -77,13 +75,13 @@ fun <K : KeyType, A : AuthCapability<out K>> SymmetricKey<A, NonceTrait.Required
  */
 @HazardousMaterials("Nonce/IV re-use can have catastrophic consequences!")
 @JvmName("authedKeyWithNonce")
+@Throws(Throwable::class)
 fun <K : KeyType, A : AuthCapability.Authenticated<out K>> SymmetricKey<out A, NonceTrait.Required, out K>.andPredefinedNonce(
     nonce: ByteArray
-) =
-    catching {
-        require(nonce.size == algorithm.nonceSize.bytes.toInt()) { "$algorithm requires a nonce of size ${algorithm.nonceSize}!" }
-        KeyWithNonceAuthenticating(nonce, this)
-    }
+): KeyWithNonceAuthenticating<A, out K> {
+    require(nonce.size == algorithm.nonceSize.bytes.toInt()) { "$algorithm requires a nonce of size ${algorithm.nonceSize}!" }
+    return KeyWithNonceAuthenticating(nonce, this)
+}
 
 private typealias KeyWithNonce<A, K> = Pair<SymmetricKey<out A, NonceTrait.Required, out K>, ByteArray>
 //first and second are deliberately swapped to avoid mixups

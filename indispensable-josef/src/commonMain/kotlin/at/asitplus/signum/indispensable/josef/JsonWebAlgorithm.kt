@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.catching
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
 import kotlinx.serialization.KSerializer
@@ -32,16 +31,12 @@ object JwaSerializer : KSerializer<JsonWebAlgorithm> {
 
     override fun deserialize(decoder: Decoder): JsonWebAlgorithm {
         val decoded = decoder.decodeString()
-        return catching<JsonWebAlgorithm> { JwsAlgorithm.entries.first { it.identifier == decoded } }
-            .getOrElse {
-                catching<JsonWebAlgorithm> {
-                    JweAlgorithm.entries.first { it.identifier == decoded }
-                }.getOrElse { JsonWebAlgorithm.UNKNOWN(decoded) }
-            }
+        return JwsAlgorithm.entries.firstOrNull { it.identifier == decoded }
+            ?: JweAlgorithm.entries.firstOrNull { it.identifier == decoded }
+            ?: JsonWebAlgorithm.UNKNOWN(decoded)
     }
 
     override fun serialize(encoder: Encoder, value: JsonWebAlgorithm) {
         encoder.encodeString(value.identifier)
     }
-
 }

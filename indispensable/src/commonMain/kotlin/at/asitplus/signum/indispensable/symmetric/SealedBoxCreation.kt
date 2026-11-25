@@ -1,21 +1,19 @@
 package at.asitplus.signum.indispensable.symmetric
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.signum.indispensable.misc.bytes
 import kotlin.jvm.JvmName
 
 /**
  * Creates a [SealedBox] matching the characteristics of the underlying [SealedBoxBuilder.algorithm].
  * Use this function to load external encrypted data for decryption.
- * Returns a KmmResult purely for the sake of consistency, even though this operation will always success
  */
+@Throws(Throwable::class)
 fun <A : AuthCapability.Authenticated<out K>, K : KeyType> SealedBoxBuilder.WithNonce.Having<A, K>.from(
     encryptedData: ByteArray,
     authTag: ByteArray
-): KmmResult<SealedBox<A, NonceTrait.Required, K>> = catching {
+): SealedBox<A, NonceTrait.Required, K> {
     @Suppress("UNCHECKED_CAST")
-    SealedBox.WithNonce.Authenticated<K>(
+    return SealedBox.WithNonce.Authenticated<K>(
         nonce,
         algorithm.authenticatedCipherText(encryptedData, authTag)
     ) as SealedBox<A, NonceTrait.Required, K>  //TODO why is this an unchecked cast???
@@ -25,12 +23,12 @@ fun <A : AuthCapability.Authenticated<out K>, K : KeyType> SealedBoxBuilder.With
 /**
  * Creates a [SealedBox] matching the characteristics of the underlying [SealedBoxBuilder.algorithm].
  * Use this function to load external encrypted data for decryption.
- * Returns a KmmResult purely for the sake of consistency, even though this operation will always success
  */
+@Throws(Throwable::class)
 fun SealedBoxBuilder.WithNonce.Having<AuthCapability.Unauthenticated, KeyType.Integrated>.from(
     encryptedData: ByteArray,
-): KmmResult<SealedBox<AuthCapability.Unauthenticated, NonceTrait.Required, KeyType.Integrated>> = catching {
-    SealedBox.WithNonce.Unauthenticated(
+): SealedBox<AuthCapability.Unauthenticated, NonceTrait.Required, KeyType.Integrated> {
+    return SealedBox.WithNonce.Unauthenticated(
         nonce,
         Ciphertext.Unauthenticated(algorithm, encryptedData)
     )
@@ -42,15 +40,16 @@ fun SealedBoxBuilder.WithNonce.Having<AuthCapability.Unauthenticated, KeyType.In
  * Use this function to load external encrypted data for decryption.
  *
  *
- *  @return [at.asitplus.KmmResult.failure] on illegal auth tag length
+ * @throws IllegalArgumentException on illegal auth tag length
  */
 @JvmName("fromAuthenticatedGeneric")
+@Throws(Throwable::class)
 fun SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<*>, *>.from(
     encryptedData: ByteArray,
     authTag: ByteArray
-): KmmResult<SealedBox<AuthCapability.Authenticated<*>, NonceTrait.Without, *>> = catching {
+): SealedBox<AuthCapability.Authenticated<*>, NonceTrait.Without, *> {
     require(authTag.size.bytes == algorithm.authTagSize) { "Illegal auth tag length! expected: ${authTag.size * 8}, actual: ${algorithm.authTagSize.bits}" }
-    SealedBox.WithoutNonce.Authenticated<KeyType>(
+    return SealedBox.WithoutNonce.Authenticated<KeyType>(
         algorithm.authenticatedCipherText(encryptedData, authTag)
     )
 }
@@ -59,15 +58,16 @@ fun SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<*>, *>.f
  * Creates a [SealedBox] matching the characteristics of the underlying [SealedBoxBuilder.algorithm].
  * Use this function to load external encrypted data for decryption.
  *
- * @return [at.asitplus.KmmResult.failure] on illegal auth tag length
+ * @throws IllegalArgumentException on illegal auth tag length
  */
 @JvmName("fromAuthenticatedWihtKeyType")
+@Throws(Throwable::class)
 fun <K : KeyType> SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenticated<out K>, K>.from(
     encryptedData: ByteArray,
     authTag: ByteArray
-): KmmResult<SealedBox<AuthCapability.Authenticated<out K>, NonceTrait.Without, K>> = catching {
+): SealedBox<AuthCapability.Authenticated<out K>, NonceTrait.Without, K> {
     require(authTag.size.bytes == algorithm.authTagSize) { "Illegal auth tag length! expected: ${authTag.size * 8}, actual: ${algorithm.authTagSize.bits}" }
-    SealedBox.WithoutNonce.Authenticated<K>(
+    return SealedBox.WithoutNonce.Authenticated<K>(
         algorithm.authenticatedCipherText(encryptedData, authTag)
     )
 }
@@ -76,13 +76,13 @@ fun <K : KeyType> SealedBoxBuilder.Without.Authenticated<AuthCapability.Authenti
 /**
  * Creates a [SealedBox] matching the characteristics of the underlying [SealedBoxBuilder.algorithm].
  * Use this function to load external encrypted data for decryption.
- * Returns a KmmResult purely for the sake of consistency
  */
 @JvmName("fromUnauthenticatedWithoutNonce")
+@Throws(Throwable::class)
 fun SealedBoxBuilder.Without<AuthCapability.Unauthenticated, KeyType.Integrated>.from(
     encryptedData: ByteArray,
-): KmmResult<SealedBox<AuthCapability.Unauthenticated, NonceTrait.Without, KeyType.Integrated>> = catching {
-    SealedBox.WithoutNonce.Unauthenticated(
+): SealedBox<AuthCapability.Unauthenticated, NonceTrait.Without, KeyType.Integrated> {
+    return SealedBox.WithoutNonce.Unauthenticated(
         Ciphertext.Unauthenticated(algorithm, encryptedData)
     )
 }

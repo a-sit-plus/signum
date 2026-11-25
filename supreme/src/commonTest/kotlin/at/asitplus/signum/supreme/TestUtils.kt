@@ -2,10 +2,7 @@
 
 package at.asitplus.signum.supreme
 
-import at.asitplus.KmmResult
 import de.infix.testBalloon.framework.core.TestExecutionReport
-import io.kotest.matchers.Matcher
-import io.kotest.matchers.MatcherResult
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.RandomSource
@@ -21,13 +18,6 @@ fun Random.azString(length: Int): String {
         RandomSource(this,nextLong())
     ).value
 }
-internal object succeed: Matcher<KmmResult<*>> {
-    override fun test(value: KmmResult<*>) =
-        MatcherResult(value.isSuccess,
-            failureMessageFn = { "Should have succeeded, but failed:\n${value.exceptionOrNull()!!.stackTraceToString()}"},
-            negatedFailureMessageFn = { "Should have failed, but succeeded with ${value.getOrNull()!!}"})
-}
-
 
 /** String -> UTF-8 bytes */ fun a(s: String) = s.encodeToByteArray()
 /** Hex String -> bytes */   fun b(s: String) = s.replace("(^0x)|([^0-9a-fA-F])".toRegex(), "").hexToByteArray()

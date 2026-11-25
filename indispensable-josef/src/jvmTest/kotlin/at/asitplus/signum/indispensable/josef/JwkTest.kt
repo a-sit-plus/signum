@@ -50,7 +50,7 @@ val JwkTest  by matrixSuite {
                 own.keyId shouldBe cryptoPubKey.jwkId
                 own.shouldNotBeNull()
 
-                own.toPublicKey().getOrThrow().iosEncoded shouldBe cryptoPubKey.iosEncoded
+                own.toPublicKey().iosEncoded shouldBe cryptoPubKey.iosEncoded
                 PublicKey.fromDid(own.keyId.shouldNotBeNull()) shouldBe cryptoPubKey
             }
         }
@@ -145,7 +145,7 @@ val JwkTest  by matrixSuite {
     "Regression test: JWK (no keyId) -> PublicKey -> JWK (no keyId)" {
         val key = randomCertificate().publicKey.toJsonWebKey()
         key.keyId shouldBe null
-        val cpk = key.toPublicKey().getOrThrow()
+        val cpk = key.toPublicKey()
         cpk.toJsonWebKey().keyId shouldBe null
         val kid = Arb.string(minSize = 16, maxSize = 16, Codepoint.az()).sample(
             RandomSource.default()

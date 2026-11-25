@@ -84,13 +84,13 @@ val CoseProtectedHeaderVerificationTest by matrixSuite {
         }
         val input = cbor("84") + protectedEs256.bstr() + cbor("A0") + payload.bstr() + signature.coseBytes.bstr()
 
-        val cose = CoseSigned.deserialize(ByteArraySerializer(), input).getOrThrow()
+        val cose = CoseSigned.deserialize(ByteArraySerializer(), input)
 
         cose.protectedHeader.type shouldBe "application/test"
         cose.prepareCoseSignatureInput() shouldBe sigStructure
         cose.verify(keyPair.public) shouldBe true
         cose.serialize(ByteArraySerializer()) shouldBe input
-        CoseSigned.deserialize(ByteArraySerializer(), cose.serialize(ByteArraySerializer())).getOrThrow()
+        CoseSigned.deserialize(ByteArraySerializer(), cose.serialize(ByteArraySerializer()))
             .verify(keyPair.public) shouldBe true
     }
 
@@ -102,7 +102,7 @@ val CoseProtectedHeaderVerificationTest by matrixSuite {
         val mac = Mac.getInstance("HmacSHA256").apply { init(SecretKeySpec(key, "HmacSHA256")) }
         val input = cbor("84") + protectedHs256.bstr() + cbor("A0") + payload.bstr() + mac.doFinal(macStructure).bstr()
 
-        val cose = CoseMac.deserialize(ByteArraySerializer(), input).getOrThrow()
+        val cose = CoseMac.deserialize(ByteArraySerializer(), input)
 
         cose.prepareCoseMacInput() shouldBe macStructure
         mac.doFinal(cose.prepareCoseMacInput()) shouldBe cose.tag
@@ -110,7 +110,7 @@ val CoseProtectedHeaderVerificationTest by matrixSuite {
     }
 
     "EUDIW status list CWT verifies" {
-        val cose = CoseSigned.deserialize(ByteArraySerializer(), eudiwStatusListCwt).getOrThrow()
+        val cose = CoseSigned.deserialize(ByteArraySerializer(), eudiwStatusListCwt)
         val leaf = cose.protectedHeader.certificateChain.shouldNotBeNull().first()
         val publicKey = CertificateFactory.getInstance("X.509").generateCertificate(leaf.inputStream()).publicKey
 

@@ -1,7 +1,5 @@
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.signum.indispensable.contentEqualsIfArray
 import at.asitplus.signum.indispensable.cosef.CoseSigned.Companion.create
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
@@ -71,10 +69,9 @@ data class CoseMac<P : Any?> internal constructor(
     }
 
     companion object {
-        fun <P : Any> deserialize(parameterSerializer: KSerializer<P>, it: ByteArray): KmmResult<CoseMac<P>> =
-            catching {
-                coseCompliantSerializer.decodeFromByteArray(CoseMacSerializer(parameterSerializer), it)
-            }
+        @Throws(Throwable::class)
+        fun <P : Any> deserialize(parameterSerializer: KSerializer<P>, it: ByteArray): CoseMac<P> =
+            coseCompliantSerializer.decodeFromByteArray(CoseMacSerializer(parameterSerializer), it)
 
         /**
          * Use this method to create a new [CoseMac] object with correct [CoseMac.wireFormat] set.

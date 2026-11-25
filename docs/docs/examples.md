@@ -12,14 +12,14 @@ In this example, we'll start with an ephemeral P-256 signer:
 ```kotlin
 val signer = Signer.Ephemeral {
     ec { curve = ECCurve.SECP_256_R_1 }
-}.getOrThrow() //TODO handle error
+}
 ```
 
 Next up, we'll create a header and payload:
 
 ```kotlin
 val header = JwsHeader(
-    algorithm = signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow(),
+    algorithm = signer.signatureAlgorithm.toJwsAlgorithm(),
     jsonWebKey = signer.publicKey.toJsonWebKey()
 )
 val payload = byteArrayOf(1, 3, 3, 7)
@@ -89,7 +89,7 @@ In this example, we'll again start with an ephemeral P-256 signer:
 ```kotlin
 val signer = Signer.Ephemeral {
     ec { curve = ECCurve.SECP_256_R_1 }
-}.getOrThrow() //TODO handle error properly
+}
 ```
 
 Next up, we'll create a header and payload:
@@ -97,7 +97,7 @@ Next up, we'll create a header and payload:
 ```kotlin
 //set KID + algorithm
 val protectedHeader = CoseHeader(
-    algorithm = signer.signatureAlgorithm.toCoseAlgorithm().getOrElse { TODO() },
+    algorithm = signer.signatureAlgorithm.toCoseAlgorithm(),
     kid = signer.publicKey.didEncoded.encodeToByteArray()
 )
 
@@ -318,7 +318,7 @@ val attestation =
 ```kotlin
 val tbsCrt = TbsCertificate(
   serialNumber = Random.nextBytes(16),
-  signatureAlgorithm = signer.signatureAlgorithm.toX509SignatureAlgorithm().getOrThrow(),
+  signatureAlgorithm = signer.signatureAlgorithm,
   issuerName = backendIssuerName,
   validFrom = Asn1Time(Clock.System.now()),
   validUntil = Asn1Time(Clock.System.now() + VALIDITY),
