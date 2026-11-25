@@ -1,7 +1,5 @@
 package at.asitplus.signum.supreme.os
 
-import at.asitplus.catching
-import at.asitplus.shouldSucceed
 import at.asitplus.signum.dsl.IosSignerConfiguration
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.digest.Digest
