@@ -5,11 +5,6 @@ import at.asitplus.awesn1.issuerAltName_2_5_29_18
 import at.asitplus.awesn1.subjectAltName_2_5_29_17
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 
-/** Interpreted SAN/IAN content, usable independently of the extension's encoding. */
-interface AlternativeNamesExtension : CertificateExtension {
-    val generalNames: List<GeneralName>
-}
-
 data class SubjectAlternativeName(
     override val generalNames: List<GeneralName>,
     override val critical: Boolean = false,

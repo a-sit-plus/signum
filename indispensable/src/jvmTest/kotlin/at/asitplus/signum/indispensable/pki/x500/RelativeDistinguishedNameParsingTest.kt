@@ -16,7 +16,16 @@ import kotlin.streams.asSequence
 
 val RelativeDistinguishedNameParsingTest by matrixSuite {
 
-    "Name should round-trip opaque attributes" { Name.fromString("1.2.3.4=#040101").toRfc2253String() shouldBe "1.2.3.4=#040101" }
+    "Opaque attributes normalize DN spelling and round-trip DER" {
+        val name = Name.fromString(" 1.2.3.4 = #0401AB ")
+        val canonicalDn = "1.2.3.4=#0401ab"
+        name.toRfc2253String() shouldBe canonicalDn
+        val der = name.asn1.toDer()
+        val decoded = Name.fromAsn1(der)
+        decoded.asn1.toDer() shouldBe der
+        decoded.toRfc2253String() shouldBe canonicalDn
+        (name == Name.fromString("1.2.3.5=#0401AB")) shouldBe false
+    }
 
     "Name should accept empty attribute values" {
         listOf("CN=", "CN=   ").forEach {

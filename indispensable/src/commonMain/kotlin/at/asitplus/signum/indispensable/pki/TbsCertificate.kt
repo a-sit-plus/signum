@@ -47,14 +47,12 @@ class TbsCertificate(
     val validFrom = validFrom.secondsCapped()
     val validUntil = validUntil.secondsCapped()
 
-    /** Contains `SubjectAlternativeName`s parsed from extensions. */
+    /** The interpreted subject alternative names, if available. */
     @Transient
-    // Nested conversion uses the application-wide DER configuration (docs/docs/extensibility.md).
     val subjectAlternativeNames: AlternativeNames? by lazy { extensions.findSubjectAltNames() }
 
-    /** Contains `IssuerAlternativeName`s parsed from extensions. */
+    /** The interpreted issuer alternative names, if available. */
     @Transient
-    // Nested conversion uses the application-wide DER configuration (docs/docs/extensibility.md).
     val issuerAlternativeNames: AlternativeNames? by lazy { extensions.findIssuerAltNames() }
 
     private fun semanticEquals(other: TbsCertificate): Boolean {

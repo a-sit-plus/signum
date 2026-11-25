@@ -501,7 +501,11 @@ val RelativeDistinguishedName.Companion.fromAsn1 get() =
         }.toSet())
     }
 
-val AttributeTypeAndValue.asn1 get() = asn1EncodersWith(AttributeTypeAndValueAsn1Provider::encodeToAsn1)
+val AttributeTypeAndValue.asn1 get() = asn1Encoders<X500AttributeTypeAndValue, _> { atv ->
+    val hex = atv.realSourceRepresentation as? Rfc4514HexAttribute
+    if (hex != null) X500AttributeTypeAndValue(hex.oid, hex.element)
+    else atv.encodeWith(AttributeTypeAndValueAsn1Provider::encodeToAsn1)
+}
 
 val AttributeTypeAndValue.Companion.fromAsn1: Asn1EncodingHelpers.Asn1Decoders<X500AttributeTypeAndValue, AttributeTypeAndValue>
     get() = Asn1EncodingHelpers.Asn1DecodersImpl(

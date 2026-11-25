@@ -122,10 +122,12 @@ private fun String.caseFold(): String = buildString(length) {
 interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
     @SignumInternals
     class Unknown internal constructor(
-        source: X500AttributeTypeAndValue,
+        override val oid: ObjectIdentifier,
+        source: Any,
         lookupResult: UnsupportedCryptoException,
     ) : AttributeTypeAndValue, ServiceLoader.UnknownShim(source, lookupResult) {
-        override val oid = source.oid
+        internal constructor(source: X500AttributeTypeAndValue, lookupResult: UnsupportedCryptoException) :
+            this(source.oid, source, lookupResult)
     }
 
     object OID {

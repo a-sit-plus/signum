@@ -98,8 +98,14 @@ internal object X500AttributeProviderScenarios {
         val hex = source.value.derEncoded.toHexString()
         val fromHex = listOf("CN", oid.toString()).map { key ->
             AttributeTypeAndValue.fromString("$key=#$hex").shouldBeInstanceOf<TextAttributeTypeAndValue>()
-                .also { it.text shouldBe "ALICE" }
+                .also {
+                    it.text shouldBe "ALICE"
+                    it.sourceFormat shouldBe "Rfc4514HexAttribute"
+                    it.toRfc2253String() shouldBe "CN=ALICE"
+                }
         }
+        val opaqueDn = "1.2.3.4=#040101"
+        Name.fromString(opaqueDn).toRfc2253String() shouldBe opaqueDn
         Signum.setDer(DER {})
         fromModel.asn1.toRepresentation() shouldBeSameInstanceAs source
         fromHex.forEach { it.asn1.toRepresentation() shouldBe source }

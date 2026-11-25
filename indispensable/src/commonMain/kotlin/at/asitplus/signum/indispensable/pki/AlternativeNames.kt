@@ -1,23 +1,15 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.*
-import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.WithSourceRepresentation
-import at.asitplus.signum.indispensable.asn1
-import at.asitplus.signum.indispensable.fromAsn1
 
-/**
- * [RFC 5280](https://datatracker.ietf.org/doc/html/rfc5280) {Subject||Issuer}AlternativeNames (SANs, IANs)
- * container class constructed from a certificate's [TbsCertificate.extensions] (filtered by OID).
- *
- * The contents are exposed as a typed list of [GeneralName]s, which is the single source of truth.
- * As this class parses [GeneralName]s upon initialisation, it may throw various kinds of [Throwable]s.
- * These are **not** limited to [Asn1Exception]s, which is why construction should be wrapped inside a
- * [runRethrowing] block, as done in [findSubjectAltNames] and [findIssuerAltNames].
- *
- * See [RFC 5280, Section 4.2.1.6](https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.6).
- */
+/** Interpreted SAN or IAN content, independent of the extension's encoding. */
+interface AlternativeNamesExtension : CertificateExtension {
+    val generalNames: List<GeneralName>
+}
+
+/** The typed names in an [RFC 5280](https://datatracker.ietf.org/doc/html/rfc5280) SAN or IAN extension. */
 class AlternativeNames(val generalNames: List<GeneralName>) : WithSourceRepresentation {
 
     override val sourceRepresentation = SourceRepresentationStorage()
@@ -35,20 +27,22 @@ class AlternativeNames(val generalNames: List<GeneralName>) : WithSourceRepresen
 
     companion object {
 
+        /** Returns the interpreted subject alternative names, if available. */
         @Throws(Asn1Exception::class)
         fun List<CertificateExtension>.findSubjectAltNames() =
             find(KnownOIDs.subjectAltName_2_5_29_17)
 
+        /** Returns the interpreted issuer alternative names, if available. */
         @Throws(Asn1Exception::class)
         fun List<CertificateExtension>.findIssuerAltNames() =
             find(KnownOIDs.issuerAltName_2_5_29_18)
 
-        private fun List<CertificateExtension>.find(oid: ObjectIdentifier): AlternativeNames? = runRethrowing {
+        private fun List<CertificateExtension>.find(oid: ObjectIdentifier): AlternativeNames? {
             val matches = asSequence().filter { it.oid == oid }.iterator()
             if (!matches.hasNext()) return null
             val matchedExtension = matches.next()
             if (matches.hasNext()) throw Asn1StructuralException("More than one extension with oid $oid found")
-            return AlternativeNames.fromAsn1(derBytes = matchedExtension.asn1.toRepresentation().value)
+            return (matchedExtension as? AlternativeNamesExtension)?.let { AlternativeNames(it.generalNames) }
         }
     }
 }
