@@ -121,10 +121,11 @@ private fun String.caseFold(): String = buildString(length) {
 /** An open attribute family. Only interpreted subtypes expose semantic values. */
 interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
     @SignumInternals
-    class Unknown(
+    class Unknown internal constructor(
         override val oid: ObjectIdentifier,
+        source: Any,
         lookupResult: UnsupportedCryptoException,
-    ) : AttributeTypeAndValue, ServiceLoader.UnknownShim(lookupResult)
+    ) : AttributeTypeAndValue, ServiceLoader.UnknownShim(source, lookupResult)
 
     object OID {
         val commonName = ObjectIdentifier("2.5.4.3")
@@ -181,7 +182,7 @@ interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
                 }
 
             val v = value.trim()
-            // RFC 4514 §2.4 hexstring form: the value is its DER encoding in hex (e.g. "#130138").
+            // RFC 4514 §2.4 uses hex-encoded BER. The built-in fallback accepts DER.
             val resolvedValue =
                 if (v.firstOrNull() == '#') {
                     require(v.length > 1)
@@ -191,17 +192,9 @@ interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
                     AttributeTypeAndValueProvider.Value(unescapeRfc2253(v))
                 }
 
-            @OptIn(SignumInternals::class)
-            ServiceLoader.load<AttributeTypeAndValueProvider>().getWithUnknown(type,
-                unknownCtor = { _, failure ->
-                    when (oid) {
-                        is AttributeTypeAndValueProvider.OID -> Unknown(oid.oid, failure)
-                        is AttributeTypeAndValueProvider.StringAlias -> throw failure
-                    }
-                },
-                loadBlock = {
-                    decodeATV(oid, resolvedValue)
-                })
+            ServiceLoader.load<AttributeTypeAndValueProvider>().get(type) {
+                decodeATV(oid, resolvedValue)
+            }
         }.getOrThrow()
     }
 }

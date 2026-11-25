@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.io.MultiBase
@@ -34,8 +35,10 @@ interface PublicKey : WithSourceRepresentation {
     val didKeyBytes: ByteArray
 
     @SignumInternals
-    class Unknown(lookupResult: UnsupportedCryptoException)
-        : PublicKey, ServiceLoader.UnknownShim(lookupResult) {
+    class Unknown internal constructor(
+        source: SubjectPublicKeyInfo,
+        lookupResult: UnsupportedCryptoException,
+    ) : PublicKey, ServiceLoader.UnknownShim(source, lookupResult) {
         override val didKeyBytes get() = fails
         override val didCodec get() = fails
         override val additionalProperties: MutableMap<String, String> get() = fails

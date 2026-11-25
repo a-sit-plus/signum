@@ -17,9 +17,10 @@ interface Digest : WithSourceRepresentation {
     val outputLength: BitLength
 
     @SignumInternals
-    class Unknown(lookupResult: UnsupportedCryptoException)
-        : Digest, ServiceLoader.UnknownShim(lookupResult)
-    {
+    class Unknown internal constructor(
+        source: X509AlgorithmIdentifier,
+        lookupResult: UnsupportedCryptoException,
+    ) : Digest, ServiceLoader.UnknownShim(source, lookupResult) {
         override val name get() = fails
         override val inputBlockSize get() = fails
         override val outputLength get() = fails

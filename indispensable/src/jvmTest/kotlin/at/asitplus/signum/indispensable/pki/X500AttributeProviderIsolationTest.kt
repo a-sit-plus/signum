@@ -3,11 +3,11 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.Asn1String
+import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeTo
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
@@ -15,8 +15,10 @@ import at.asitplus.signum.indispensable.installIndispensable
 import at.asitplus.signum.indispensable.sourceFormat
 import at.asitplus.signum.test.isolatedScenario
 import at.asitplus.testballoon.matrix.matrixSuite
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import io.kotest.matchers.types.shouldBeSameInstanceAs
 
 val X500AttributeProviderIsolationTest by matrixSuite {
     "Provider-only registration supplies aliases, canonical names, and typed text construction" {
@@ -29,6 +31,10 @@ val X500AttributeProviderIsolationTest by matrixSuite {
 
     "DN hex values use the ASN.1 provider for both an alias and a dotted OID" {
         isolatedScenario(X500AttributeProviderScenarios::class.java, "hexUsesAsn1Provider")
+    }
+
+    "A lenient DN provider can handle BER before the built-in fallback" {
+        isolatedScenario(X500AttributeProviderScenarios::class.java, "lenientBer")
     }
 
     "Exhausted semantic providers preserve the original wire payload as unknown" {
@@ -87,12 +93,43 @@ internal object X500AttributeProviderScenarios {
             override fun encodeToAsn1(value: AttributeTypeAndValue): X500AttributeTypeAndValue? = null
         })
 
+        val fromModel = AttributeTypeAndValue.fromAsn1(source).shouldBeInstanceOf<TextAttributeTypeAndValue>()
+        fromModel.text shouldBe "ALICE"
         val hex = source.value.derEncoded.toHexString()
-        for (key in listOf("CN", oid.toString())) {
-            val decoded = AttributeTypeAndValue.fromString("$key=#$hex").shouldBeInstanceOf<TextAttributeTypeAndValue>()
-            decoded.text shouldBe "ALICE"
-            decoded.asn1.toRepresentation() shouldBe source
+        val fromHex = listOf("CN", oid.toString()).map { key ->
+            AttributeTypeAndValue.fromString("$key=#$hex").shouldBeInstanceOf<TextAttributeTypeAndValue>()
+                .also {
+                    it.text shouldBe "ALICE"
+                    it.sourceFormat shouldBe "X500AttributeTypeAndValue"
+                    it.toRfc2253String() shouldBe "CN=ALICE"
+                }
         }
+        val opaqueDn = "1.2.3.4=#040101"
+        AttributeTypeAndValue.fromString(opaqueDn).shouldBeInstanceOf<AttributeTypeAndValue.Unknown>()
+            .sourceFormat shouldBe "X500AttributeTypeAndValue"
+        Name.fromString(opaqueDn).toRfc2253String() shouldBe opaqueDn
+        Signum.setDer(DER {})
+        fromModel.asn1.toRepresentation() shouldBeSameInstanceAs source
+        fromHex.forEach { it.asn1.toRepresentation() shouldBe source }
+    }
+
+    @JvmStatic
+    fun lenientBer() {
+        Signum.installIndispensable()
+        val ber = "13810141" // PrintableString "A" with a BER long-form length.
+        val dn = "CN=#$ber"
+        shouldThrow<UnsupportedCryptoException> { AttributeTypeAndValue.fromString(dn) }
+
+        ServiceLoader.register<AttributeTypeAndValueProvider>(object : AttributeTypeAndValueProvider {
+            override fun decodeATV(key: AttributeTypeAndValueProvider.Key, value: AttributeTypeAndValueProvider.Value): AttributeTypeAndValue? {
+                if (key != AttributeTypeAndValueProvider.Key("CN") || value !is AttributeTypeAndValueProvider.ByteArrayValue) return null
+                value.bytes.toHexString() shouldBe ber
+                return TextAttributeTypeAndValue(AttributeTypeAndValue.OID.commonName, "A")
+            }
+
+            override fun encodeATV(atv: AttributeTypeAndValue): Pair<AttributeTypeAndValueProvider.Key, AttributeTypeAndValueProvider.Value>? = null
+        })
+        AttributeTypeAndValue.fromString(dn).toRfc2253String() shouldBe "CN=A"
     }
 
     @JvmStatic
@@ -120,9 +157,7 @@ internal object X500AttributeProviderScenarios {
             }
         })
 
-        val attribute = decodeFrom<String, AttributeTypeAndValue> {
-            AttributeTypeAndValue.Unknown(Nickname.oid, UnsupportedCryptoException("No semantic interpretation"))
-        }("Alice")
+        val attribute = AttributeTypeAndValue.Unknown(Nickname.oid, "Alice", UnsupportedCryptoException("No semantic interpretation"))
         attribute.toRfc2253String() shouldBe "NICK=Alice"
     }
 }

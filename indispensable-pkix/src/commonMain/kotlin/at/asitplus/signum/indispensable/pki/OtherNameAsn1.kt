@@ -4,7 +4,7 @@ import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.signum.Signum
 import at.asitplus.signum.ServiceLoader
-import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeWith
 import at.asitplus.signum.indispensable.pki.x500.*
 
 /** ASN.1 adapters for the open OtherName family, selected by its inner OID. */
@@ -13,14 +13,11 @@ interface OtherNameAsn1Provider {
     fun encodeToAsn1(value: OtherName): X509GeneralName.Other?
 }
 
-internal fun decodeOtherName(src: X509GeneralName.Other): OtherName = try {
-    ServiceLoader.load<OtherNameAsn1Provider>().get(src, OtherNameAsn1Provider::decodeFromAsn1)
-} catch (failure: UnsupportedCryptoException) {
-    OtherName(src.value.oid, failure)
-}
+internal fun decodeOtherName(source: X509GeneralName.Other): OtherName =
+    ServiceLoader.load<OtherNameAsn1Provider>().get(source, OtherNameAsn1Provider::decodeFromAsn1)
 
-internal fun encodeOtherName(src: OtherName): X509GeneralName.Other =
-    ServiceLoader.load<OtherNameAsn1Provider>().get(src, OtherNameAsn1Provider::encodeToAsn1)
+internal fun encodeOtherName(source: OtherName): X509GeneralName.Other =
+    source.encodeWith(OtherNameAsn1Provider::encodeToAsn1)
 
 internal object BuiltinOtherNames : OtherNameAsn1Provider {
     override fun decodeFromAsn1(value: X509GeneralName.Other): OtherName? {

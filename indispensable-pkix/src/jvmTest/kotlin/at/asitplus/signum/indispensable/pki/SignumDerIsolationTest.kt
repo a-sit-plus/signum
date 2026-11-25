@@ -5,6 +5,7 @@ import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.awesn1.serialization.*
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
+import at.asitplus.signum.indispensable.SourceRepresentationStorage
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.pki.attributes.CommonName
@@ -14,6 +15,7 @@ import at.asitplus.signum.indispensable.pki.extn.GeneralSubtree
 import at.asitplus.signum.indispensable.pki.extn.GeneralSubtrees
 import at.asitplus.signum.indispensable.pki.extn.NameConstraints
 import at.asitplus.signum.indispensable.pki.x500.OtherName
+import at.asitplus.signum.indispensable.pki.x500.SmtpUtf8Mailbox
 import at.asitplus.signum.indispensable.sourceFormat
 import at.asitplus.signum.test.isolatedScenario
 import at.asitplus.testballoon.matrix.matrixSuite
@@ -26,6 +28,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
 import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
 
 @Serializable
 internal data class RegisteredOtherName(
@@ -36,6 +40,21 @@ internal data class RegisteredOtherName(
     companion object : OidProvider<RegisteredOtherName> {
         override val oid = ObjectIdentifier("1.2.3.123456789")
     }
+}
+
+private data class RegisteredSemanticName(val text: String) : OtherName {
+    override val oid get() = RegisteredOtherName.oid
+    override val sourceRepresentation = SourceRepresentationStorage()
+}
+
+private object RegisteredOtherNameProvider : OtherNameAsn1Provider {
+    override fun decodeFromAsn1(value: X509GeneralName.Other): OtherName? =
+        (value.value as? RegisteredOtherName)?.let { RegisteredSemanticName(it.payload.value.value.trim()) }
+
+    override fun encodeToAsn1(value: OtherName): X509GeneralName.Other? =
+        (value as? RegisteredSemanticName)?.let {
+            X509GeneralName.Other(RegisteredOtherName(ExplicitlyTagged(Asn1String.UTF8(it.text))))
+        }
 }
 
 internal data class RegisteredCertificateExtension(val text: String) : CertificateExtension {
@@ -66,7 +85,7 @@ val SignumDerIsolationTest by matrixSuite {
     "Rejected serializer registration leaves the active provider usable" {
         isolatedScenario(SignumDerScenarios::class.java, "rejectedRegistration")
     }
-    "Custom otherName registration reaches nested AKI and NameConstraints codecs" {
+    "Custom OtherNames round-trip through rebuilt SAN, AKI and NameConstraints" {
         isolatedScenario(SignumDerScenarios::class.java, "customOtherName")
     }
     "Selected depth limit reaches embedded constraint bodies" {
@@ -75,7 +94,7 @@ val SignumDerIsolationTest by matrixSuite {
     "PKIX construction leaves DER configurable" {
         isolatedScenario(SignumDerScenarios::class.java, "constructionBeforeDer")
     }
-    "JSON attribute codecs leave DER configurable" {
+    "JSON attribute and OtherName conversions leave DER configurable" {
         isolatedScenario(SignumDerScenarios::class.java, "jsonBeforeDer")
     }
     "Attribute providers resolve custom aliases" {
@@ -140,20 +159,36 @@ internal object SignumDerScenarios {
             }
         })
         Signum.installPkix()
-        val name = OtherName(X509GeneralName.Other(RegisteredOtherName(ExplicitlyTagged(Asn1String.UTF8("custom")))))
+        ServiceLoader.register<OtherNameAsn1Provider>(RegisteredOtherNameProvider)
+
+        val canonical = RegisteredOtherName(ExplicitlyTagged(Asn1String.UTF8("custom")))
+        val original = RegisteredOtherName(ExplicitlyTagged(Asn1String.UTF8(" custom ")))
+        RegisteredSemanticName("custom").asn1.toRepresentation() shouldBe X509GeneralName.Other(canonical)
+        val name = OtherName(X509GeneralName.Other(original)).shouldBeInstanceOf<RegisteredSemanticName>()
+        name.text shouldBe "custom"
+
+        val san = SubjectAlternativeName(listOf(name))
+        val sanBytes = san.asn1.toDer()
+        val decodedSan = CertificateExtension.fromAsn1(sanBytes).shouldBeInstanceOf<SubjectAlternativeName>()
+        val decodedSanName = decodedSan.generalNames.single().shouldBeInstanceOf<RegisteredSemanticName>()
+        (decodedSanName.asn1.toRepresentation() as X509GeneralName.Other).value
+            .shouldBeInstanceOf<RegisteredOtherName>() shouldBe original
+        SubjectAlternativeName(decodedSan.generalNames).asn1.toDer() shouldBe sanBytes
+
         val aki = AuthorityKeyIdentifier(authorityCertIssuer = listOf(name))
         val akiBytes = aki.asn1.toDer()
         val decodedAki = (CertificateExtension.fromAsn1(akiBytes) as AuthorityKeyIdentifier)
-        (decodedAki.authorityCertIssuer.single().asn1.toRepresentation() as X509GeneralName.Other).value
-            .shouldBeInstanceOf<RegisteredOtherName>()
-        decodedAki.asn1.toDer() shouldBe akiBytes
+        val issuer = decodedAki.authorityCertIssuer.single().shouldBeInstanceOf<RegisteredSemanticName>()
+        (issuer.asn1.toRepresentation() as X509GeneralName.Other).value shouldBe original
+        AuthorityKeyIdentifier(authorityCertIssuer = decodedAki.authorityCertIssuer).asn1.toDer() shouldBe akiBytes
 
         val constraints = NameConstraints(GeneralSubtrees(listOf(GeneralSubtree(name))))
         val bytes = constraints.asn1.toDer()
         val decoded = (CertificateExtension.fromAsn1(bytes) as NameConstraints)
-        (decoded.permitted!!.trees.single().base.asn1.toRepresentation() as X509GeneralName.Other).value
-            .shouldBeInstanceOf<RegisteredOtherName>()
-        decoded.asn1.toDer() shouldBe bytes
+        val decodedBase = checkNotNull(decoded.permitted).trees.single().base.shouldBeInstanceOf<RegisteredSemanticName>()
+        (decodedBase.asn1.toRepresentation() as X509GeneralName.Other).value shouldBe original
+        val rebuilt = NameConstraints(GeneralSubtrees(listOf(GeneralSubtree(decodedBase))))
+        rebuilt.asn1.toDer() shouldBe bytes
     }
 
     @JvmStatic
@@ -180,6 +215,13 @@ internal object SignumDerScenarios {
         Signum.installPkix()
         val jsonAttribute = J509.attribute(CommonName("startup"))
         J509.attribute(jsonAttribute).shouldBeInstanceOf<CommonName>().text shouldBe "startup"
+        val mailbox = SmtpUtf8Mailbox("mé@example.test")
+        J509.other(J509.other(mailbox)) shouldBe mailbox
+        val original = Json.parseToJsonElement("""{"oid":"1.2.3.999","value":{"native":"opaque"}}""").jsonObject
+        val opaque = J509.other(original)
+        opaque.oid shouldBe ObjectIdentifier("1.2.3.999")
+        J509.other(opaque) shouldBeSameInstanceAs original
+
         // This would fail if the JSON path had initialized Signum.Der.
         shouldNotThrowAny { Signum.registerAsn1Serializers(SerializersModule {}) }
     }

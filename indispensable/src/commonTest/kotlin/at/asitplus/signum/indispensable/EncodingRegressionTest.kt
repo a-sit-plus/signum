@@ -16,6 +16,7 @@ import at.asitplus.awesn1.serialization.encodeToTlv
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
+import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeTo
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.mac.MessageAuthenticationCode
 import at.asitplus.signum.indispensable.pki.RelativeDistinguishedName
@@ -26,6 +27,8 @@ import at.asitplus.signum.indispensable.pki.TextAttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.Name
 import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaSignature
 import at.asitplus.testballoon.matrix.matrixSuite
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import io.kotest.matchers.shouldBe
@@ -135,6 +138,16 @@ val EncodingRegressionTest by matrixSuite {
         shouldThrow<Asn1Exception> { RelativeDistinguishedName(setOf(first, second)) }
     }
 
+    "Generic converters preserve neutral failures" {
+        class Model : WithSourceRepresentation {
+            override val sourceRepresentation = SourceRepresentationStorage()
+        }
+        val failure = IllegalArgumentException("codec failure")
+        val decoder = decodeFrom<Asn1OctetString, Model> { throw failure }
+        shouldThrow<IllegalArgumentException> { decoder(Asn1OctetString(byteArrayOf(1))) } shouldBeSameInstanceAs failure
+        shouldThrow<IllegalArgumentException> { Model().encodeTo<Asn1OctetString, Model> { throw failure } } shouldBeSameInstanceAs failure
+    }
+
     "RDN equality and hashing ignore text case in any attribute order" {
         val mixed = RelativeDistinguishedName.fromString("CN=Straße+O=Köln")
         val upper = RelativeDistinguishedName.fromString("O=KÖLN+CN=STRAẞE")
@@ -190,5 +203,19 @@ val EncodingRegressionTest by matrixSuite {
             Digest.fromAsn1(original),
             MessageAuthenticationCode.fromAsn1(original),
         ).size shouldBe 3
+    }
+
+    "Signature algorithm dispatch retains the original X.509 source" {
+        val raw = EcdsaSignature.fromRS(BigInteger.ONE, BigInteger.TWO).asn1.toRepresentation()
+        val algorithm = EcdsaAlgorithm(Digest.SHA256, ECCurve.SECP_256_R_1)
+        val x509Algorithm = algorithm.asn1.toRepresentation()
+
+        val byAlgorithm = Signature.fromAsn1(raw).withSignatureAlgorithm(algorithm)
+        byAlgorithm.asn1.toRepresentation().rawBitString shouldBeSameInstanceAs raw.rawBitString
+        val byX509Algorithm = Signature.fromAsn1(raw).withX509Algorithm(x509Algorithm)
+        byX509Algorithm.asn1.toRepresentation().rawBitString shouldBeSameInstanceAs raw.rawBitString
+        Signature(x509Algorithm, raw).asn1.toRepresentation().rawBitString shouldBeSameInstanceAs raw.rawBitString
+        Signum.Der.encodeToTlv(byAlgorithm.asn1.toRepresentation()).derEncoded shouldBe
+                Signum.Der.encodeToTlv(raw).derEncoded
     }
 }

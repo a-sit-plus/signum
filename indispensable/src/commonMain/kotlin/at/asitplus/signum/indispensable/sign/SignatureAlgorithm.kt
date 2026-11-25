@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.sign
 
+import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
@@ -21,9 +22,10 @@ interface SignatureAlgorithm : WithSourceRepresentation {
     val preHashedSignatureFormat: SignatureInputFormat get() = null
 
     @OptIn(SignumInternals::class)
-    class Unknown(lookupResult: UnsupportedCryptoException)
-        : SignatureAlgorithm, ServiceLoader.UnknownShim(lookupResult)
-    {
+    class Unknown internal constructor(
+        source: X509AlgorithmIdentifier,
+        lookupResult: UnsupportedCryptoException,
+    ) : SignatureAlgorithm, ServiceLoader.UnknownShim(source, lookupResult) {
         override val preHashedSignatureFormat get() = fails
     }
 

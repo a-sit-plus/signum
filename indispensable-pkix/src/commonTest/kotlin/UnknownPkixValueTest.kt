@@ -9,6 +9,7 @@ import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
+import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeTo
 import at.asitplus.signum.indispensable.pki.attributes.*
 import at.asitplus.signum.indispensable.pki.extn.*
 import at.asitplus.signum.indispensable.pki.x500.*
@@ -16,6 +17,7 @@ import at.asitplus.signum.indispensable.sign.EcdsaPublicKey.Companion.asPublicKe
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.matchers.types.shouldBeSameInstanceAs
 import kotlinx.serialization.Serializable
@@ -138,6 +140,32 @@ val UnknownPkixValueTest by matrixSuite {
         qualifier.shouldBeInstanceOf<ServiceLoader.UnknownShim>()
         qualifier.lookupResult.suppressedExceptions.isNotEmpty() shouldBe true
         CertificatePolicies(policies.certificatePolicies).asn1.toRepresentation().value shouldBe body
+    }
+
+    "Opaque values distinguish OIDs with identical payloads" {
+        val first = ObjectIdentifier("1.2.3.4")
+        val second = ObjectIdentifier("1.2.3.5")
+        val payload = Asn1Integer(1).encodeToTlv()
+
+        val csr = CsrAttribute(first, payload).shouldBeInstanceOf<CsrAttribute.Unknown>()
+        csr shouldBe CsrAttribute(first, payload)
+        csr shouldNotBe CsrAttribute(second, payload)
+
+        fun other(oid: ObjectIdentifier) =
+            OtherName(X509GeneralName.Other(X509GeneralName.Other.SemanticValue.Generic(oid, payload)))
+        val name = other(first).shouldBeInstanceOf<OtherName.Unknown>()
+        name shouldBe other(first)
+        name shouldNotBe other(second)
+
+        val qualifiers = listOf(Asn1PolicyQualifier(first, payload), Asn1PolicyQualifier(second, payload))
+        val body = Signum.Der.encodeToByteArray(ListSerializer(PolicyInformation.Asn1Representation.serializer()), listOf(
+            PolicyInformation.Asn1Representation(first, qualifiers),
+        ))
+        val policies = decodeCertificatePolicies(body)
+        val decoded = policies.single().policyQualifiers
+        decoded[0].shouldBeInstanceOf<PolicyQualifierInfo.Unknown>() shouldNotBe decoded[1]
+        decoded.map { it.encodeTo<Asn1PolicyQualifier, PolicyQualifierInfo> { error("Expected retained qualifier") } } shouldBe qualifiers
+        encodeCertificatePolicies(policies) shouldBe body
     }
 
     "Unknown values retain a non-ASN.1 source for independent recovery" {

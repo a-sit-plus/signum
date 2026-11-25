@@ -18,9 +18,10 @@ interface PrivateKey : WithSourceRepresentation {
     }
 
     @SignumInternals
-    class Unknown(
-        lookupResult: UnsupportedCryptoException
-    ) : PrivateKey, ServiceLoader.UnknownShim(lookupResult)
+    class Unknown internal constructor(
+        source: Pkcs8PrivateKeyInfo,
+        lookupResult: UnsupportedCryptoException,
+    ) : PrivateKey, ServiceLoader.UnknownShim(source, lookupResult)
 
     companion object {
         init { Signum.installIndispensable() }

@@ -53,7 +53,8 @@ val J509Test by matrixSuite {
             AuthorityKeyIdentifier(byteArrayOf(4, 5), listOf(hardware), BigInteger.TWO), ExtendedKeyUsage(setOf(policyOid)),
             InhibitAnyPolicy(2), PolicyConstraints(1, 2), PolicyMappings(listOf(CertificatePolicyMap(policyOid, ObjectIdentifier("1.2.3.5")))),
             CertificatePolicies(listOf(PolicyInformation(policyOid, qualifiers))),
-            NameConstraints(GeneralSubtrees(listOf(GeneralSubtree(DNSName("example.com"))))), SubjectAlternativeName(names),
+            NameConstraints(GeneralSubtrees(listOf(GeneralSubtree(DNSName("example.com"))))),
+            SubjectAlternativeName(names), IssuerAlternativeName(listOf(hardware)),
         ))
         source.sourceFormat shouldBe "<no source>"
         val json = J509.encode(source)
@@ -68,6 +69,10 @@ val J509Test by matrixSuite {
         val der = decoded.asn1.toDer()
         val fromDer = TbsCertificate.fromAsn1(der)
         fromDer shouldBe source
+        fromDer.asn1.toDer() shouldBe der
+        val (san, ian) = fromDer.extensions.filterIsInstance<AlternativeNamesExtension>()
+        fromDer.subjectAlternativeNames?.asn1?.toDer() shouldBe san.asn1.toRepresentation().value
+        fromDer.issuerAlternativeNames?.asn1?.toDer() shouldBe ian.asn1.toRepresentation().value
         J509.decode(J509.encode(fromDer)) shouldBe source
         J509.encode(decoded) shouldBe json
         source.sourceFormat shouldBe "<no source>"
@@ -104,8 +109,13 @@ val J509Test by matrixSuite {
             } shouldBeSameInstanceAs shim.lookupResult
         }
         val nativeNames = j509Contents(listOf(SubjectAlternativeName(listOf(name)), IssuerAlternativeName(listOf(name))))
-        nativeNames.extensions.filterIsInstance<SubjectAlternativeName>().single().generalNames.single() shouldBeSameInstanceAs name
-        nativeNames.extensions.filterIsInstance<IssuerAlternativeName>().single().generalNames.single() shouldBeSameInstanceAs name
+        nativeNames.subjectAlternativeNames?.generalNames?.single() shouldBeSameInstanceAs name
+        nativeNames.issuerAlternativeNames?.generalNames?.single() shouldBeSameInstanceAs name
+        val decodedNames = J509.decode(J509.encode(nativeNames))
+        decodedNames.subjectAlternativeNames?.generalNames?.single() shouldBeSameInstanceAs
+            decodedNames.extensions.filterIsInstance<SubjectAlternativeName>().single().generalNames.single()
+        decodedNames.issuerAlternativeNames?.generalNames?.single() shouldBeSameInstanceAs
+            decodedNames.extensions.filterIsInstance<IssuerAlternativeName>().single().generalNames.single()
         shouldThrowAny { atv.asn1.toRepresentation() }
         shouldThrowAny { csr.asn1.toRepresentation() }
         shouldThrowAny { name.asn1.toRepresentation() }

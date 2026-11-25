@@ -35,9 +35,10 @@ interface MessageAuthenticationCode : WithSourceRepresentation {
     }
 
     @OptIn(SignumInternals::class)
-    class Unknown(lookupResult: UnsupportedCryptoException)
-        : MessageAuthenticationCode, ServiceLoader.UnknownShim(lookupResult)
-    {
+    class Unknown internal constructor(
+        source: X509AlgorithmIdentifier,
+        lookupResult: UnsupportedCryptoException,
+    ) : MessageAuthenticationCode, ServiceLoader.UnknownShim(source, lookupResult) {
         override val outputLength: BitLength get() = fails
     }
 

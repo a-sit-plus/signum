@@ -23,11 +23,13 @@ interface CertificateExtension : Identifiable, WithSourceRepresentation {
 
     val critical: Boolean
 
-    /** derivators need to provide [critical] */
     @SignumInternals
-    abstract class Unknown(lookupResult: UnsupportedCryptoException)
-        : CertificateExtension, ServiceLoader.UnknownShim(lookupResult) {
-        override val oid: ObjectIdentifier get() = fails
+    class Unknown internal constructor(
+        source: X509CertificateExtension,
+        lookupResult: UnsupportedCryptoException,
+    ) : CertificateExtension, ServiceLoader.UnknownShim(source, lookupResult) {
+        override val oid = source.oid
+        override val critical = source.critical
     }
 
 

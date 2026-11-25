@@ -10,10 +10,12 @@ import at.asitplus.signum.indispensable.*
 /** An open CSR attribute family, without a format-specific payload contract. */
 interface CsrAttribute : Identifiable, WithSourceRepresentation {
     @SignumInternals
-    class Unknown(
-        override val oid: ObjectIdentifier,
+    class Unknown internal constructor(
+        source: Pkcs10CsrAttribute,
         lookupResult: UnsupportedCryptoException,
-    ) : CsrAttribute, ServiceLoader.UnknownShim(lookupResult)
+    ) : CsrAttribute, ServiceLoader.UnknownShim(source, lookupResult) {
+        override val oid = source.oid
+    }
 
     companion object {
         val EXTENSION_REQUEST_OID = ObjectIdentifier("1.2.840.113549.1.9.14")

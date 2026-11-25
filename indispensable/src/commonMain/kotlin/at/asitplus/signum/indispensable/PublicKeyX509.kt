@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.Asn1Exception
+import at.asitplus.awesn1.runRethrowing
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
 import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo.Companion.from
@@ -93,7 +94,7 @@ object EcdsaPublicKeyAsn1Constructors :
         EcdsaPublicKey.fromAsn1.SEC1(Sec1EcPublicKeyInfo.of(src, Signum.Der))
     })
 {
-    val SEC1 get() = decodeFrom { parsed: Sec1EcPublicKeyInfo ->
+    val SEC1 get() = decodeFrom { parsed: Sec1EcPublicKeyInfo -> runRethrowing {
         val curve = ECCurve.entries.find { it.oid == parsed.curveOid }
             ?: throw Asn1Exception("Curve not supported: ${parsed.curveOid}")
         val key = when (parsed) {
@@ -101,7 +102,7 @@ object EcdsaPublicKeyAsn1Constructors :
             is Sec1EcPublicKeyInfo.Uncompressed -> EcdsaPublicKey.fromUncompressed(curve, parsed.x, parsed.y)
         }
         EcdsaPublicKey(key.publicPoint, key.preferCompressedRepresentation)
-    }
+    } }
 
     operator fun invoke(sec1: Sec1EcPublicKeyInfo) = SEC1(sec1)
 }

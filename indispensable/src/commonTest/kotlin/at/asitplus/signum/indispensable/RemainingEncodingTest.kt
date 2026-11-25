@@ -3,12 +3,14 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.Asn1OctetString
+import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.KnownOIDs
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
 import at.asitplus.awesn1.crypto.RsaSsaPssParams
 import at.asitplus.awesn1.crypto.RsaSsaPssParams.Companion.invoke
 import at.asitplus.awesn1.crypto.Sec1EcPrivateKeyInfo
+import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
 import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequest
 import at.asitplus.awesn1.crypto.pki.Pkcs10CertificationRequestInfo
@@ -36,6 +38,12 @@ import io.kotest.matchers.types.shouldBeSameInstanceAs
 import kotlinx.serialization.encodeToByteArray
 
 val RemainingEncodingTest by matrixSuite {
+    "Explicit SEC1 public-key decoding keeps ASN.1 error translation" {
+        val malformed = Sec1EcPublicKeyInfo.Uncompressed(ECCurve.SECP_256_R_1.oid, byteArrayOf(0), byteArrayOf(0))
+        val failure = shouldThrow<Asn1Exception> { EcdsaPublicKey.fromAsn1.SEC1(malformed) }
+        failure.cause.shouldBeInstanceOf<IllegalArgumentException>()
+    }
+
 
     "Signatures use contextual DER and retain raw values until an algorithm is supplied" {
         val rsa = RsaSignature.fromRawSignatureValue(byteArrayOf(1, 2, 3))
@@ -58,6 +66,17 @@ val RemainingEncodingTest by matrixSuite {
         definite.asn1.toDer() shouldBe ecBytes
         EcdsaSignature.fromAsn1(ecBytes).shouldBeInstanceOf<EcdsaSignature.IndefiniteLength>()
             .withCurve(ECCurve.SECP_256_R_1) shouldBe definite
+    }
+
+    "X.509 signature provider lookup retains unavailable representation failures" {
+        val signature = object : AbstractSignature {
+            override val sourceRepresentation = SourceRepresentationStorage()
+            override fun withSignatureAlgorithm(signatureAlgorithm: SignatureAlgorithm): Signature =
+                error("Expected X.509 provider lookup")
+        }
+        val algorithm = RsaAlgorithm.withSHA256andPKCS1Padding.asn1.toRepresentation()
+        val failure = shouldThrow<UnsupportedCryptoException> { signature.withX509Algorithm(algorithm) }
+        failure.suppressedExceptions.single().shouldBeInstanceOf<Asn1Exception>()
     }
 
     "CSR equality uses supplied semantics without requesting an X509 representation" {

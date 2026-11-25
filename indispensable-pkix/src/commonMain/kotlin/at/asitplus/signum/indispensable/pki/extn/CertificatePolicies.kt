@@ -43,10 +43,13 @@ data class PolicyInformation(
 
 interface PolicyQualifierInfo : Identifiable, WithSourceRepresentation {
     @OptIn(SignumInternals::class)
-    class Unknown(
-        override val oid: ObjectIdentifier,
+    class Unknown internal constructor(
+        source: Asn1PolicyQualifier,
         lookupResult: UnsupportedCryptoException,
-    ) : PolicyQualifierInfo, ServiceLoader.UnknownShim(lookupResult)
+    ) : PolicyQualifierInfo, ServiceLoader.UnknownShim(source, lookupResult) {
+        override val oid = source.oid
+    }
+
 }
 
 data class CpsUri(val uri: Uri) : PolicyQualifierInfo {
