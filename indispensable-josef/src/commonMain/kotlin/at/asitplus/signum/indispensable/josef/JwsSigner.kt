@@ -21,12 +21,12 @@ import kotlin.requireNotNull
  * Missing registrations and mismatched headers fail before signing; signer failures propagate.
  */
 class JwsSigner(signers: List<Signer>) {
-    private val signerMap = signers.associateBy { it.signatureAlgorithm.toJwsAlgorithm().getOrThrow() }
+    private val signerMap = signers.associateBy { it.signatureAlgorithm.toJwsAlgorithm() }
 
     init {
         require(this.signerMap.isNotEmpty()) { "At least one signer is required" }
         this.signerMap.forEach { (algorithm, signer) ->
-            require(algorithm == signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow()) {
+            require(algorithm == signer.signatureAlgorithm.toJwsAlgorithm()) {
                 "Registered JWS algorithm does not match the signer"
             }
         }
@@ -128,7 +128,7 @@ class JwsSigner(signers: List<Signer>) {
     private fun selectSigner(header: JwsHeader): Signer {
         val algorithm = header.algorithm
         val signer = requireNotNull(signerMap[algorithm]) { "No signer registered for JWS algorithm ${algorithm.identifier}" }
-        require(algorithm == signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow()) {
+        require(algorithm == signer.signatureAlgorithm.toJwsAlgorithm()) {
             "Signer algorithm does not match the JWS header algorithm"
         }
         val publicKey = signer.publicKey
@@ -143,7 +143,7 @@ class JwsSigner(signers: List<Signer>) {
             }
         }
         header.jsonWebKey?.let { key ->
-            require(key.toPublicKey().getOrThrow() == publicKey) {
+            require(key.toPublicKey() == publicKey) {
                 "Signer public key does not match the JWS header JWK"
             }
         }

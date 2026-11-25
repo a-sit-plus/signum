@@ -1,6 +1,5 @@
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
-import at.asitplus.KmmResult
 import at.asitplus.signum.indispensable.cosef.CoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.toCoseAlgorithm
 import at.asitplus.signum.indispensable.cosef.toCoseKey
@@ -14,28 +13,23 @@ import java.security.KeyPairGenerator
 import java.security.interfaces.ECPublicKey
 import kotlin.random.Random
 
-//somehow including kmmresult-test makes this fail
-@IgnorableReturnValue
-infix fun <T> KmmResult<T>.shouldSucceedWith(b: T): T =
-    (this.getOrThrow() shouldBe b)
-
 val ConversionTests by matrixSuite {
     "COSE -> SigAlg -> COSE is stable" - {
 
         "All" - {
             data(CoseAlgorithm.Signature.entries) test {
-                it.algorithm.toCoseAlgorithm() shouldSucceedWith it
+                it.algorithm.toCoseAlgorithm() shouldBe it
             }
             data(CoseAlgorithm.MAC.entries) test {
-                it.algorithm.toCoseAlgorithm() shouldSucceedWith it
+                it.algorithm.toCoseAlgorithm() shouldBe it
             }
         }
         "Specialized Signature Algorithms" - {
             data(CoseAlgorithm.Signature.entries) test {
-                it.toCoseAlgorithm() shouldSucceedWith it
+                it.toCoseAlgorithm() shouldBe it
             }
             data(CoseAlgorithm.MAC.entries) test {
-                it.toCoseAlgorithm() shouldSucceedWith it
+                it.toCoseAlgorithm() shouldBe it
             }
         }
     }
@@ -44,14 +38,14 @@ val ConversionTests by matrixSuite {
             it.algorithm.asn1.toRepresentation().let { x509 ->
                 if (it.algorithm is EcdsaAlgorithm && (it.algorithm as EcdsaAlgorithm).requiredCurve != null) {
                     "Curve information is lost" {
-                        val algorithm = SignatureAlgorithm.fromAsn1(x509).toCoseAlgorithm().getOrThrow()
+                        val algorithm = SignatureAlgorithm.fromAsn1(x509).toCoseAlgorithm()
                         algorithm shouldNotBe it
                         algorithm.toString().takeLast(3) shouldBe it.toString().takeLast(3)
                         algorithm.toString().take(2) shouldBe it.toString().take(2)
                     }
                 } else {
                     "is stable" {
-                        SignatureAlgorithm.fromAsn1(x509).toCoseAlgorithm() shouldSucceedWith it
+                        SignatureAlgorithm.fromAsn1(x509).toCoseAlgorithm() shouldBe it
                     }
                 }
             }
@@ -59,12 +53,12 @@ val ConversionTests by matrixSuite {
     }
 
     "Regression test: COSE key (no keyId) -> PublicKey -> COSE key (no keyId)" {
-        val key = randomPublicKey().toCoseKey().getOrThrow()
+        val key = randomPublicKey().toCoseKey()
         key.keyId shouldBe null
-        val cpk = key.toPublicKey().getOrThrow()
-        cpk.toCoseKey().getOrThrow().keyId shouldBe null
+        val cpk = key.toPublicKey()
+        cpk.toCoseKey().keyId shouldBe null
         val kid = Random.nextBytes(16)
-        cpk.toCoseKey(keyId = kid).getOrThrow().keyId shouldBe kid
+        cpk.toCoseKey(keyId = kid).keyId shouldBe kid
     }
 }
 

@@ -1,7 +1,5 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.symmetric.SpecializedSymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
@@ -172,9 +170,10 @@ sealed class JweAlgorithm(override val identifier: String) : JsonWebAlgorithm, E
  * * [SymmetricEncryptionAlgorithm.AES.WRAP]
  *
  *
- * @return `null` if no mapping exists
+ * @throws UnsupportedCryptoException if no mapping exists
  */
-fun SymmetricEncryptionAlgorithm<*, *, *>.toJweKwAlgorithm(): KmmResult<JweAlgorithm.Symmetric> = catching {
+@Throws(Throwable::class)
+fun SymmetricEncryptionAlgorithm<*, *, *>.toJweKwAlgorithm(): JweAlgorithm.Symmetric =
     when (this) {
         SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394 -> JweAlgorithm.A128KW
         SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394 -> JweAlgorithm.A192KW
@@ -186,7 +185,6 @@ fun SymmetricEncryptionAlgorithm<*, *, *>.toJweKwAlgorithm(): KmmResult<JweAlgor
 
         else -> throw UnsupportedCryptoException("$this is not a a supported key wrapping algorithm for JWE")
     }
-}
 
 object JweAlgorithmSerializer : KSerializer<JweAlgorithm> {
 
@@ -198,9 +196,7 @@ object JweAlgorithmSerializer : KSerializer<JweAlgorithm> {
 
     override fun deserialize(decoder: Decoder): JweAlgorithm {
         val decoded = decoder.decodeString()
-        return catching { JweAlgorithm.entries.first { it.identifier == decoded } }.getOrElse {
-            JweAlgorithm.UNKNOWN(decoded)
-        }
+        return JweAlgorithm.entries.firstOrNull { it.identifier == decoded } ?: JweAlgorithm.UNKNOWN(decoded)
     }
 
 }

@@ -40,21 +40,21 @@ internal object AESIOS {
     ) = when (alg) {
         is AES.CBC.Unauthenticated -> {
             val bytes = cbcEcbCrypt(alg, encrypt = true, key, nonce, data, pad = true)
-            alg.sealedBox.withNonce(nonce!!).from(bytes).getOrThrow()
+            alg.sealedBox.withNonce(nonce!!).from(bytes)
         }
 
         is AES.ECB -> {
             val bytes = cbcEcbCrypt(alg, encrypt = true, key, nonce, data, pad = true)
-            alg.sealedBox.from(bytes).getOrThrow()
+            alg.sealedBox.from(bytes)
         }
         is AES.ECB_NOPADDING -> {
             val bytes = cbcEcbCrypt(alg, encrypt = true, key, nonce, data, pad = false)
-            alg.sealedBox.from(bytes).getOrThrow()
+            alg.sealedBox.from(bytes)
         }
 
         is AES.WRAP.RFC3394 -> {
             val bytes = cbcEcbCrypt(alg, encrypt = true, key, nonce, data, pad = false)
-            alg.sealedBox.from(bytes).getOrThrow()
+            alg.sealedBox.from(bytes)
         }
 
         is AES.GCM -> {
@@ -63,7 +63,7 @@ internal object AESIOS {
             alg.sealedBox.withNonce(ciphertext.iv().toByteArray()).from(
                 ciphertext.ciphertext().toByteArray(),
                 ciphertext.authTag().toByteArray()
-            ).getOrThrow()
+            )
         }
 
         else -> TODO("ALGORITHM UNSUPPORTED")

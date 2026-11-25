@@ -1,7 +1,5 @@
 package at.asitplus.signum.supreme.asymmetric
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.signum.indispensable.PrivateKey
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.sign.RsaPrivateKey
@@ -14,7 +12,8 @@ sealed interface Decryptor {
     val privateKey: PrivateKey
 
 
-    suspend fun decrypt(data: ByteArray): KmmResult<ByteArray>
+    @Throws(Throwable::class)
+    suspend fun decrypt(data: ByteArray): ByteArray
 
 
     sealed class RSA(
@@ -46,9 +45,9 @@ internal constructor(
     private val config = DSL.resolve(::PlatformDecryptorConfiguration, configure)
 
 
-    override suspend fun decrypt(data: ByteArray) = catching {
+    override suspend fun decrypt(data: ByteArray): ByteArray {
         require(data.size.toUInt() * 8u <= privateKey.publicKey.n.bitLength())
-        decryptRSAImpl(algorithm, privateKey, data, config)
+        return decryptRSAImpl(algorithm, privateKey, data, config)
     }
 }
 

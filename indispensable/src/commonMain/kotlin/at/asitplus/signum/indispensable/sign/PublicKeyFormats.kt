@@ -2,7 +2,7 @@ package at.asitplus.signum.indispensable.sign
 
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
-import at.asitplus.catching
+import at.asitplus.catchingUnwrapped
 import at.asitplus.io.UVarInt
 import at.asitplus.io.UVarInt.Companion.varint
 import at.asitplus.signum.SignumInternals
@@ -167,7 +167,7 @@ class EcdsaPublicKey(
         fun fromAnsiX963Bytes(curve: ECCurve, src: ByteArray): EcdsaPublicKey {
             val numBytes = curve.coordinateLength.bytes.toInt()
 
-            val prefix = catching { ANSIECPrefix.fromPrefixByte(src[0]) }
+            val prefix = catchingUnwrapped { ANSIECPrefix.fromPrefixByte(src[0]) }
                 .getOrElse { throw IllegalArgumentException("Invalid X9.63 EC key format") }
 
             if (prefix.isUncompressed) {

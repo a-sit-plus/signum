@@ -2,7 +2,6 @@ package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.awesn1.toJavaBigInteger
-import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.UnsupportedCryptoException
@@ -425,17 +424,13 @@ val AsymmetricEncryptionAlgorithm.jcaParameterSpec: AlgorithmParameterSpec?
         }
 
 /** Get a pre-configured JCA Cipher instance for this algorithm to use for **encryption** */
-fun AsymmetricEncryptionAlgorithm.getJCAEncryptorInstance(publicKey: RsaPublicKey, provider: String? = null) =
-    catching {
-        (if (provider != null) Cipher.getInstance(jcaName, provider) else Cipher.getInstance(jcaName)).apply {
-            init(Cipher.ENCRYPT_MODE, publicKey.toJcaPublicKey(), jcaParameterSpec)
-        }
+fun AsymmetricEncryptionAlgorithm.getJCAEncryptorInstance(publicKey: RsaPublicKey, provider: String? = null): Cipher =
+    (if (provider != null) Cipher.getInstance(jcaName, provider) else Cipher.getInstance(jcaName)).apply {
+        init(Cipher.ENCRYPT_MODE, publicKey.toJcaPublicKey(), jcaParameterSpec)
     }
 
 /** Get a pre-configured JCA Cipher instance for this algorithm to use for **decryption** */
-fun AsymmetricEncryptionAlgorithm.getJCADecryptorInstance(privateKey: RsaPrivateKey, provider: String? = null) =
-    catching {
-        (if (provider != null) Cipher.getInstance(jcaName, provider) else Cipher.getInstance(jcaName)).apply {
-            init(Cipher.DECRYPT_MODE, privateKey.toJcaPrivateKey(), jcaParameterSpec)
-        }
+fun AsymmetricEncryptionAlgorithm.getJCADecryptorInstance(privateKey: RsaPrivateKey, provider: String? = null): Cipher =
+    (if (provider != null) Cipher.getInstance(jcaName, provider) else Cipher.getInstance(jcaName)).apply {
+        init(Cipher.DECRYPT_MODE, privateKey.toJcaPrivateKey(), jcaParameterSpec)
     }

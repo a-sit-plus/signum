@@ -42,7 +42,7 @@ val CborNumericDateVerificationTest by matrixSuite {
         val input = bytes(0x84) + protectedHeader.byteString() + bytes(0xA0) + payload.byteString() +
                 signature.coseBytes.byteString()
 
-        val cose = CoseSigned.deserialize(CborWebToken.serializer(), input).getOrThrow()
+        val cose = CoseSigned.deserialize(CborWebToken.serializer(), input)
 
         cose.payload?.expiration shouldBe Instant.fromEpochSeconds(1700000000, 500_000_000)
         cose.payload?.issuedAt shouldBe Instant.fromEpochSeconds(1)

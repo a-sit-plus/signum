@@ -58,11 +58,11 @@ val CoseKeySerializationTest by matrixSuite {
                 }.genKeyPair().public.toPublicKey().run {
                     this as EcdsaPublicKey
                     this.withCompressionPreference(true)
-                }.toCoseKey(CoseAlgorithm.Signature.ES256).getOrThrow()
+                }.toCoseKey(CoseAlgorithm.Signature.ES256)
             )
             val coseUncompressed = KeyPairGenerator.getInstance("EC").apply {
                 initialize(256)
-            }.genKeyPair().public.toPublicKey().toCoseKey().getOrThrow()
+            }.genKeyPair().public.toPublicKey().toCoseKey()
             val uncompressed = coseCompliantSerializer.encodeToByteArray(coseUncompressed)
 
             val coseKey = coseCompliantSerializer.decodeFromByteArray<CoseKey>(compressed)
@@ -70,10 +70,9 @@ val CoseKeySerializationTest by matrixSuite {
             "Basic Checks" {
                 uncompressed.size shouldBeGreaterThan compressed.size
 
-                coseKey.toPublicKey().getOrThrow()
+                coseKey.toPublicKey()
                     .shouldBeInstanceOf<EcdsaPublicKey>().preferCompressedRepresentation shouldBe true
                 coseCompliantSerializer.decodeFromByteArray<CoseKey>(uncompressed).toPublicKey()
-                    .getOrThrow()
                     .shouldBeInstanceOf<EcdsaPublicKey>().preferCompressedRepresentation shouldBe false
 
             }
@@ -118,12 +117,12 @@ val CoseKeySerializationTest by matrixSuite {
                     withClue("Uncompressed")
                     {
                         val coseKey: CoseKey =
-                            pubKey.toPublicKey().toCoseKey().getOrThrow()
+                            pubKey.toPublicKey().toCoseKey()
                         val cose = coseCompliantSerializer.encodeToByteArray(coseKey)
                         val decoded = coseCompliantSerializer.decodeFromByteArray<CoseKey>(cose)
-                        decoded.toPublicKey().getOrThrow()
+                        decoded.toPublicKey()
                             .shouldBeInstanceOf<EcdsaPublicKey>().preferCompressedRepresentation shouldBe false
-                        decoded.toPublicKey().getOrThrow()
+                        decoded.toPublicKey()
                             .toJcaPublicKey().encoded.encodeToString(Base64Strict) shouldBe
                                 pubKey.encoded.encodeToString(Base64Strict)
                     }
@@ -134,15 +133,14 @@ val CoseKeySerializationTest by matrixSuite {
                             pubKey.toPublicKey()
                                 .withCompressionPreference(true)
                                 .toCoseKey()
-                                .getOrThrow()
 
                         coseKey.keyParams.shouldBeInstanceOf<CoseKeyParams.EcYBoolParams>()
                         val cose = coseCompliantSerializer.encodeToByteArray(coseKey)
                         val decoded = coseCompliantSerializer.decodeFromByteArray<CoseKey>(cose)
                         decoded shouldBe coseKey
-                        decoded.toPublicKey().getOrThrow()
+                        decoded.toPublicKey()
                             .shouldBeInstanceOf<EcdsaPublicKey>().preferCompressedRepresentation shouldBe true
-                        decoded.toPublicKey().getOrThrow()
+                        decoded.toPublicKey()
                             .toJcaPublicKey().encoded.encodeToString(Base64Strict) shouldBe
                                 pubKey.encoded.encodeToString(Base64Strict)
                     }
@@ -167,7 +165,6 @@ val CoseKeySerializationTest by matrixSuite {
                     val coseKey: CoseKey =
                         pubKey.toPublicKey()
                             .toCoseKey(CoseAlgorithm.Signature.RS256)
-                            .getOrThrow()
                     val cose = coseCompliantSerializer.encodeToByteArray(coseKey)
 
                     val decoded = coseCompliantSerializer.decodeFromByteArray<CoseKey>(cose)

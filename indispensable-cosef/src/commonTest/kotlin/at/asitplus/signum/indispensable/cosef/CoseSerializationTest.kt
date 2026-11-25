@@ -117,7 +117,7 @@ val CoseSerializationTest by matrixSuite {
         serializedString shouldContain "8445A101390100" // array of 5 bytes that is a map with -257 (the header for RS256)
         cose.payload shouldBe payload
 
-        CoseSigned.deserialize(ByteArraySerializer(), serialized).getOrThrow() shouldBe cose
+        CoseSigned.deserialize(ByteArraySerializer(), serialized) shouldBe cose
     }
 
     "Serialization is correct for byte array with CoseMac" {
@@ -137,7 +137,7 @@ val CoseSerializationTest by matrixSuite {
 
         cose.payload.contentEquals(payload) shouldBe true
 
-        CoseMac.deserialize(ByteArraySerializer(), serialized).getOrThrow() shouldBe cose
+        CoseMac.deserialize(ByteArraySerializer(), serialized) shouldBe cose
     }
 
     "Serialization is correct for null CoseSigned" {
@@ -155,7 +155,7 @@ val CoseSerializationTest by matrixSuite {
         serializedString shouldContain "8445A101390100" // array of 5 bytes that is a map with -257 (the header for RS256)
         cose.payload shouldBe null
 
-        CoseSigned.deserialize(ByteArraySerializer(), serialized).getOrThrow() shouldBe cose
+        CoseSigned.deserialize(ByteArraySerializer(), serialized) shouldBe cose
     }
 
     "Serialization is correct for null CoseMac" {
@@ -173,13 +173,13 @@ val CoseSerializationTest by matrixSuite {
         serializedString shouldContain "8443A10105" // array of 3 bytes that is a map with 4 (the header for HMAC256)
         cose.payload shouldBe null
 
-        CoseMac.deserialize(ByteArraySerializer(), serialized).getOrThrow() shouldBe cose
+        CoseMac.deserialize(ByteArraySerializer(), serialized) shouldBe cose
     }
 
     "Deserialization is correct for byte array CoseSigned" {
         val input = "8445A101390100A054546869732069732074686520636F6E74656E742E43626172"
 
-        val cose = CoseSigned.deserialize(ByteArraySerializer(), input.decodeToByteArray(Base16())).getOrThrow()
+        val cose = CoseSigned.deserialize(ByteArraySerializer(), input.decodeToByteArray(Base16()))
         cose.payload shouldBe "This is the content.".encodeToByteArray()
         cose.wireFormat.payload shouldBe "546869732069732074686520636F6E74656E742E".decodeToByteArray(Base16())
     }
@@ -187,7 +187,7 @@ val CoseSerializationTest by matrixSuite {
     "Deserialization is correct for byte array CoseMac" {
         val input = "8443A10105A054546869732069732074686520636F6E74656E742E40"
 
-        val cose = CoseMac.deserialize(ByteArraySerializer(), input.decodeToByteArray(Base16())).getOrThrow()
+        val cose = CoseMac.deserialize(ByteArraySerializer(), input.decodeToByteArray(Base16()))
         cose.payload shouldBe "This is the content.".encodeToByteArray()
         cose.wireFormat.payload shouldBe "546869732069732074686520636F6E74656E742E".decodeToByteArray(Base16())
     }
@@ -195,7 +195,7 @@ val CoseSerializationTest by matrixSuite {
     "Deserialization is correct for null payload CoseSigned" {
         val input = "8445A101390100A0F643626172"
 
-        val cose = CoseSigned.deserialize(ByteArraySerializer(), input.decodeToByteArray(Base16())).getOrThrow()
+        val cose = CoseSigned.deserialize(ByteArraySerializer(), input.decodeToByteArray(Base16()))
         cose.payload shouldBe null
         cose.wireFormat.payload shouldBe null
     }
@@ -203,7 +203,7 @@ val CoseSerializationTest by matrixSuite {
     "Deserialization is correct for null payload CoseMac" {
         val input = "8443A10105A0F640"
 
-        val cose = CoseMac.deserialize(ByteArraySerializer(), input.decodeToByteArray(Base16())).getOrThrow()
+        val cose = CoseMac.deserialize(ByteArraySerializer(), input.decodeToByteArray(Base16()))
         cose.payload shouldBe null
         cose.wireFormat.payload shouldBe null
     }
@@ -212,7 +212,7 @@ val CoseSerializationTest by matrixSuite {
         val input = "8445A101390100A054546869732069732074686520636F6E74656E742E43626172"
 
         shouldThrow<SerializationException> {
-            CoseSigned.deserialize(DataClass.serializer(), input.decodeToByteArray(Base16())).getOrThrow()
+            CoseSigned.deserialize(DataClass.serializer(), input.decodeToByteArray(Base16()))
         }
     }
 
@@ -220,7 +220,7 @@ val CoseSerializationTest by matrixSuite {
         val input = "8443A10105A054546869732069732074686520636F6E74656E742E40"
 
         shouldThrow<SerializationException> {
-            CoseMac.deserialize(DataClass.serializer(), input.decodeToByteArray(Base16())).getOrThrow()
+            CoseMac.deserialize(DataClass.serializer(), input.decodeToByteArray(Base16()))
         }
     }
 
@@ -240,7 +240,7 @@ val CoseSerializationTest by matrixSuite {
         serializedString shouldContain "8445A101390100" // array of 5 bytes that is a map with -257 (the header for RS256)
         cose.payload shouldBe payload
 
-        CoseSigned.deserialize(DataClass.serializer(), serialized).getOrThrow() shouldBe cose
+        CoseSigned.deserialize(DataClass.serializer(), serialized) shouldBe cose
     }
 
     "Serialization is correct for data class CoseMac" {
@@ -259,13 +259,13 @@ val CoseSerializationTest by matrixSuite {
         serializedString shouldContain "8443A10105" // array of 3 bytes that is a map with 4 (the header for HMAC256)
         cose.payload shouldBe payload
 
-        CoseMac.deserialize(DataClass.serializer(), serialized).getOrThrow() shouldBe cose
+        CoseMac.deserialize(DataClass.serializer(), serialized) shouldBe cose
     }
 
     "Deserialization is correct for data class CoseSigned" {
         val input = "8445A101390100A05822D818581EA167636F6E74656E7474546869732069732074686520636F6E74656E742E43626172"
 
-        val cose = CoseSigned.deserialize(DataClass.serializer(), input.decodeToByteArray(Base16())).getOrThrow()
+        val cose = CoseSigned.deserialize(DataClass.serializer(), input.decodeToByteArray(Base16()))
         cose.payload shouldBe DataClass("This is the content.")
         cose.wireFormat.payload shouldBe "D818581EA167636F6E74656E7474546869732069732074686520636F6E74656E742E"
             .decodeToByteArray(Base16())
@@ -275,7 +275,7 @@ val CoseSerializationTest by matrixSuite {
     "Deserialization is correct for data class CoseMac" {
         val input = "8443A10105A05822D818581EA167636F6E74656E7474546869732069732074686520636F6E74656E742E43626172"
 
-        val cose = CoseMac.deserialize(DataClass.serializer(), input.decodeToByteArray(Base16())).getOrThrow()
+        val cose = CoseMac.deserialize(DataClass.serializer(), input.decodeToByteArray(Base16()))
         cose.payload shouldBe DataClass("This is the content.")
         cose.wireFormat.payload shouldBe "D818581EA167636F6E74656E7474546869732069732074686520636F6E74656E742E"
             .decodeToByteArray(Base16())
@@ -285,7 +285,7 @@ val CoseSerializationTest by matrixSuite {
     "Deserialization is correct for data class read as byte array CoseSigned" {
         val input = "8445A101390100A05822D818581EA167636F6E74656E7474546869732069732074686520636F6E74656E742E43626172"
 
-        val cose = CoseSigned.deserialize(ByteArraySerializer(), input.decodeToByteArray(Base16())).getOrThrow()
+        val cose = CoseSigned.deserialize(ByteArraySerializer(), input.decodeToByteArray(Base16()))
         cose.wireFormat.payload shouldBe "D818581EA167636F6E74656E7474546869732069732074686520636F6E74656E742E"
             .decodeToByteArray(Base16())
         // important part is the D818 as tag(24)
@@ -294,7 +294,7 @@ val CoseSerializationTest by matrixSuite {
     "Deserialization is correct for data class read as byte array CoseMac" {
         val input = "8443A10105A05822D818581EA167636F6E74656E7474546869732069732074686520636F6E74656E742E43626172"
 
-        val cose = CoseMac.deserialize(ByteArraySerializer(), input.decodeToByteArray(Base16())).getOrThrow()
+        val cose = CoseMac.deserialize(ByteArraySerializer(), input.decodeToByteArray(Base16()))
         cose.wireFormat.payload shouldBe "D818581EA167636F6E74656E7474546869732069732074686520636F6E74656E742E"
             .decodeToByteArray(Base16())
         // important part is the D818 as tag(24)
@@ -318,7 +318,6 @@ val CoseSerializationTest by matrixSuite {
                 "16e5a4c345cacb36"
 
         val cose = CoseSigned.deserialize(ByteArraySerializer(), input.uppercase().decodeToByteArray(Base16Strict))
-            .getOrThrow()
 
         cose.payload shouldBe "This is the content.".encodeToByteArray()
     }
@@ -420,14 +419,14 @@ val CoseSerializationTest by matrixSuite {
     "Protected header bytes are retained for CoseSigned" {
         val input = "8448${protectedHeaderOtherOrder}A054${payloadHex}43626172".decodeToByteArray(Base16())
 
-        val cose = CoseSigned.deserialize(ByteArraySerializer(), input).getOrThrow()
+        val cose = CoseSigned.deserialize(ByteArraySerializer(), input)
         cose.protectedHeader shouldBe CoseHeader(algorithm = CoseAlgorithm.Signature.RS256, type = "t")
         cose.wireFormat.rawProtectedHeader shouldBe protectedHeaderOtherOrder.decodeToByteArray(Base16())
         // [ "Signature1", protected as received, external_aad, payload ]
         cose.prepareCoseSignatureInput().encodeToString(Base16Strict).uppercase() shouldBe
                 "846A5369676E61747572653148${protectedHeaderOtherOrder}4054${payloadHex}"
         cose.serialize(ByteArraySerializer()) shouldBe input
-        CoseSigned.deserialize(ByteArraySerializer(), cose.serialize(ByteArraySerializer())).getOrThrow() shouldBe cose
+        CoseSigned.deserialize(ByteArraySerializer(), cose.serialize(ByteArraySerializer())) shouldBe cose
         Json.decodeFromString<CoseSigned<ByteArray>>(Json.encodeToString(cose)) shouldBe cose
 
         val recreated = CoseSigned.create(
@@ -445,7 +444,7 @@ val CoseSerializationTest by matrixSuite {
     "Protected header bytes are retained for CoseSigned with detached payload" {
         val input = "8448${protectedHeaderOtherOrder}A0F643626172".decodeToByteArray(Base16())
 
-        val cose = CoseSigned.deserialize(ByteArraySerializer(), input).getOrThrow()
+        val cose = CoseSigned.deserialize(ByteArraySerializer(), input)
         cose.payload shouldBe null
         cose.prepareCoseSignatureInput(detachedPayload = payloadHex.decodeToByteArray(Base16()))
             .encodeToString(Base16Strict).uppercase() shouldBe
@@ -458,20 +457,20 @@ val CoseSerializationTest by matrixSuite {
         val protectedHeader = "A21061740105"
         val input = "8446${protectedHeader}A054${payloadHex}40".decodeToByteArray(Base16())
 
-        val cose = CoseMac.deserialize(ByteArraySerializer(), input).getOrThrow()
+        val cose = CoseMac.deserialize(ByteArraySerializer(), input)
         cose.protectedHeader shouldBe CoseHeader(algorithm = CoseAlgorithm.MAC.HS256, type = "t")
         // [ "MAC0", protected as received, external_aad, payload ]
         cose.prepareCoseMacInput().encodeToString(Base16Strict).uppercase() shouldBe
                 "84644D41433046${protectedHeader}4054${payloadHex}"
         cose.serialize(ByteArraySerializer()) shouldBe input
-        CoseMac.deserialize(ByteArraySerializer(), cose.serialize(ByteArraySerializer())).getOrThrow() shouldBe cose
+        CoseMac.deserialize(ByteArraySerializer(), cose.serialize(ByteArraySerializer())) shouldBe cose
     }
 
     "Empty protected header encoded as map is retained" {
         // protected header h'A0' instead of h''
         val input = "8441A0A10139010054${payloadHex}43626172".decodeToByteArray(Base16())
 
-        val cose = CoseSigned.deserialize(ByteArraySerializer(), input).getOrThrow()
+        val cose = CoseSigned.deserialize(ByteArraySerializer(), input)
         cose.protectedHeader shouldBe CoseHeader()
         cose.wireFormat.rawProtectedHeader shouldBe byteArrayOf(0xA0.toByte())
         cose.prepareCoseSignatureInput().encodeToString(Base16Strict).uppercase() shouldBe
@@ -490,7 +489,7 @@ val CoseSerializationTest by matrixSuite {
         cose.wireFormat.rawProtectedHeader shouldBe byteArrayOf()
         cose.prepareCoseSignatureInput().encodeToString(Base16Strict).uppercase() shouldBe
                 "846A5369676E617475726531404054${payloadHex}"
-        CoseSigned.deserialize(ByteArraySerializer(), cose.serialize(ByteArraySerializer())).getOrThrow() shouldBe cose
+        CoseSigned.deserialize(ByteArraySerializer(), cose.serialize(ByteArraySerializer())) shouldBe cose
     }
 }
 

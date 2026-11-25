@@ -98,9 +98,6 @@ kotlin {
             implementation("androidx.biometric:biometric:1.2.0-alpha05")
         }
 
-        commonTest.dependencies {
-            implementation("at.asitplus:kmmresult-test:${AspVersions.kmmresult}")
-        }
         jvmTest.dependencies {
             implementation("com.lambdaworks:scrypt:1.4.0")
             gradle.startParameter.taskNames.firstOrNull { it.contains("publish") } ?:implementation(project(":internals-test"))

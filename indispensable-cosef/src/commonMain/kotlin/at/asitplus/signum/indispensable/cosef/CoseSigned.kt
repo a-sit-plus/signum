@@ -1,7 +1,5 @@
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.contentEqualsIfArray
 import at.asitplus.signum.indispensable.contentHashCodeIfArray
@@ -81,10 +79,9 @@ data class CoseSigned<P : Any?> internal constructor(
     }
 
     companion object {
-        fun <P : Any> deserialize(parameterSerializer: KSerializer<P>, it: ByteArray): KmmResult<CoseSigned<P>> =
-            catching {
-                coseCompliantSerializer.decodeFromByteArray(CoseSignedSerializer(parameterSerializer), it)
-            }
+        @Throws(Throwable::class)
+        fun <P : Any> deserialize(parameterSerializer: KSerializer<P>, it: ByteArray): CoseSigned<P> =
+            coseCompliantSerializer.decodeFromByteArray(CoseSignedSerializer(parameterSerializer), it)
 
         /**
          * Use this method to create a new [CoseSigned] object with correct [CoseSigned.wireFormat] set.

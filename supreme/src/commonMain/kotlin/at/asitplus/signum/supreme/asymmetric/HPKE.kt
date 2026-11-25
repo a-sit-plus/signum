@@ -274,7 +274,7 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
 
                 override suspend fun Seal(key: ByteArray, nonce: ByteArray, aad: ByteArray?, pt: ByteArray): ByteArray {
                     val box =  Encryptor(alg, key, null, nonce, aad).encrypt(pt)
-                    //val box = runBlocking { alg.keyFrom(key).getOrThrow().encrypt(pt, aad).getOrThrow() }
+                    //val box = runBlocking { alg.keyFrom(key).encrypt(pt, aad) }
                     return box.encryptedData + box.authTag
                 }
 
@@ -282,8 +282,8 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
                     require(ct.size >= Nt.bytes.toInt())
                     val ciphertext = ct.copyOfRange(0, ct.size - Nt.bytes.toInt())
                     val tag = ct.copyOfRange(ct.size - Nt.bytes.toInt(), ct.size)
-                    val box = alg.sealedBox.withNonce(nonce).from(ciphertext, tag).getOrThrow()
-                    return box.decrypt(alg.keyFrom(key).getOrThrow(), aad ?: byteArrayOf()).getOrThrow()
+                    val box = alg.sealedBox.withNonce(nonce).from(ciphertext, tag)
+                    return box.decrypt(alg.keyFrom(key), aad ?: byteArrayOf())
                 }
             }
             val AES_128_GCM: AEAD = SignumAEADProxy(0x0001, SymmetricEncryptionAlgorithm.AES_128.GCM)

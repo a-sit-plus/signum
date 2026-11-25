@@ -24,14 +24,11 @@ val RsaEncryptionTest  by matrixSuite {
     compact("From OpenSSL") - {
         data(testData, nameFn = { it.toString().let { if (it.length <= 128) it else (it.substring(0, 125)+"..." )} }) test {
             it.key as RsaPrivateKey
-            AsymmetricEncryptionAlgorithm.RSA(it.padding).decryptorFor(it.key).decrypt(it.enc)
-                .getOrThrow() shouldBe it.plain
+            AsymmetricEncryptionAlgorithm.RSA(it.padding).decryptorFor(it.key).decrypt(it.enc) shouldBe it.plain
             val newEncrypted =
                 AsymmetricEncryptionAlgorithm.RSA(it.padding).encryptorFor(it.key.publicKey).encrypt(it.plain)
-                    .getOrThrow()
 
-            AsymmetricEncryptionAlgorithm.RSA(it.padding).decryptorFor(it.key).decrypt(newEncrypted)
-                .getOrThrow() shouldBe it.plain
+            AsymmetricEncryptionAlgorithm.RSA(it.padding).decryptorFor(it.key).decrypt(newEncrypted) shouldBe it.plain
         }
     }
 }

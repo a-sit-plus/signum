@@ -98,7 +98,7 @@ val JwsSignerTest by matrixSuite {
         )
         val parameters = signers.mapIndexed { index, signer ->
             JwsHeaderWrapped(
-                SigningHeader(signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow(), "key-$index"),
+                SigningHeader(signer.signatureAlgorithm.toJwsAlgorithm(), "key-$index"),
                 if (index == 0) setOf("kid") else emptySet(),
             )
         }
@@ -157,7 +157,7 @@ val JwsSignerTest by matrixSuite {
         views.forEach { typed ->
             typed.payload shouldBe payload
             typed.header shouldBe header
-            typed.raw.getPayload(SigningPayload.serializer()).getOrThrow().sub shouldBe "ALICE"
+            typed.raw.getPayload(SigningPayload.serializer()).sub shouldBe "ALICE"
             JwsHeaderWrapped.fromParts<SigningHeader>(
                 typed.raw.plainProtectedHeader, typed.raw.unprotectedHeader,
             ).header.extension shouldBe "CUSTOM"

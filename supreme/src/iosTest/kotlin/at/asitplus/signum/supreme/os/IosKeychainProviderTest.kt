@@ -1,7 +1,5 @@
 package at.asitplus.signum.supreme.os
 
-import at.asitplus.catching
-import at.asitplus.shouldSucceed
 import at.asitplus.signum.dsl.IosSignerConfiguration
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.digest.Digest
@@ -52,7 +50,7 @@ val IosKeychainProviderTest by matrixSuite {
                 val original = IosKeychainProvider.createSigningKey(alias)
 
                 // attempt to create another key with the same alias, using a config that throws
-                val secondAttempt = catching { IosKeychainProvider.createSigningKey(alias) {
+                val secondAttempt = runCatching { IosKeychainProvider.createSigningKey(alias) {
                     throw IllegalStateException("intentionally broken config")
                 }}
                 secondAttempt.isFailure shouldBe true
@@ -69,7 +67,7 @@ val IosKeychainProviderTest by matrixSuite {
             try {
                 val original = IosKeychainProvider.createSigningKey(alias)
 
-                val secondAttempt = catching { IosKeychainProvider.createSigningKey(alias) }
+                val secondAttempt = runCatching { IosKeychainProvider.createSigningKey(alias) }
                 secondAttempt.isFailure shouldBe true
 
                 IosKeychainProvider.getSignerForKey(alias).publicKey shouldBe original.publicKey

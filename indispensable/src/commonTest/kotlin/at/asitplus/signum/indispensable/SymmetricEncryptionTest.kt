@@ -23,14 +23,14 @@ val SymmetricEncryptionTest by matrixSuite {
         when (key) {
             is SymmetricKey.Integrated -> {
                 @OptIn(SecretExposure::class)
-                key.secretKey.getOrThrow().size shouldBe key.algorithm.keySize.bytes.toInt()
+                key.secretKey.size shouldBe key.algorithm.keySize.bytes.toInt()
             }
 
             is SymmetricKey.WithDedicatedMac -> {
                 @OptIn(SecretExposure::class)
-                key.encryptionKey.getOrThrow().size shouldBe key.algorithm.keySize.bytes.toInt()
+                key.encryptionKey.size shouldBe key.algorithm.keySize.bytes.toInt()
                 @OptIn(SecretExposure::class)
-                key.macKey.getOrThrow().size shouldBe key.algorithm.preferredMacKeyLength.bytes.toInt()
+                key.macKey.size shouldBe key.algorithm.preferredMacKeyLength.bytes.toInt()
             }
 
             else -> error("unreachable")

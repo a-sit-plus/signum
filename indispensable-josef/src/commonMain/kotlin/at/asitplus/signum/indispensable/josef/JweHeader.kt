@@ -1,6 +1,6 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.catching
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.CertificateChainBase64Serializer
 import at.asitplus.signum.indispensable.io.InstantLongSerializer
@@ -325,14 +325,14 @@ data class JweHeader(
 
 
     val publicKey: JsonWebKey? by lazy {
-        jsonWebKey ?: keyId?.let { JsonWebKey.fromDid(it).getOrNull() }
+        jsonWebKey ?: keyId?.let { catchingUnwrapped { JsonWebKey.fromDid(it) }.getOrNull() }
     }
 
     companion object {
 
         @Deprecated("To be removed in next release")
-        fun deserialize(it: String) = catching {
+        @Throws(Throwable::class)
+        fun deserialize(it: String) =
             joseCompliantSerializer.decodeFromString<JweHeader>(it)
-        }
     }
 }

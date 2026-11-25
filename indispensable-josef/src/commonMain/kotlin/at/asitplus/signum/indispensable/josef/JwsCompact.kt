@@ -150,7 +150,7 @@ fun <H : JwsHeader, P> JwsCompact.Raw.typed(
     ).let { wrapped ->
         JwsCompact(
             this,
-            getPayload(payloadSerializer, serialFormat).getOrThrow(),
+            getPayload(payloadSerializer, serialFormat),
             wrapped,
             JwsRaw.getSignature(wrapped.header.algorithm, plainSignature)
         )

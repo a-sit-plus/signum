@@ -109,7 +109,7 @@ data, and `JwsCompactRawStringSerializer` when embedding a compact string in JSO
 Configure a signing provider such as Supreme first. For a serializable `AppHeader`:
 
 ```kotlin
-val header = AppHeader(algorithm = signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow())
+val header = AppHeader(algorithm = signer.signatureAlgorithm.toJwsAlgorithm())
 val claims = JsonObject(mapOf("sub" to JsonPrimitive("alice")))
 val jwsSigner = JwsSigner(mapOf(header.algorithm to signer))
 val compact = jwsSigner.signCompact(header, claims)

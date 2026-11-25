@@ -2,8 +2,6 @@
 
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.ECCurve.SECP_256_R_1
@@ -189,7 +187,8 @@ object JwsAlgorithmSerializer : KSerializer<JwsAlgorithm> {
 }
 
 /** Tries to find a matching JWS algorithm. Note that JWS imposes curve restrictions on ECDSA based on the digest. */
-fun SignatureAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
+@Throws(Throwable::class)
+fun SignatureAlgorithm.toJwsAlgorithm(): JwsAlgorithm =
     when (this) {
         is EcdsaAlgorithm -> when (this.digest) {
             Digest.SHA256 -> JwsAlgorithm.Signature.ES256
@@ -221,9 +220,9 @@ fun SignatureAlgorithm.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
 
         else -> throw UnsupportedCryptoException("COSE/JOSE providerize TODO")
     }
-}
 
-fun MessageAuthenticationCode.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catching {
+@Throws(Throwable::class)
+fun MessageAuthenticationCode.toJwsAlgorithm(): JwsAlgorithm =
     when (this) {
         HMAC.SHA1 -> UNOFFICIAL_HS1
         HMAC.SHA256 -> JwsAlgorithm.MAC.HS256
@@ -231,12 +230,13 @@ fun MessageAuthenticationCode.toJwsAlgorithm(): KmmResult<JwsAlgorithm> = catchi
         HMAC.SHA512 -> JwsAlgorithm.MAC.HS512
         else -> throw UnsupportedCryptoException("$this has no JWS equivalent")
     }
-}
 
 /** Tries to find a matching JWS algorithm.*/
+@Throws(Throwable::class)
 fun SpecializedMessageAuthenticationCode.toJwsAlgorithm() =
     this.algorithm.toJwsAlgorithm()
 
 /** Tries to find a matching JWS algorithm.*/
+@Throws(Throwable::class)
 fun SpecializedSignatureAlgorithm.toJwsAlgorithm() =
     this.algorithm.toJwsAlgorithm()

@@ -1,22 +1,19 @@
 @file:OptIn(SecretExposure::class)
 
-import at.asitplus.catching
 import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.InsecureRandom
-import at.asitplus.signum.supreme.succeed
 import at.asitplus.signum.supreme.symmetric.decrypt
 import at.asitplus.signum.supreme.symmetric.discouraged.andPredefinedNonce
 import at.asitplus.signum.supreme.symmetric.discouraged.encrypt
 import at.asitplus.signum.supreme.symmetric.encrypt
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.engine.runBlocking
 import io.kotest.matchers.nulls.shouldNotBeNull
-import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNot
 import io.kotest.matchers.shouldNotBe
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
@@ -61,12 +58,11 @@ val JvmSymmetricTest by matrixSuite {
                                 val own =
                                     (secretKey as SymmetricKey<AuthCapability.Authenticated<KeyType.Integrated>, NonceTrait.Required, KeyType.Integrated>).andPredefinedNonce(
                                         iv
-                                    ).getOrThrow().encrypt(data = data, aad)
-                                        .getOrThrow()
+                                    ).encrypt(data = data, aad)
                                 own.isAuthenticated() shouldBe true
                                 jcaCipher.init(
                                     Cipher.ENCRYPT_MODE,
-                                    SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
+                                    SecretKeySpec(secretKey.secretKey, "AES"),
                                     GCMParameterSpec(
                                         alg.authTagSize.bits.toInt(),
                                         own.nonce/*use our own auto-generated IV*/
@@ -80,7 +76,7 @@ val JvmSymmetricTest by matrixSuite {
 
                                 jcaCipher.init(
                                     Cipher.DECRYPT_MODE,
-                                    SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
+                                    SecretKeySpec(secretKey.secretKey, "AES"),
                                     GCMParameterSpec(
                                         alg.authTagSize.bits.toInt(),
                                         own.nonce/*use our own auto-generated IV*/
@@ -90,28 +86,28 @@ val JvmSymmetricTest by matrixSuite {
 
 
 
-                                own.decrypt(secretKey, aad ?: byteArrayOf()).getOrThrow() shouldBe jcaCipher.doFinal(
+                                own.decrypt(secretKey, aad ?: byteArrayOf()) shouldBe jcaCipher.doFinal(
                                     encrypted
                                 )
 
                                 val wrongKey = own.algorithm.randomKey(random = InsecureRandom)
-                                own.decrypt(wrongKey) shouldNot succeed
+                                shouldThrowAny { own.decrypt(wrongKey) }
 
                                 val box = own.algorithm.sealedBox.withNonce(own.algorithm.randomNonce()).from(
                                     own.encryptedData,
                                     own.authTag,
-                                ).getOrThrow()
-                                box.decrypt(secretKey, aad ?: byteArrayOf()) shouldNot succeed
+                                )
+                                shouldThrowAny { box.decrypt(secretKey, aad ?: byteArrayOf()) }
 
 
                             } else {
                                 alg as SymmetricEncryptionAlgorithm.AES.CBC.Unauthenticated
                                 val secretKey = alg.randomKey(random = InsecureRandom)
                                 //CBC
-                                val own = secretKey.encrypt(data).getOrThrow()
+                                val own = secretKey.encrypt(data)
                                 jcaCipher.init(
                                     Cipher.ENCRYPT_MODE,
-                                    SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
+                                    SecretKeySpec(secretKey.secretKey, "AES"),
                                     IvParameterSpec(own.nonce)/*use our own auto-generated IV, if null iv was provided*/
                                 )
                                 val encrypted = jcaCipher.doFinal(data)
@@ -120,20 +116,20 @@ val JvmSymmetricTest by matrixSuite {
 
                                 jcaCipher.init(
                                     Cipher.DECRYPT_MODE,
-                                    SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
+                                    SecretKeySpec(secretKey.secretKey, "AES"),
                                     IvParameterSpec(own.nonce)/*use our own auto-generated IV, if null iv was provided*/
                                 )
-                                own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
+                                own.decrypt(secretKey) shouldBe jcaCipher.doFinal(encrypted)
 
                                 //this could succeed if we're lucky and padding works out
-                                own.decrypt(own.algorithm.randomKey(random = InsecureRandom)).onSuccess {
+                                runCatching { own.decrypt(own.algorithm.randomKey(random = InsecureRandom)) }.onSuccess {
                                     it shouldNotBe data
                                 }
 
-                                if (data.size < alg.blockSize.bytes.toInt())
-                                    alg.sealedBox.withNonce(own.algorithm.randomNonce()).from(
-                                        own.encryptedData
-                                    ).getOrThrow().decrypt(secretKey).onSuccess { it shouldNotBe data }
+                                if (data.size < alg.blockSize.bytes.toInt()) {
+                                    val box = alg.sealedBox.withNonce(own.algorithm.randomNonce()).from(own.encryptedData)
+                                    runCatching { box.decrypt(secretKey) }.onSuccess { it shouldNotBe data }
+                                }
 
                             }
                         }
@@ -178,10 +174,10 @@ val JvmSymmetricTest by matrixSuite {
                                 val jcaCipher =
                                     Cipher.getInstance("AES/ECB/PKCS5PADDING")
 
-                                val own = secretKey.encrypt(data).getOrThrow()
+                                val own = secretKey.encrypt(data)
                                 jcaCipher.init(
                                     Cipher.ENCRYPT_MODE,
-                                    SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
+                                    SecretKeySpec(secretKey.secretKey, "AES"),
                                 )
                                 val encrypted = jcaCipher.doFinal(data)
 
@@ -189,16 +185,16 @@ val JvmSymmetricTest by matrixSuite {
 
                                 jcaCipher.init(
                                     Cipher.DECRYPT_MODE,
-                                    SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
+                                    SecretKeySpec(secretKey.secretKey, "AES"),
                                 )
-                                own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
+                                own.decrypt(secretKey) shouldBe jcaCipher.doFinal(encrypted)
 
                                 //we might get lucky here
-                                own.decrypt(own.algorithm.randomKey(random = InsecureRandom)).onSuccess {
+                                runCatching { own.decrypt(own.algorithm.randomKey(random = InsecureRandom)) }.onSuccess {
                                     it shouldNotBe data
                                 }
 
-                                alg.sealedBox.from(own.encryptedData).getOrThrow().decrypt(secretKey) should succeed
+                                alg.sealedBox.from(own.encryptedData).decrypt(secretKey) shouldBe data
                             }
                         } else if (alg is SymmetricEncryptionAlgorithm.AES.ECB_NOPADDING) {
                             "ECB NoPadding" - {
@@ -207,10 +203,10 @@ val JvmSymmetricTest by matrixSuite {
                                         val jcaCipher =
                                             Cipher.getInstance("AES/ECB/NoPadding")
 
-                                        val own = secretKey.encrypt(data).getOrThrow()
+                                        val own = secretKey.encrypt(data)
                                         jcaCipher.init(
                                             Cipher.ENCRYPT_MODE,
-                                            SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
+                                            SecretKeySpec(secretKey.secretKey, "AES"),
                                         )
                                         val encrypted = jcaCipher.doFinal(data)
 
@@ -218,20 +214,20 @@ val JvmSymmetricTest by matrixSuite {
 
                                         jcaCipher.init(
                                             Cipher.DECRYPT_MODE,
-                                            SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
+                                            SecretKeySpec(secretKey.secretKey, "AES"),
                                         )
-                                        own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
+                                        own.decrypt(secretKey) shouldBe jcaCipher.doFinal(encrypted)
 
                                         //we might get lucky here
-                                        own.decrypt(own.algorithm.randomKey(random = InsecureRandom)).onSuccess {
+                                        runCatching { own.decrypt(own.algorithm.randomKey(random = InsecureRandom)) }.onSuccess {
                                             it shouldNotBe data
                                         }
 
-                                        alg.sealedBox.from(own.encryptedData).getOrThrow()
-                                            .decrypt(secretKey) should succeed
+                                        alg.sealedBox.from(own.encryptedData)
+                                            .decrypt(secretKey) shouldBe data
                                     }
                                 } else "Illegal input size" {
-                                    shouldThrow<Throwable> { secretKey.encrypt(data).getOrThrow() }
+                                    shouldThrow<Throwable> { secretKey.encrypt(data) }
                                 }
                             }
                         } else {
@@ -239,40 +235,35 @@ val JvmSymmetricTest by matrixSuite {
                                 val shouldSucceed = (data.size >= 16) && (data.size % 8 == 0)
                                 val jcaCipher =
                                     Cipher.getInstance("AESWrap")
-                                val trial = secretKey.encrypt(data)
-
-                                if (shouldSucceed)
-                                    trial should succeed
-                                else trial shouldNot succeed
+                                val trial = runCatching { secretKey.encrypt(data) }
+                                trial.isSuccess shouldBe shouldSucceed
 
                                 jcaCipher.init(
                                     Cipher.ENCRYPT_MODE,
-                                    SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
+                                    SecretKeySpec(secretKey.secretKey, "AES"),
                                 )
-                                val jcaTrail = catching {
+                                val jcaTrial = runCatching {
                                     jcaCipher.doFinal(data)
                                 }
-                                if (shouldSucceed)
-                                    jcaTrail should succeed
-                                else jcaTrail shouldNot succeed
+                                jcaTrial.isSuccess shouldBe shouldSucceed
 
                                 if (shouldSucceed) {
                                     val own = trial.getOrThrow()
-                                    val encrypted = jcaTrail.getOrThrow()
+                                    val encrypted = jcaTrial.getOrThrow()
                                     own.encryptedData shouldBe encrypted
 
                                     jcaCipher.init(
                                         Cipher.DECRYPT_MODE,
-                                        SecretKeySpec(secretKey.secretKey.getOrThrow(), "AES"),
+                                        SecretKeySpec(secretKey.secretKey, "AES"),
                                     )
-                                    own.decrypt(secretKey).getOrThrow() shouldBe jcaCipher.doFinal(encrypted)
+                                    own.decrypt(secretKey) shouldBe jcaCipher.doFinal(encrypted)
 
                                     //we might get lucky here
-                                    own.decrypt(own.algorithm.randomKey(random = InsecureRandom)).onSuccess {
+                                    runCatching { own.decrypt(own.algorithm.randomKey(random = InsecureRandom)) }.onSuccess {
                                         it shouldNotBe data
                                     }
 
-                                    alg.sealedBox.from(own.encryptedData).getOrThrow().decrypt(secretKey) should succeed
+                                    alg.sealedBox.from(own.encryptedData).decrypt(secretKey) shouldBe data
                                 }
                             }
                         }
@@ -299,14 +290,13 @@ val JvmSymmetricTest by matrixSuite {
                     val secretKey = alg.randomKey(random = InsecureRandom)
                     val jcaCipher = Cipher.getInstance("ChaCha20-Poly1305");
 
-                    val box = if (nonce != null) secretKey.andPredefinedNonce(nonce).getOrThrow().encrypt(data, aad)
-                        .getOrThrow()
-                    else secretKey.encrypt(data, aad).getOrThrow()
+                    val box = if (nonce != null) secretKey.andPredefinedNonce(nonce).encrypt(data, aad)
+                    else secretKey.encrypt(data, aad)
 
 
                     jcaCipher.init(
                         Cipher.ENCRYPT_MODE,
-                        SecretKeySpec(secretKey.secretKey.getOrThrow(), "ChaCha"),
+                        SecretKeySpec(secretKey.secretKey, "ChaCha"),
                         IvParameterSpec(box.nonce) /*need to do this, otherwise we get a random nonce*/
                     )
 
@@ -318,7 +308,7 @@ val JvmSymmetricTest by matrixSuite {
                     box.nonce.size shouldBe alg.nonceSize.bytes.toInt()
                     box.isAuthenticated() shouldBe true
                     (box.encryptedData + box.authTag) shouldBe fromJCA
-                    box.decrypt(secretKey, aad ?: byteArrayOf()).getOrThrow() shouldBe data
+                    box.decrypt(secretKey, aad ?: byteArrayOf()) shouldBe data
 
                 }
             }

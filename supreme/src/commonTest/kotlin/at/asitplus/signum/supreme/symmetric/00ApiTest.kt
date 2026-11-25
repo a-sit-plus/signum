@@ -1,11 +1,10 @@
 package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.InsecureRandom
-import at.asitplus.signum.supreme.succeed
 import at.asitplus.testballoon.matrix.*
-import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import kotlinx.coroutines.runBlocking
 import kotlin.random.Random
@@ -24,14 +23,11 @@ val ApiTest  by matrixSuite {
             ).map { runBlocking {
                 val key = it.randomKey(InsecureRandom)
                 val plain = Random.nextBytes(131)
-                val encrypted = key.encrypt(plain).getOrThrow()
+                val encrypted = key.encrypt(plain)
                 Triple(key, plain, encrypted)
             } }
         ) test { (key, plain, encrypted) ->
-            encrypted.decrypt(key).let {
-                it should succeed
-                it.getOrThrow() shouldBe plain
-            }
+            encrypted.decrypt(key) shouldBe plain
         }
     }
 
@@ -41,20 +37,20 @@ val ApiTest  by matrixSuite {
             //create a key, encrypt and decrypt works!
             val key = algorithm.randomKey(InsecureRandom)
             val plain = "Harvest".encodeToByteArray()
-            val box = key.encrypt(plain).getOrThrow()
-            box.decrypt(key).onSuccess { it shouldBe plain } should succeed
+            val box = key.encrypt(plain)
+            box.decrypt(key) shouldBe plain
 
 
             //if you load a key, you are forced to know whether a dedicated MAC key is required
             val loadedKey = when (algorithm.hasDedicatedMac()) {
                 true -> {
-                    algorithm.keyFrom(byteArrayOf(), byteArrayOf())
+                    algorithm.keyFrom(Random.nextBytes(algorithm.keySize.bytes.toInt()), Random.nextBytes(32))
                     //Compile error
                     //algorithm.keyFrom(byteArrayOf())
                 }
 
                 false -> {
-                    algorithm.keyFrom(byteArrayOf())
+                    algorithm.keyFrom(Random.nextBytes(algorithm.keySize.bytes.toInt()))
                     //Compile error
                     //algorithm.keyFrom(byteArrayOf(),byteArrayOf())
                 }
@@ -99,7 +95,7 @@ val ApiTest  by matrixSuite {
                         // compile error
                         // algorithm.sealedBox.from(byteArrayOf())
 
-                        algorithm.sealedBox.from(byteArrayOf(), byteArrayOf())
+                        algorithm.sealedBox.from(byteArrayOf(), ByteArray(algorithm.authTagSize.bytes.toInt()))
 
                         // compile error
                         // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf())
@@ -144,7 +140,7 @@ val ApiTest  by matrixSuite {
                         // compile error
                         // algorithm.sealedBox.from(byteArrayOf())
 
-                        algorithm.sealedBox.from(byteArrayOf(), byteArrayOf())
+                        algorithm.sealedBox.from(byteArrayOf(), ByteArray(algorithm.authTagSize.bytes.toInt()))
 
                         // compile error
                         // algorithm.sealedBox.withNonce(byteArrayOf()).from(byteArrayOf())
@@ -195,20 +191,21 @@ val ApiTest  by matrixSuite {
 
             //create a key, encrypt and decrypt works!
             val key = algorithm.randomKey(InsecureRandom)
-            val box = key.encrypt("Harvest".encodeToByteArray()).getOrThrow()
-            box.decrypt(key) should succeed
+            val plain = "Harvest".encodeToByteArray()
+            val box = key.encrypt(plain)
+            box.decrypt(key) shouldBe plain
 
 
             //if you load a key, you are forced to know whether a dedicated MAC key is required
             val loadedKey = when (algorithm.hasDedicatedMac()) {
                 true -> {
-                    algorithm.keyFrom(byteArrayOf(), byteArrayOf())
+                    algorithm.keyFrom(Random.nextBytes(algorithm.keySize.bytes.toInt()), Random.nextBytes(32))
                     //Compile error
                     //algorithm.keyFrom(byteArrayOf())
                 }
 
                 false -> {
-                    algorithm.keyFrom(byteArrayOf())
+                    algorithm.keyFrom(Random.nextBytes(algorithm.keySize.bytes.toInt()))
                     //Compile error
                     //algorithm.keyFrom(byteArrayOf(),byteArrayOf())
                 }

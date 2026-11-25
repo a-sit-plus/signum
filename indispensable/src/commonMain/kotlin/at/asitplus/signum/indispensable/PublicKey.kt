@@ -1,12 +1,11 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
-import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.io.MultiBase
 import at.asitplus.io.UVarInt
 import at.asitplus.io.multibaseDecode
 import at.asitplus.io.multibaseEncode
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
 import at.asitplus.signum.SignumInternals
@@ -55,7 +54,7 @@ interface PublicKey : WithSourceRepresentation {
         @Throws(Throwable::class)
         fun fromDid(input: String): PublicKey {
             val bytes = multiKeyRemovePrefix(input).substringBefore("#")
-            val decoded = catching { bytes.multibaseDecode() }.getOrThrow()
+            val decoded = bytes.multibaseDecode()
                 ?: throw IndexOutOfBoundsException("Unsupported multibase encoding")
             val (codec, codecLength) = UVarInt.fromByteArrayPermissive(decoded)
             val keyBytes = decoded.copyOfRange(codecLength, decoded.size)
@@ -76,10 +75,12 @@ interface PublicKey : WithSourceRepresentation {
 }
 
 interface SpecializedPublicKey {
-    fun toPublicKey(): KmmResult<PublicKey>
+    @Throws(Throwable::class)
+    fun toPublicKey(): PublicKey
 
     @Deprecated("Renamed to toPublicKey", ReplaceWith("toPublicKey()"))
-    fun toCryptoPublicKey(): KmmResult<PublicKey> = toPublicKey()
+    @Throws(Throwable::class)
+    fun toCryptoPublicKey(): PublicKey = toPublicKey()
 }
 
 /** Alias of [equals] provided for convenience (and alignment with [SpecializedPublicKey]) */
@@ -88,11 +89,11 @@ fun PublicKey.equalsCryptographically(other: PublicKey) =
 
 /** Whether the actual underlying key (irrespective of any format-specific metadata) is equal */
 fun SpecializedPublicKey.equalsCryptographically(other: PublicKey) =
-    toPublicKey().map { it.equalsCryptographically(other) }.getOrElse { false }
+    catchingUnwrapped { toPublicKey() }.getOrNull()?.equalsCryptographically(other) ?: false
 
 /** Whether the actual underlying key (irrespective of any format-specific metadata) is equal */
 fun SpecializedPublicKey.equalsCryptographically(other: SpecializedPublicKey) =
-    toPublicKey().map { other.equalsCryptographically(it) }.getOrElse { false }
+    catchingUnwrapped { toPublicKey() }.getOrNull()?.let { other.equalsCryptographically(it) } ?: false
 
 /** Whether the actual underlying key (irrespective of any format-specific metadata) is equal */
 fun PublicKey.equalsCryptographically(other: SpecializedPublicKey) =

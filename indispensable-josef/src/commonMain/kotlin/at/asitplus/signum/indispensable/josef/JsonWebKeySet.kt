@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.catching
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -17,16 +16,16 @@ data class JsonWebKeySet(
 
     
     @Deprecated("To be removed in next release")
-    fun serialize() = catching {
+    @Throws(Throwable::class)
+    fun serialize() =
         joseCompliantSerializer.encodeToString(this)
-    }
 
     companion object {
 
         @Deprecated("To be removed in next release")
-        fun deserialize(it: String) = catching {
+        @Throws(Throwable::class)
+        fun deserialize(it: String) =
             joseCompliantSerializer.decodeFromString<JsonWebKeySet>(it)
-        }
     }
 
 }

@@ -1,6 +1,5 @@
 package at.asitplus.signum.supreme.os
 
-import at.asitplus.catching
 import at.asitplus.signum.dsl.PlatformSignerConfigurationBase
 import at.asitplus.signum.dsl.PlatformSigningKeyConfigurationBase
 import at.asitplus.signum.dsl.PlatformSigningProviderConfigurationBase
@@ -69,8 +68,9 @@ interface PlatformSigningProviderI<out SignerT: PlatformSigningProviderSigner<*,
     : SigningProviderI<SignerT, SignerConfigT, KeyConfigT> {
 
     companion object {
+        @Throws(Throwable::class)
         operator fun invoke(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase> = null) =
-            catching { getPlatformSigningProvider(configure) }
+            getPlatformSigningProvider(configure)
     }
 }
 /**

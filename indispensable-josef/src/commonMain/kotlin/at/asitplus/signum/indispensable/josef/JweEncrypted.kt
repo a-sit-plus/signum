@@ -1,7 +1,5 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -69,7 +67,8 @@ data class JweEncrypted(
 
 
     companion object {
-        fun deserialize(it: String): KmmResult<JweEncrypted> = catching {
+        @Throws(Throwable::class)
+        fun deserialize(it: String): JweEncrypted {
             val stringList = it.replace("[^A-Za-z0-9-_.]".toRegex(), "").split(".")
             if (stringList.size != 5) throw IllegalArgumentException("not five parts in input: $it")
             val headerAsParsed = stringList[0].decodeToByteArray(Base64UrlStrict)
@@ -78,7 +77,7 @@ data class JweEncrypted(
             val ciphertext = stringList[3].decodeToByteArray(Base64UrlStrict)
             val authTag = stringList[4].decodeToByteArray(Base64UrlStrict)
             val header = joseCompliantSerializer.decodeFromString<JweHeader>(headerAsParsed.decodeToString())
-            JweEncrypted(header, headerAsParsed, encryptedKey, iv, ciphertext, authTag)
+            return JweEncrypted(header, headerAsParsed, encryptedKey, iv, ciphertext, authTag)
         }
     }
 }

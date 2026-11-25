@@ -42,7 +42,7 @@ val JsonWebKeyJvmTest by matrixSuite {
         jsonWebKey.keyId shouldHaveMinLength 32
 
         "it can be recreated from keyId" {
-            val recreatedJwk = JsonWebKey.fromDid(jsonWebKey.keyId.shouldNotBeNull()).getOrThrow()
+            val recreatedJwk = JsonWebKey.fromDid(jsonWebKey.keyId.shouldNotBeNull())
             recreatedJwk.shouldNotBeNull()
             recreatedJwk.keyId shouldBe jsonWebKey.keyId
             recreatedJwk.x shouldBe jsonWebKey.x
@@ -50,7 +50,7 @@ val JsonWebKeyJvmTest by matrixSuite {
         }
 
         "it can be converted back to PublicKey" {
-            val recreatedPubKey = jsonWebKey.toPublicKey().getOrThrow()
+            val recreatedPubKey = jsonWebKey.toPublicKey()
             (pubKey == recreatedPubKey) shouldBe true
         }
     }
@@ -72,12 +72,12 @@ val JsonWebKeyJvmTest by matrixSuite {
         jwk.keyId.shouldNotBeNull()
 
         "it can be converted back to PublicKey" {
-            val recreatedPubKey = jwk.toPublicKey().getOrThrow()
+            val recreatedPubKey = jwk.toPublicKey()
             (pubKey == recreatedPubKey) shouldBe true
         }
 
         "it can be recreated from keyId" {
-            val recreatedJwk = JsonWebKey.fromDid(jwk.keyId.shouldNotBeNull()).getOrThrow()
+            val recreatedJwk = JsonWebKey.fromDid(jwk.keyId.shouldNotBeNull())
             recreatedJwk.shouldNotBeNull()
             recreatedJwk.keyId shouldBe jwk.keyId
             recreatedJwk.n shouldBe jwk.n

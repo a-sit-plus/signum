@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.catching
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
@@ -59,8 +58,8 @@ data class CoseInput(
 
 
     companion object {
-        fun deserialize(it: ByteArray) = catching {
+        @Throws(Throwable::class)
+        fun deserialize(it: ByteArray) =
             coseCompliantSerializer.decodeFromByteArray<CoseInput>(it)
-        }
     }
 }

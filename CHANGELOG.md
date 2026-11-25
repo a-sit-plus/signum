@@ -34,7 +34,7 @@ at the cost of introducing breaking changes**
     * Non-finite and out-of-range values are rejected with a `SerializationException`
     * The deprecated `at.asitplus.signum.indispensable.cosef.InstantLongSerializer` now delegates to `at.asitplus.signum.indispensable.io.InstantLongSerializer`
 * `EphemeralKey` has been retired. Use `Signer.Ephemeral` instead.
-* `KmmResult` has been retired from almost all return types. You can get rid of your `getOrThrow`s.
+* Remove `KmmResult` wrappers from key and algorithm conversions, JOSE and COSE codecs, and encryption and decryption. These APIs return values directly and throw on failure. Remove the corresponding `getOrThrow()` calls.
 * Change `Base64Strict` and `Base64UrlStrict` to no longer be lenient during de-/encoding.
 * Dependency Updates:
     * Kotlin 2.4.21

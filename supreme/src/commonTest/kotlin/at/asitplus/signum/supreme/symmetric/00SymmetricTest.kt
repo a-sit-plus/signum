@@ -12,16 +12,16 @@ import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
 import at.asitplus.signum.supreme.InsecureRandom
-import at.asitplus.signum.supreme.succeed
 import at.asitplus.signum.supreme.symmetric.discouraged.andPredefinedNonce
 import at.asitplus.signum.supreme.symmetric.discouraged.encrypt
 import at.asitplus.testballoon.matrix.matrixSuite
+import io.kotest.assertions.throwables.shouldNotThrowAny
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.assertions.withClue
 import io.kotest.engine.runBlocking
 import io.kotest.matchers.nulls.shouldNotBeNull
-import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNot
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlin.random.Random
@@ -36,8 +36,8 @@ val SymmetricTest by matrixSuite {
         val secret = "Top Secret".encodeToByteArray()
         val authenticatedData = "Bottom Secret".encodeToByteArray()
         val secretKey = SymmetricEncryptionAlgorithm.ChaCha20Poly1305.randomKey(InsecureRandom)
-        val encrypted = secretKey.encrypt(secret, authenticatedData).getOrThrow(/*handle error*/)
-        encrypted.decrypt(secretKey, authenticatedData).getOrThrow(/*handle error*/) shouldBe secret
+        val encrypted = secretKey.encrypt(secret, authenticatedData)
+        encrypted.decrypt(secretKey, authenticatedData) shouldBe secret
 
         //getting data from external
 
@@ -46,15 +46,15 @@ val SymmetricTest by matrixSuite {
         val ciphertext = encrypted.encryptedData
         val authTag = encrypted.authTag
         val externalAAD = authenticatedData
-        val keyBytes = secretKey.secretKey.getOrThrow()
+        val keyBytes = secretKey.secretKey
 
-        val preSharedKey = algo.keyFrom(keyBytes).getOrThrow()
+        val preSharedKey = algo.keyFrom(keyBytes)
 
-        val box = algo.sealedBox.withNonce(nonce).from(ciphertext, authTag).getOrThrow(/*handle error*/)
-        box.decrypt(preSharedKey, /*also pass AAD*/ externalAAD).getOrThrow(/*handle error*/) shouldBe secret
+        val box = algo.sealedBox.withNonce(nonce).from(ciphertext, authTag)
+        box.decrypt(preSharedKey, /*also pass AAD*/ externalAAD) shouldBe secret
 
         //direct decryption
-        preSharedKey.decrypt(nonce, ciphertext, authTag, externalAAD).getOrThrow(/*handle error*/) shouldBe secret
+        preSharedKey.decrypt(nonce, ciphertext, authTag, externalAAD) shouldBe secret
 
         val payload = "More matter, with less art!".encodeToByteArray()
 
@@ -72,10 +72,10 @@ val SymmetricTest by matrixSuite {
         val sealedBox = key.encrypt(
             payload,
             authenticatedData = aad,
-        ).getOrThrow(/*handle error*/)
+        )
 
         //because everything is structured, decryption is simple
-        val recovered = sealedBox.decrypt(key, aad).getOrThrow(/*handle error*/)
+        val recovered = sealedBox.decrypt(key, aad)
 
         recovered shouldBe payload //success!
 
@@ -83,20 +83,20 @@ val SymmetricTest by matrixSuite {
         val reconstructed = algorithm.sealedBox.withNonce(sealedBox.nonce).from(
             encryptedData = sealedBox.encryptedData, /*Could also access authenticatedCipherText*/
             authTag = sealedBox.authTag,
-        ).getOrThrow()
+        )
 
         val manuallyRecovered = reconstructed.decrypt(
             key,
             authenticatedData = aad,
-        ).getOrThrow(/*handle error*/)
+        )
 
         manuallyRecovered shouldBe payload //great success!
 
         //if we just know algorithm and key bytes, we can also construct a symmetric key
         reconstructed.decrypt(
-            algorithm.keyFrom(key.encryptionKey.getOrThrow(), key.macKey.getOrThrow()).getOrThrow(/*handle error*/),
+            algorithm.keyFrom(key.encryptionKey, key.macKey),
             aad
-        ).getOrThrow(/*handle error*/) shouldBe payload //greatest success!
+        ) shouldBe payload //greatest success!
     }
 
 
@@ -136,17 +136,15 @@ val SymmetricTest by matrixSuite {
                 ), nameFn = { "${it?.size} Bytes" }) test { iv ->
 
                 val key = alg.randomKey(InsecureRandom)
-                if (iv != null) key.andPredefinedNonce(iv) shouldNot succeed
-                else key.encrypt(Random.nextBytes(32)) should succeed
-                key.andPredefinedNonce(alg.randomNonce()).getOrThrow().encrypt(Random.nextBytes(32)) should succeed
-                key.encrypt(Random.nextBytes(32)) should succeed
+                if (iv != null) shouldThrow<IllegalArgumentException> { key.andPredefinedNonce(iv) }
+                else shouldNotThrowAny { key.encrypt(Random.nextBytes(32)) }
+                shouldNotThrowAny { key.andPredefinedNonce(alg.randomNonce()).encrypt(Random.nextBytes(32)) }
+                shouldNotThrowAny { key.encrypt(Random.nextBytes(32)) }
 
                 if (alg.authCapability is AuthCapability.Authenticated)
-                    key.encrypt(Random.nextBytes(32))
-                        .getOrThrow().algorithm.isAuthenticated() shouldBe true
+                    key.encrypt(Random.nextBytes(32)).algorithm.isAuthenticated() shouldBe true
                 else if (alg.authCapability is AuthCapability.Unauthenticated)
-                    key.encrypt(Random.nextBytes(32))
-                        .getOrThrow().algorithm.isAuthenticated() shouldBe false
+                    key.encrypt(Random.nextBytes(32)).algorithm.isAuthenticated() shouldBe false
             }
         }
     }
@@ -187,39 +185,38 @@ val SymmetricTest by matrixSuite {
                     Random.nextBytes(256)
                 ), nameFn = { "${it.size} Bytes" }) test { keyBytes ->
 
-                when (alg.hasDedicatedMac()) {
-                    true -> alg.keyFrom(keyBytes, keyBytes) //never do this in production!
-                    false -> alg.keyFrom(keyBytes)
-                } shouldNot succeed
+                shouldThrow<IllegalArgumentException> {
+                    when (alg.hasDedicatedMac()) {
+                        true -> alg.keyFrom(keyBytes, keyBytes) //never do this in production!
+                        false -> alg.keyFrom(keyBytes)
+                    }
+                }
 
                 val key = when (alg.hasDedicatedMac()) {
                     true -> alg.keyFrom(
-                        alg.randomKey(InsecureRandom).encryptionKey.getOrThrow(),
-                        alg.randomKey(InsecureRandom).encryptionKey.getOrThrow()
+                        alg.randomKey(InsecureRandom).encryptionKey,
+                        alg.randomKey(InsecureRandom).encryptionKey
                     )
 
-                    false -> alg.keyFrom(alg.randomKey(InsecureRandom).secretKey.getOrThrow())
-                }.getOrThrow()
+                    false -> alg.keyFrom(alg.randomKey(InsecureRandom).secretKey)
+                }
 
 
 
-                key.encrypt(Random.nextBytes(32)) should succeed
-                key.andPredefinedNonce(alg.randomNonce()).getOrThrow()
-                    .encrypt(data = Random.nextBytes(32)) should succeed
+                shouldNotThrowAny { key.encrypt(Random.nextBytes(32)) }
+                shouldNotThrowAny { key.andPredefinedNonce(alg.randomNonce()).encrypt(data = Random.nextBytes(32)) }
 
                 if (alg.authCapability is AuthCapability.Authenticated)
                     alg.randomKey(InsecureRandom).encrypt(
                         Random.nextBytes(32)
                     ).let {
-                        it should succeed
-                        it.getOrThrow().algorithm.isAuthenticated() shouldBe true
+                        it.algorithm.isAuthenticated() shouldBe true
                     }
                 else if (alg.authCapability is AuthCapability.Unauthenticated)
                     alg.randomKey(InsecureRandom).encrypt(
                         Random.nextBytes(32)
                     ).let {
-                        it should succeed
-                        it.getOrThrow().algorithm.isAuthenticated() shouldBe false
+                        it.algorithm.isAuthenticated() shouldBe false
                     }
             }
         }
@@ -256,8 +253,8 @@ val SymmetricTest by matrixSuite {
                     nameFn = { "IV: " + it?.toHexString()?.substring(0..8) }) test { iv ->
 
                     val ciphertext =
-                        if (iv != null) key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext).getOrThrow()
-                        else key.encrypt(plaintext).getOrThrow()
+                        if (iv != null) key.andPredefinedNonce(iv).encrypt(plaintext)
+                        else key.encrypt(plaintext)
 
                     ciphertext.nonce.shouldNotBeNull()
                     if (iv != null) ciphertext.nonce.size shouldBe iv.size
@@ -266,38 +263,36 @@ val SymmetricTest by matrixSuite {
                     ciphertext.algorithm.isAuthenticated() shouldBe false
 
 
-                    val decrypted = ciphertext.decrypt(key).getOrThrow()
+                    val decrypted = ciphertext.decrypt(key)
                     decrypted shouldBe plaintext
 
 
-                    val wrongDecrypted = ciphertext.decrypt(it.randomKey(InsecureRandom))
+                    val wrongDecrypted = runCatching { ciphertext.decrypt(it.randomKey(InsecureRandom)) }
                     //We're not authenticated, so from time to time, we won't run into a padding error for specific plaintext sizes
                     wrongDecrypted.onSuccess { value -> value shouldNotBe plaintext }
 
                     val wrongCiphertext =
                         ciphertext.algorithm.sealedBox.withNonce(ciphertext.nonce).from(
                             InsecureRandom.nextBytes(ciphertext.encryptedData.size)
-                        ).getOrThrow()
+                        )
 
-                    val wrongWrongDecrypted = wrongCiphertext.decrypt(it.randomKey(InsecureRandom))
+                    val wrongWrongDecrypted = runCatching { wrongCiphertext.decrypt(it.randomKey(InsecureRandom)) }
                     withClue(
                         "KEY: ${
-                            key.secretKey.getOrThrow().toHexString()
+                            key.secretKey.toHexString()
                         }, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.nonce?.toHexString()}"
                     ) {
                         //we're not authenticated, so from time to time, this succeeds
-                        //wrongWrongDecrypted shouldNot succeed
                         //instead, we test differently:
                         wrongWrongDecrypted.onSuccess { value -> value shouldNotBe plaintext }
                     }
-                    val wrongRightDecrypted = wrongCiphertext.decrypt(key)
+                    val wrongRightDecrypted = runCatching { wrongCiphertext.decrypt(key) }
                     withClue(
                         "KEY: ${
-                            key.secretKey.getOrThrow().toHexString()
+                            key.secretKey.toHexString()
                         }, wrongCiphertext: ${wrongCiphertext.encryptedData.toHexString()}, ciphertext: ${ciphertext.encryptedData.toHexString()}, iv: ${wrongCiphertext.nonce.toHexString()}"
                     ) {
                         //we're not authenticated, so from time to time, this succeeds
-                        //wrongRightDecrypted shouldNot succeed
                         //instead, we test differently:
                         wrongRightDecrypted.onSuccess { value -> value shouldNotBe plaintext }
                     }
@@ -305,12 +300,11 @@ val SymmetricTest by matrixSuite {
                         ciphertext.algorithm.sealedBox.withNonce(ciphertext.nonce.asList().shuffled().toByteArray())
                             .from(
                                 encryptedData = ciphertext.encryptedData
-                            ).getOrThrow()
+                            )
 
 
                     if (plaintext.size > it.blockSize.bytes.toInt()) { //cannot test like that for ciphertexts shorter than IV
                         val wrongIVDecrypted = wrongIV.decrypt(key)
-                        wrongIVDecrypted should succeed //no padding errors!
                         wrongIVDecrypted shouldNotBe plaintext
                     }
 
@@ -353,55 +347,49 @@ val SymmetricTest by matrixSuite {
                         nameFn = { "AAD: " + it?.toHexString() }) test { aad ->
                         key.encrypt(plaintext, aad)
                         val ciphertext =
-                            if (iv != null) key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext, aad).getOrThrow()
-                            else key.encrypt(plaintext, aad).getOrThrow()
+                            if (iv != null) key.andPredefinedNonce(iv).encrypt(plaintext, aad)
+                            else key.encrypt(plaintext, aad)
 
                         ciphertext.nonce.shouldNotBeNull()
                         ciphertext.nonce.size shouldBe alg.nonceSize.bytes.toInt()
                         if (iv != null) ciphertext.nonce shouldBe iv
                         ciphertext.algorithm.authCapability.shouldBeInstanceOf<AuthCapability.Authenticated<*>>()
-                        val decrypted = ciphertext.decrypt(key, aad ?: byteArrayOf()).getOrThrow()
+                        val decrypted = ciphertext.decrypt(key, aad ?: byteArrayOf())
                         decrypted shouldBe plaintext
 
 
-                        val wrongDecrypted = ciphertext.decrypt(alg.randomKey(InsecureRandom))
-                        wrongDecrypted shouldNot succeed
+                        shouldThrowAny { ciphertext.decrypt(alg.randomKey(InsecureRandom)) }
 
                         val wrongCiphertext = alg.sealedBox.withNonce(ciphertext.nonce).from(
                             InsecureRandom.nextBytes(ciphertext.encryptedData.size),
                             authTag = ciphertext.authTag,
-                        ).getOrThrow()
+                        )
 
 
-                        val wrongWrongDecrypted =
-                            wrongCiphertext.decrypt(alg.randomKey(InsecureRandom), aad ?: byteArrayOf())
-                        wrongWrongDecrypted shouldNot succeed
+                        shouldThrowAny { wrongCiphertext.decrypt(alg.randomKey(InsecureRandom), aad ?: byteArrayOf()) }
 
-                        val wrongRightDecrypted = wrongCiphertext.decrypt(key)
-                        wrongRightDecrypted shouldNot succeed
+                        shouldThrowAny { wrongCiphertext.decrypt(key) }
 
                         val wrongIV = alg.sealedBox.withNonce(ciphertext.nonce.asList().shuffled().toByteArray()).from(
                             ciphertext.encryptedData,
                             authTag = ciphertext.authTag,
-                        ).getOrThrow()
+                        )
 
-                        val wrongIVDecrypted = wrongIV.decrypt(key, aad ?: byteArrayOf())
-                        wrongIVDecrypted shouldNot succeed
+                        shouldThrowAny { wrongIV.decrypt(key, aad ?: byteArrayOf()) }
 
 
                         if (aad != null) {
-                            //missing aad
-                            alg.sealedBox.withNonce(ciphertext.nonce).from(
+                            val box = alg.sealedBox.withNonce(ciphertext.nonce).from(
                                 encryptedData = ciphertext.encryptedData,
                                 authTag = ciphertext.authTag,
-                            ).getOrThrow().decrypt(key) shouldNot succeed
-
+                            )
+                            shouldThrowAny { box.decrypt(key) }
                         }
-                        //shuffled auth tag
-                        alg.sealedBox.withNonce(ciphertext.nonce).from(
+                        val wrongTag = alg.sealedBox.withNonce(ciphertext.nonce).from(
                             ciphertext.encryptedData,
                             authTag = ciphertext.authTag.asList().shuffled().toByteArray(),
-                        ).getOrThrow().decrypt(key, aad ?: byteArrayOf()) shouldNot succeed
+                        )
+                        shouldThrowAny { wrongTag.decrypt(key, aad ?: byteArrayOf()) }
                     }
                 }
             }
@@ -478,7 +466,7 @@ val SymmetricTest by matrixSuite {
                         InsecureRandom.nextBytes(21257)
                     ), nameFn = { "${it.size} Bytes" }) - { plaintext ->
 
-                    val secretKey = runBlocking { it.randomKey(InsecureRandom).encryptionKey.getOrThrow() }
+                    val secretKey = runBlocking { it.randomKey(InsecureRandom).encryptionKey }
 
                     data(
                         listOf(16, 32, 64, 128, secretKey.size),
@@ -496,52 +484,43 @@ val SymmetricTest by matrixSuite {
                                 listOf(InsecureRandom.nextBytes(32), null),
                                 nameFn = { "AAD: " + it?.toHexString()?.substring(0..8) }) test { aad ->
                                 val ciphertext =
-                                    if (iv != null) key.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext, aad)
-                                        .getOrThrow()
-                                    else key.encrypt(plaintext, aad).getOrThrow()
+                                    if (iv != null) key.andPredefinedNonce(iv).encrypt(plaintext, aad)
+                                    else key.encrypt(plaintext, aad)
                                 val manilaAlg = it.Custom(ciphertext.authTag.size.bytes)
                                 { _, _, _ -> "Manila".encodeToByteArray() }
 
                                 val manilaKey = SymmetricKey.WithDedicatedMac.RequiringNonce(
                                     manilaAlg,
-                                    key.encryptionKey.getOrThrow(),
-                                    key.macKey.getOrThrow()
+                                    key.encryptionKey,
+                                    key.macKey
                                 )
-                                if (iv != null) manilaKey.andPredefinedNonce(iv).getOrThrow().encrypt(plaintext, aad)
-                                    .getOrThrow() shouldNotBe ciphertext
-                                manilaKey.encrypt(plaintext, aad).getOrThrow() shouldNotBe ciphertext
+                                if (iv != null) manilaKey.andPredefinedNonce(iv).encrypt(plaintext, aad) shouldNotBe ciphertext
+                                manilaKey.encrypt(plaintext, aad) shouldNotBe ciphertext
 
                                 //no randomness. must be equal
                                 val randomIV = it.randomNonce()
-                                manilaKey.andPredefinedNonce(randomIV).getOrThrow().encrypt(plaintext, aad)
-                                    .getOrThrow() shouldBe
-                                        manilaKey.andPredefinedNonce(randomIV).getOrThrow().encrypt(plaintext, aad)
-                                            .getOrThrow()
+                                manilaKey.andPredefinedNonce(randomIV).encrypt(plaintext, aad) shouldBe
+                                        manilaKey.andPredefinedNonce(randomIV).encrypt(plaintext, aad)
 
                                 if (iv != null) ciphertext.nonce shouldBe iv
                                 ciphertext.nonce.shouldNotBeNull()
                                 ciphertext.nonce.size shouldBe it.nonceSize.bytes.toInt()
                                 ciphertext.algorithm.authCapability.shouldBeInstanceOf<AuthCapability.Authenticated<*>>()
 
-                                val decrypted = ciphertext.decrypt(key, aad ?: byteArrayOf()).getOrThrow()
+                                val decrypted = ciphertext.decrypt(key, aad ?: byteArrayOf())
                                 decrypted shouldBe plaintext
 
-                                val wrongDecrypted = ciphertext.decrypt(it.randomKey(InsecureRandom))
-                                wrongDecrypted shouldNot succeed
+                                shouldThrowAny { ciphertext.decrypt(it.randomKey(InsecureRandom)) }
 
                                 val wrongCiphertext =
                                     ciphertext.algorithm.sealedBox.withNonce(ciphertext.nonce).from(
                                         InsecureRandom.nextBytes(ciphertext.encryptedData.size),
                                         authTag = ciphertext.authTag,
-                                    ).getOrThrow()
+                                    )
 
-                                val wrongWrongDecrypted =
-                                    wrongCiphertext.decrypt(it.randomKey(InsecureRandom), aad ?: byteArrayOf())
-                                wrongWrongDecrypted shouldNot succeed
+                                shouldThrowAny { wrongCiphertext.decrypt(it.randomKey(InsecureRandom), aad ?: byteArrayOf()) }
 
-                                val wrongRightDecrypted =
-                                    wrongCiphertext.decrypt(key)
-                                wrongRightDecrypted shouldNot succeed
+                                shouldThrowAny { wrongCiphertext.decrypt(key) }
 
                                 val wrongIV =
                                     ciphertext.algorithm.sealedBox.withNonce(
@@ -549,51 +528,44 @@ val SymmetricTest by matrixSuite {
                                     ).from(
                                         ciphertext.encryptedData,
                                         ciphertext.authTag,
-                                    ).getOrThrow()
+                                    )
 
-                                val wrongIVDecrypted = wrongIV.decrypt(key, aad ?: byteArrayOf())
-                                wrongIVDecrypted shouldNot succeed
-                                ciphertext.algorithm.sealedBox.withNonce(
+                                shouldThrowAny { wrongIV.decrypt(key, aad ?: byteArrayOf()) }
+                                val wrongIVWithTag = ciphertext.algorithm.sealedBox.withNonce(
                                     ciphertext.nonce.asList().shuffled().toByteArray()
                                 ).from(
                                     ciphertext.encryptedData,
                                     authTag = ciphertext.authTag,
-                                ).getOrThrow().decrypt(key, aad ?: byteArrayOf()) shouldNot succeed
+                                )
+                                shouldThrowAny { wrongIVWithTag.decrypt(key, aad ?: byteArrayOf()) }
 
-                                ciphertext.algorithm.sealedBox.withNonce(ciphertext.nonce).from(
+                                val box = ciphertext.algorithm.sealedBox.withNonce(ciphertext.nonce).from(
                                     ciphertext.encryptedData,
                                     authTag = ciphertext.authTag,
-                                ).getOrThrow().decrypt(
-                                    SymmetricKey.WithDedicatedMac.RequiringNonce(
-                                        ciphertext.algorithm,
-                                        key.encryptionKey.getOrThrow(),
-                                        dedicatedMacKey = key.macKey.getOrThrow().asList().shuffled().toByteArray()
-                                    ), aad ?: byteArrayOf()
-                                ) shouldNot succeed
+                                )
+                                val wrongMacKey = SymmetricKey.WithDedicatedMac.RequiringNonce(
+                                    ciphertext.algorithm,
+                                    key.encryptionKey,
+                                    dedicatedMacKey = key.macKey.asList().shuffled().toByteArray()
+                                )
+                                shouldThrowAny { box.decrypt(wrongMacKey, aad ?: byteArrayOf()) }
 
                                 if (aad != null) {
-                                    ciphertext.algorithm.sealedBox.withNonce(ciphertext.nonce).from(
-                                        ciphertext.encryptedData,
-                                        ciphertext.authTag,
-                                    ).getOrThrow().decrypt(key) shouldNot succeed
+                                    shouldThrowAny { box.decrypt(key) }
                                 }
 
-                                ciphertext.algorithm.sealedBox.withNonce(ciphertext.nonce).from(
+                                val wrongTag = ciphertext.algorithm.sealedBox.withNonce(ciphertext.nonce).from(
                                     ciphertext.encryptedData,
                                     ciphertext.authTag.asList().shuffled().toByteArray(),
-                                ).getOrThrow().decrypt(key, aad ?: byteArrayOf()) shouldNot succeed
-                                ciphertext.algorithm.sealedBox.withNonce(ciphertext.nonce).from(
-                                    ciphertext.encryptedData,
-                                    ciphertext.authTag.asList().shuffled().toByteArray(),
-                                ).getOrThrow().decrypt(it.Custom(ciphertext.authTag.size.bytes) { _, _, _ ->
+                                )
+                                shouldThrowAny { wrongTag.decrypt(key, aad ?: byteArrayOf()) }
+                                val customAlgorithm = it.Custom(ciphertext.authTag.size.bytes) { _, _, _ ->
                                     "Szombathely".encodeToByteArray()
-                                }.let {
-                                    SymmetricKey.WithDedicatedMac.RequiringNonce(
-                                        it,
-                                        key.encryptionKey.getOrThrow(),
-                                        key.macKey.getOrThrow()
-                                    )
-                                }, aad ?: byteArrayOf()) shouldNot succeed
+                                }
+                                val customKey = SymmetricKey.WithDedicatedMac.RequiringNonce(
+                                    customAlgorithm, key.encryptionKey, key.macKey
+                                )
+                                shouldThrowAny { wrongTag.decrypt(customKey, aad ?: byteArrayOf()) }
                             }
 
                         }
@@ -641,56 +613,52 @@ val SymmetricTest by matrixSuite {
                 //EBC
                 if (alg is SymmetricEncryptionAlgorithm.AES.ECB) {
 
-                    val own = secretKey.encrypt(data).getOrThrow()
+                    val own = secretKey.encrypt(data)
 
 
-                    own.decrypt(secretKey).getOrThrow() shouldBe data
+                    own.decrypt(secretKey) shouldBe data
 
                     //we might get lucky here
-                    own.decrypt(own.algorithm.randomKey(InsecureRandom)).onSuccess {
+                    runCatching { own.decrypt(own.algorithm.randomKey(InsecureRandom)) }.onSuccess {
                         it shouldNotBe data
                     }
 
-                    alg.sealedBox.from(own.encryptedData).getOrThrow().decrypt(secretKey) should succeed
+                    alg.sealedBox.from(own.encryptedData).decrypt(secretKey) shouldBe data
                 } else if (alg is SymmetricEncryptionAlgorithm.AES.ECB_NOPADDING) {
                     if (data.size % AES.blockSize.bytes.toInt() == 0) {
 
-                        val own = secretKey.encrypt(data).getOrThrow()
+                        val own = secretKey.encrypt(data)
 
 
-                        own.decrypt(secretKey).getOrThrow() shouldBe data
+                        own.decrypt(secretKey) shouldBe data
 
                         //we might get lucky here
-                        own.decrypt(own.algorithm.randomKey(InsecureRandom)).onSuccess {
+                        runCatching { own.decrypt(own.algorithm.randomKey(InsecureRandom)) }.onSuccess {
                             it shouldNotBe data
                         }
 
-                        alg.sealedBox.from(own.encryptedData).getOrThrow().decrypt(secretKey) should succeed
+                        alg.sealedBox.from(own.encryptedData).decrypt(secretKey) shouldBe data
                     }
                 } else {
 
 
                     val shouldSucceed = (data.size >= 16) && (data.size % 8 == 0)
-                    val trial = secretKey.encrypt(data)
+                    val trial = runCatching { secretKey.encrypt(data) }
 
-                    if (shouldSucceed) trial should succeed
-                    else trial shouldNot succeed
-
-
-
+                    trial.isSuccess shouldBe shouldSucceed
 
                     if (shouldSucceed) {
                         val own = trial.getOrThrow()
 
 
-                        own.decrypt(secretKey).getOrThrow() shouldBe data
+                        own.decrypt(secretKey) shouldBe data
 
                         //we might get lucky here
-                        own.decrypt(own.algorithm.randomKey(InsecureRandom)).onSuccess {
+                        runCatching { own.decrypt(own.algorithm.randomKey(InsecureRandom)) }.onSuccess {
                             it shouldNotBe data
                         }
 
-                        alg.sealedBox.from(own.encryptedData).getOrThrow().decrypt(secretKey) should succeed
+                        alg.sealedBox.from(own.encryptedData).decrypt(secretKey) shouldBe data
                     }
                 }
             }
@@ -737,28 +705,27 @@ val SymmetricTest by matrixSuite {
                     when (alg.hasDedicatedMac()) {
                         true -> {
                             key shouldBe alg.keyFrom(
-                                (key as SymmetricKey.WithDedicatedMac).encryptionKey.getOrThrow(),
-                                (key as SymmetricKey.WithDedicatedMac<*>).macKey.getOrThrow()
-                            ).getOrThrow()
+                                (key as SymmetricKey.WithDedicatedMac).encryptionKey,
+                                (key as SymmetricKey.WithDedicatedMac<*>).macKey
+                            )
 
                             key shouldNotBe alg.keyFrom(
-                                key.encryptionKey.getOrThrow(),
-                                (key as SymmetricKey.WithDedicatedMac<*>).macKey.getOrThrow().asList().shuffled()
+                                key.encryptionKey,
+                                (key as SymmetricKey.WithDedicatedMac<*>).macKey.asList().shuffled()
                                     .toByteArray()
-                            ).getOrThrow()
+                            )
                             key shouldNotBe alg.keyFrom(
-                                key.encryptionKey.getOrThrow().asList().shuffled().toByteArray(),
-                                (key as SymmetricKey.WithDedicatedMac<*>).macKey.getOrThrow()
-                            ).getOrThrow()
+                                key.encryptionKey.asList().shuffled().toByteArray(),
+                                (key as SymmetricKey.WithDedicatedMac<*>).macKey
+                            )
                             key shouldNotBe alg.keyFrom(
-                                key.encryptionKey.getOrThrow().asList().shuffled().toByteArray(),
-                                (key as SymmetricKey.WithDedicatedMac<*>).macKey.getOrThrow().asList().shuffled()
+                                key.encryptionKey.asList().shuffled().toByteArray(),
+                                (key as SymmetricKey.WithDedicatedMac<*>).macKey.asList().shuffled()
                                     .toByteArray()
-                            ).getOrThrow()
+                            )
                         }
 
-                        false -> key shouldBe alg.keyFrom((key as SymmetricKey.Integrated).secretKey.getOrThrow())
-                            .getOrThrow()
+                        false -> key shouldBe alg.keyFrom((key as SymmetricKey.Integrated).secretKey)
                     }
                 }
 
@@ -766,40 +733,37 @@ val SymmetricTest by matrixSuite {
                 if (alg.isAuthenticated()) {
                     val aad = plaintext.asList().shuffled().toByteArray()
                     if (!alg.requiresNonce()) alg.randomKey(InsecureRandom).let { key ->
-                        key.encrypt(plaintext, aad).getOrThrow() shouldBe key.encrypt(plaintext, aad).getOrThrow()
-                        key.encrypt(plaintext, plaintext).getOrThrow() shouldNotBe key.encrypt(plaintext, aad)
-                            .getOrThrow()
+                        key.encrypt(plaintext, aad) shouldBe key.encrypt(plaintext, aad)
+                        key.encrypt(plaintext, plaintext) shouldNotBe key.encrypt(plaintext, aad)
                     }
                     else alg.randomKey(InsecureRandom).let { key ->
 
-                        key.encrypt(plaintext, aad).getOrThrow() shouldNotBe key.encrypt(plaintext, aad).getOrThrow()
+                        key.encrypt(plaintext, aad) shouldNotBe key.encrypt(plaintext, aad)
 
                         val nonce = alg.randomNonce()
-                        key.andPredefinedNonce(nonce).getOrThrow()
-                            .encrypt(plaintext).getOrThrow() shouldBe key.andPredefinedNonce(nonce).getOrThrow()
-                            .encrypt(plaintext).getOrThrow()
+                        key.andPredefinedNonce(nonce)
+                            .encrypt(plaintext) shouldBe key.andPredefinedNonce(nonce)
+                            .encrypt(plaintext)
 
-                        key.andPredefinedNonce(nonce).getOrThrow()
-                            .encrypt(plaintext).getOrThrow() shouldNotBe key.andPredefinedNonce(alg.randomNonce())
-                            .getOrThrow()
-                            .encrypt(plaintext).getOrThrow()
+                        key.andPredefinedNonce(nonce)
+                            .encrypt(plaintext) shouldNotBe key.andPredefinedNonce(alg.randomNonce())
+                            .encrypt(plaintext)
                     }
                 } else {
                     if (!alg.requiresNonce()) alg.randomKey(InsecureRandom).also { key ->
-                        key.encrypt(plaintext).getOrThrow() shouldBe key.encrypt(plaintext).getOrThrow()
+                        key.encrypt(plaintext) shouldBe key.encrypt(plaintext)
                     } else alg.randomKey(InsecureRandom).let { key ->
 
-                        key.encrypt(plaintext).getOrThrow() shouldNotBe key.encrypt(plaintext).getOrThrow()
+                        key.encrypt(plaintext) shouldNotBe key.encrypt(plaintext)
 
                         val nonce = alg.randomNonce()
-                        key.andPredefinedNonce(nonce).getOrThrow()
-                            .encrypt(plaintext).getOrThrow() shouldBe key.andPredefinedNonce(nonce).getOrThrow()
-                            .encrypt(plaintext).getOrThrow()
+                        key.andPredefinedNonce(nonce)
+                            .encrypt(plaintext) shouldBe key.andPredefinedNonce(nonce)
+                            .encrypt(plaintext)
 
-                        key.andPredefinedNonce(nonce).getOrThrow()
-                            .encrypt(plaintext).getOrThrow() shouldNotBe key.andPredefinedNonce(alg.randomNonce())
-                            .getOrThrow()
-                            .encrypt(plaintext).getOrThrow()
+                        key.andPredefinedNonce(nonce)
+                            .encrypt(plaintext) shouldNotBe key.andPredefinedNonce(alg.randomNonce())
+                            .encrypt(plaintext)
                     }
                 }
 
@@ -811,15 +775,15 @@ val SymmetricTest by matrixSuite {
                             if (alg.hasDedicatedMac() && wrongAlg.hasDedicatedMac()) {
                                 alg.randomKey(InsecureRandom).let { key ->
                                     wrongAlg.keyFrom(
-                                        key.encryptionKey.getOrThrow(),
-                                        key.macKey.getOrThrow() /*size will not match, but it will get us a valid key*/
-                                    ).getOrThrow() shouldNotBe key
+                                        key.encryptionKey,
+                                        key.macKey /*size will not match, but it will get us a valid key*/
+                                    ) shouldNotBe key
                                 }
                             } else if (!wrongAlg.hasDedicatedMac() && !alg.hasDedicatedMac()) {
                                 alg.randomKey(InsecureRandom).let { key ->
                                     wrongAlg.keyFrom(
-                                        key.secretKey.getOrThrow(),
-                                    ).getOrThrow() shouldNotBe key
+                                        key.secretKey,
+                                    ) shouldNotBe key
                                 }
                             }
                         }
@@ -843,7 +807,7 @@ val SymmetricTest by matrixSuite {
 
                             false -> alg.sealedBox.from(plaintext)
                         }
-                    }.getOrThrow()
+                    }
 
                     val box2 = when (wrongAlg.requiresNonce()) {
                         true -> when (wrongAlg.isAuthenticated()) {
@@ -874,7 +838,7 @@ val SymmetricTest by matrixSuite {
 
                             false -> wrongAlg.sealedBox.from(plaintext)
                         }
-                    }.getOrThrow()
+                    }
 
                     box shouldNotBe box2
                 }
@@ -906,7 +870,7 @@ val SymmetricTest by matrixSuite {
                 data(listOf(0, 1, 4096)) test { sz ->
                     val data = Random.nextBytes(sz)
                     val key = alg.randomKey(InsecureRandom)
-                    key.encrypt(data).getOrThrow().decrypt(key).getOrThrow() shouldBe data
+                    key.encrypt(data).decrypt(key) shouldBe data
                 }
             }
         }
@@ -915,10 +879,10 @@ val SymmetricTest by matrixSuite {
             data(allAlgorithms) - { alg ->
                 data(allAlgorithms.filterNot { it == alg }) test { wrongAlg ->
                     val encrypted =
-                        alg.randomKey(InsecureRandom).encrypt(Random.nextBytes(64)/*works with wrapping*/).getOrThrow()
+                        alg.randomKey(InsecureRandom).encrypt(Random.nextBytes(64)/*works with wrapping*/)
                     val wrongKey = wrongAlg.randomKey(InsecureRandom)
 
-                    encrypted.decrypt(wrongKey) shouldNot succeed
+                    shouldThrow<IllegalArgumentException> { encrypted.decrypt(wrongKey) }
 
                 }
             }
@@ -932,18 +896,20 @@ val SymmetricTest by matrixSuite {
                         wrongSized += wrong
                 }
                 data(wrongSized) test { sz ->
-                    when (alg.hasDedicatedMac()) {
-                        true -> {
-                            alg.keyFrom(
-                                Random.nextBytes(sz),
-                                alg.randomKey(InsecureRandom).encryptionKey.getOrThrow() /*mac key should not trigger, as it is unconstrained*/
-                            )
-                        }
+                    shouldThrow<IllegalArgumentException> {
+                        when (alg.hasDedicatedMac()) {
+                            true -> {
+                                alg.keyFrom(
+                                    Random.nextBytes(sz),
+                                    alg.randomKey(InsecureRandom).encryptionKey /*mac key should not trigger, as it is unconstrained*/
+                                )
+                            }
 
-                        false -> {
-                            alg.keyFrom(Random.nextBytes(sz))
+                            false -> {
+                                alg.keyFrom(Random.nextBytes(sz))
+                            }
                         }
-                    } shouldNot succeed
+                    }
                 }
             }
         }
@@ -958,7 +924,7 @@ val SymmetricTest by matrixSuite {
                         wrongSized += wrong
                 }
                 data(wrongSized) test { sz ->
-                    alg.randomKey(InsecureRandom).andPredefinedNonce(Random.nextBytes(sz)) shouldNot succeed
+                    shouldThrow<IllegalArgumentException> { alg.randomKey(InsecureRandom).andPredefinedNonce(Random.nextBytes(sz)) }
                 }
 
             }

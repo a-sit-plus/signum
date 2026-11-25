@@ -163,24 +163,26 @@ The following table provides a detailed comparison between Signum and cryptograp
 
 ## _Supreme_ Demo Reel
 The _Supreme_ KMP crypto provider works differently from JCA. Configuration is type-safe, more expressive and more concise,
-meaning you'll end up with less code. **Nothing throws! Do not discard the results returned from any operation!**
+meaning you'll end up with less code. Operations generally return values directly and throw on failure.
 
 ### Signature Creation
 
 To create a signature, obtain a `Signer` instance.
 You can do this using `Signer.Ephemeral` to create a signer for a throwaway keypair:
 ```kotlin
-val signer = Signer.Ephemeral {}.getOrThrow()
+val signer = Signer.Ephemeral {}
 val plaintext = "You have this.".encodeToByteArray()
 val signature = signer.sign(plaintext).signature
 println("Signed using ${signer.signatureAlgorithm}: $signature")
 ```
 
-If you want to create multiple signatures using the same ephemeral key, you can obtain an `EphemeralKey` instance, then create signers from it:
+To use the same key with multiple algorithms, export it from an ephemeral signer and create a signer for each algorithm.
+
 ```kotlin
-val key = EphemeralKey { rsa {} }.getOrThrow()
-val sha256Signer = key.getSigner { rsa { digest = Digests.SHA256 } }.getOrThrow()
-val sha384Signer = key.getSigner { rsa { digest = Digests.SHA384 } }.getOrThrow()
+@OptIn(SecretExposure::class)
+val key = Signer.Ephemeral { rsa {} }.exportPrivateKey()
+val sha256Signer = RsaAlgorithm.withSHA256andPSSPadding.signerFor(key)
+val sha384Signer = RsaAlgorithm.withSHA384andPSSPadding.signerFor(key)
 ```
 
 The instances can be configured using the configuration DSL.
@@ -259,7 +261,7 @@ val publicKey: EcdsaPublicKey = TODO("You have this and trust it.")
 val plaintext = "You want to trust this.".encodeToByteArray()
 val signature: Signature = TODO("This was sent alongside the plaintext.")
 val verifier = SignatureAlgorithm.ECDSAwithSHA256.verifierFor(publicKey)
-val isValid = verifier.verify(plaintext, signature).isSuccess
+val isValid = catchingUnwrapped { verifier.verify(plaintext, signature) }.isSuccess
 println("Looks good? $isValid")
 ```
 
@@ -271,7 +273,7 @@ val untrustedCert: X509Certificate = TODO("You want to verify that this is trust
 val verifier = untrustedCert.signatureAlgorithm.verifierFor(rootCert.publicKey)
 val plaintext = untrustedCert.tbsCertificate.encodeToDer()
 val signature = untrustedCert.signature
-val isValid = verifier.verify(plaintext, signature).isSuccess
+val isValid = catchingUnwrapped { verifier.verify(plaintext, signature) }.isSuccess
 println("Certificate looks trustworthy: $isValid")
 ```
 
@@ -289,7 +291,7 @@ val plaintext: ByteArray = TODO("This is the message.")
 val signature: EcdsaSignature = TODO("And this is the signature.")
     
 val verifier = SignatureAlgorithm.ECDSAwithSHA512.verifierFor(publicKey)
-val isValid = verifier.verify(plaintext, signature).isSuccess
+val isValid = catchingUnwrapped { verifier.verify(plaintext, signature) }.isSuccess
 println("Is it trustworthy? $isValid")
 ```
 
@@ -304,8 +306,8 @@ Once you know decided on an encryption algorithm, encryption itself is straight-
 ```kotlin
 val secret = "Top Secret".encodeToByteArray()
 val secretKey = SymmetricEncryptionAlgorithm.ChaCha20Poly1305.randomKey()
-val encrypted = secretKey.encrypt(secret).getOrThrow(/*handle error*/)
-encrypted.decrypt(secretKey).getOrThrow(/*handle error*/) shouldBe secret
+val encrypted = secretKey.encrypt(secret)
+encrypted.decrypt(secretKey) shouldBe secret
 ```
 
 Encrypted data is always structured and the individual components are easily accessible:
@@ -313,16 +315,16 @@ Encrypted data is always structured and the individual components are easily acc
 val nonce = encrypted.nonce
 val ciphertext = encrypted.encryptedData
 val authTag = encrypted.authTag
-val keyBytes = secretKey.secretKey.getOrThrow() /*for algorithms with a dedicated MAC key, there's encryptionKey and macKey*/
+val keyBytes = secretKey.secretKey /*for algorithms with a dedicated MAC key, there's encryptionKey and macKey*/
 ```
 
 Decrypting data received from external sources is also straight-forward:
 ```kotlin
-val box = algo.sealedBox.withNonce(nonce).from(ciphertext, authTag).getOrThrow(/*handle error*/)
-box.decrypt(preSharedKey, /*also pass AAD*/ externalAAD).getOrThrow(/*handle error*/) shouldBe secret
+val box = algo.sealedBox.withNonce(nonce).from(ciphertext, authTag)
+box.decrypt(preSharedKey, /*also pass AAD*/ externalAAD) shouldBe secret
 
 //alternatively, pass raw data:
-preSharedKey.decrypt(nonce, ciphertext, authTag, externalAAD).getOrThrow(/*handle error*/) shouldBe secret
+preSharedKey.decrypt(nonce, ciphertext, authTag, externalAAD) shouldBe secret
 ```
 
 ### Custom AES-CBC-HMAC
@@ -345,10 +347,10 @@ val aad = Clock.System.now().toString().encodeToByteArray()
 val sealedBox = key.encrypt(
   payload,
   authenticatedData = aad,
-).getOrThrow(/*handle error*/)
+)
 
 //because everything is structured, decryption is simple
-val recovered = sealedBox.decrypt(key, aad).getOrThrow(/*handle error*/)
+val recovered = sealedBox.decrypt(key, aad)
 
 recovered shouldBe payload //success!
 
@@ -356,20 +358,20 @@ recovered shouldBe payload //success!
 val reconstructed = algorithm.sealedBox.withNonce(sealedBox.nonce).from(
   encryptedData = sealedBox.encryptedData, /*Could also access authenticatedCipherText*/
   authTag = sealedBox.authTag,
-).getOrThrow()
+)
 
 val manuallyRecovered = reconstructed.decrypt(
   key,
   authenticatedData = aad,
-).getOrThrow(/*handle error*/)
+)
 
 manuallyRecovered shouldBe payload //great success!
 
 //if we just know algorithm and key bytes, we can also construct a symmetric key
 reconstructed.decrypt(
-  algorithm.keyFrom(key.encryptionKey.getOrThrow(), key.macKey.getOrThrow()).getOrThrow(/*handle error*/),
+  algorithm.keyFrom(key.encryptionKey, key.macKey),
   aad
-).getOrThrow(/*handle error*/) shouldBe payload //greatest success!
+) shouldBe payload //greatest success!
 ```
 
 

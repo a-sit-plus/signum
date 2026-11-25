@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable.cosef
 
-import at.asitplus.catching
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import at.asitplus.signum.indispensable.io.InstantLongSerializer
@@ -156,8 +155,8 @@ data class CborWebToken(
     companion object {
 
         @Deprecated("To be removed in next release")
-        fun deserialize(it: ByteArray) = catching {
+        @Throws(Throwable::class)
+        fun deserialize(it: ByteArray) =
             coseCompliantSerializer.decodeFromByteArray<CborWebToken>(it)
-        }
     }
 }

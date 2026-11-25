@@ -41,32 +41,42 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import at.asitplus.KmmResult
+import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.RSAPadding
-import at.asitplus.signum.indispensable.SignatureAlgorithm
-import at.asitplus.signum.indispensable.SpecializedSignatureAlgorithm
-import at.asitplus.signum.indispensable.X509SignatureAlgorithm
+import at.asitplus.signum.indispensable.sign.RsaAlgorithm
+import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
+import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
-import at.asitplus.signum.supreme.dsl.PREFERRED
-import at.asitplus.signum.supreme.sign.Signer
-import at.asitplus.signum.supreme.sign.makeVerifier
-import at.asitplus.signum.supreme.sign.verify
+import at.asitplus.signum.dsl.PREFERRED
+import at.asitplus.signum.dsl.attestation
+import at.asitplus.signum.dsl.ec
+import at.asitplus.signum.dsl.factors
+import at.asitplus.signum.dsl.hardware
+import at.asitplus.signum.dsl.protection
+import at.asitplus.signum.dsl.purposes
+import at.asitplus.signum.dsl.rsa
+import at.asitplus.signum.dsl.signer
+import at.asitplus.signum.dsl.unlockPrompt
+import at.asitplus.signum.indispensable.sign.Signer
+import at.asitplus.signum.indispensable.sign.ECDSASigner
+import at.asitplus.signum.indispensable.sign.sign
+import at.asitplus.signum.indispensable.sign.signature
+import at.asitplus.signum.indispensable.sign.makeVerifier
+import at.asitplus.signum.indispensable.sign.verify
 import at.asitplus.cryptotest.theme.AppTheme
 import at.asitplus.cryptotest.theme.LocalThemeIsDark
-import at.asitplus.signum.indispensable.KeyAgreementPrivateValue
+import at.asitplus.signum.indispensable.agree.KeyAgreementPrivateValue
 import at.asitplus.signum.indispensable.jsonEncoded
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.symmetric.randomKey
 import at.asitplus.signum.supreme.agree.Ephemeral
-import at.asitplus.signum.supreme.asKmmResult
-import at.asitplus.signum.supreme.os.PlatformSignerConfigurationBase
-import at.asitplus.signum.supreme.os.SignerConfiguration
+import at.asitplus.signum.dsl.PlatformSignerConfigurationBase
+import at.asitplus.signum.dsl.SignerConfiguration
 import at.asitplus.signum.supreme.os.SigningProvider
-import at.asitplus.signum.supreme.sign.Verifier
+import at.asitplus.signum.indispensable.sign.SignatureVerifier
 import at.asitplus.signum.supreme.symmetric.decrypt
 import at.asitplus.signum.supreme.symmetric.encrypt
 import io.github.aakira.napier.DebugAntilog
@@ -95,7 +105,7 @@ val SIGNER_CONFIG: (SignerConfiguration.() -> Unit) = {
         }
     }
     rsa {
-        padding = RSAPadding.PKCS1
+        padding = RsaAlgorithm.Padding.PKCS1
     }
 }
 
@@ -116,22 +126,18 @@ internal fun App() {
     AppTheme {
         var attestation by remember { mutableStateOf(false) }
         var biometricAuth by remember { mutableStateOf(" Disabled") }
-        val algos = listOf(
-            X509SignatureAlgorithm.ES256,
-            X509SignatureAlgorithm.ES384,
-            X509SignatureAlgorithm.ES512,
-            X509SignatureAlgorithm.RS1,
-            X509SignatureAlgorithm.RS256,
-            X509SignatureAlgorithm.RS384,
-            X509SignatureAlgorithm.RS512
+        val algos = mapOf(
+            "ES256" to EcdsaAlgorithm.withSHA256,
+            "ES384" to EcdsaAlgorithm.withSHA384,
+            "ES512" to EcdsaAlgorithm.withSHA512,
+            "RS1" to RsaAlgorithm(RsaAlgorithm.Padding.PKCS1, Digest.SHA1),
+            "RS256" to RsaAlgorithm.withSHA256andPKCS1Padding,
+            "RS384" to RsaAlgorithm.withSHA384andPKCS1Padding,
+            "RS512" to RsaAlgorithm.withSHA512andPKCS1Padding
         )
-        var keyAlgorithm by remember {
-            mutableStateOf<SpecializedSignatureAlgorithm>(
-                X509SignatureAlgorithm.ES256
-            )
-        }
+        var keyAlgorithm by remember { mutableStateOf("ES256") }
         var inputData by remember { mutableStateOf("Foo") }
-        var currentSigner by remember { mutableStateOf<KmmResult<Signer>?>(null) }
+        var currentSigner by remember { mutableStateOf<Result<Signer>?>(null) }
         val currentKey by getter { currentSigner?.mapCatching(Signer::publicKey) }
         val currentKeyStr by getter {
             currentKey?.fold(
@@ -148,13 +154,13 @@ internal fun App() {
             currentAttestation?.jsonEncoded?.also { Napier.d { "Current Attestation: $it" } } ?: ""
         }
         val signingPossible by getter { currentKey?.isSuccess == true }
-        var signatureData by remember { mutableStateOf<KmmResult<Signature>?>(null) }
+        var signatureData by remember { mutableStateOf<Result<Signature>?>(null) }
         var ephemeralKey by remember {
             mutableStateOf<KeyAgreementPrivateValue.ECDH?>(
                 null
             )
         }
-        var agreedKey by remember { mutableStateOf<KmmResult<ByteArray>?>(null) }
+        var agreedKey by remember { mutableStateOf<Result<ByteArray>?>(null) }
         val signatureDataStr by getter {
             signatureData?.fold(onSuccess = Any::toString) {
                 Napier.e("Signature failed", it)
@@ -162,7 +168,7 @@ internal fun App() {
             } ?: ""
         }
         val verifyPossible by getter { signatureData?.isSuccess == true }
-        var verifyState by remember { mutableStateOf<KmmResult<SignatureVerifier.Success>?>(null) }
+        var verifyState by remember { mutableStateOf<Result<SignatureVerifier.Success>?>(null) }
         var encRT by remember { mutableStateOf<String?>(null) }
         val verifySucceededStr by getter {
             verifyState?.fold(onSuccess = {
@@ -176,11 +182,10 @@ internal fun App() {
         var genTextOverride by remember { mutableStateOf<String?>(null) }
         val genText by getter { genTextOverride ?: "Generate" }
 
-        fun genEphemeralKey() {
-            ephemeralKey = if (currentKey?.getOrNull() is EcdsaPublicKey)
-                KeyAgreementPrivateValue.ECDH.Ephemeral((currentKey!!.getOrThrow() as EcdsaPublicKey).curve)
-                    .getOrNull()
-            else null
+        suspend fun genEphemeralKey() {
+            ephemeralKey = (currentKey?.getOrNull() as? EcdsaPublicKey)?.let { key ->
+                catchingUnwrapped { KeyAgreementPrivateValue.ECDH.Ephemeral(key.curve) }.getOrNull()
+            }
             agreedKey = null
         }
 
@@ -316,11 +321,11 @@ internal fun App() {
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        algos.forEachIndexed { index, s ->
+                        algos.keys.forEach { algorithm ->
                             DropdownMenuItem(
-                                text = { Text(text = s.toString()) },
+                                text = { Text(text = algorithm) },
                                 onClick = {
-                                    keyAlgorithm = algos[index]
+                                    keyAlgorithm = algorithm
                                     expanded = false
                                 })
                         }
@@ -337,52 +342,54 @@ internal fun App() {
                         CoroutineScope(context).launch {
                             canGenerate = false
                             genTextOverride = "Creating…"
-                            currentSigner = Provider.createSigningKey(ALIAS) {
+                            currentSigner = catchingUnwrapped {
+                                Provider.createSigningKey(ALIAS) {
 
-                                when (val alg = keyAlgorithm.algorithm) {
-                                    is SignatureAlgorithm.ECDSA -> {
-                                        this@createSigningKey.ec {
-                                            curve = alg.requiredCurve
-                                                ?: ECCurve.entries.find { it.nativeDigest == alg.digest }!!
-                                            digests = setOf(alg.digest)
-                                            purposes {
-                                                keyAgreement = true
-                                            }
-                                        }
-                                    }
-
-                                    is SignatureAlgorithm.RSA -> {
-                                        this@createSigningKey.rsa {
-                                            digests = setOf(alg.digest)
-                                            paddings = RSAPadding.entries.toSet()
-                                            bits = 1024
-                                        }
-                                    }
-
-                                    else -> error("unreachable")
-                                }
-
-                                signer(SIGNER_CONFIG)
-
-                                val timeout = runCatching {
-                                    biometricAuth.substringBefore("s").trim().toInt()
-                                }.getOrNull()
-
-                                if (attestation || timeout != null) {
-                                    hardware {
-                                        backing = PREFERRED
-                                        if (attestation) {
-                                            attestation {
-                                                challenge = Random.nextBytes(16)
+                                    when (val alg = algos.getValue(keyAlgorithm)) {
+                                        is EcdsaAlgorithm -> {
+                                            this@createSigningKey.ec {
+                                                curve = alg.requiredCurve
+                                                    ?: ECCurve.entries.find { it.nativeDigest == alg.digest }!!
+                                                digests = setOf(alg.digest)
+                                                purposes {
+                                                    keyAgreement = true
+                                                }
                                             }
                                         }
 
-                                        if (timeout != null) {
-                                            protection {
-                                                this.timeout = timeout.seconds
-                                                factors {
-                                                    biometry = true
-                                                    deviceLock = true
+                                        is RsaAlgorithm -> {
+                                            this@createSigningKey.rsa {
+                                                digests = setOf(alg.digest)
+                                                paddings = RsaAlgorithm.Padding.entries.toSet()
+                                                bits = 1024
+                                            }
+                                        }
+
+                                        else -> error("unreachable")
+                                    }
+
+                                    signer(SIGNER_CONFIG)
+
+                                    val timeout = runCatching {
+                                        biometricAuth.substringBefore("s").trim().toInt()
+                                    }.getOrNull()
+
+                                    if (attestation || timeout != null) {
+                                        hardware {
+                                            backing = PREFERRED
+                                            if (attestation) {
+                                                attestation {
+                                                    challenge = Random.nextBytes(16)
+                                                }
+                                            }
+
+                                            if (timeout != null) {
+                                                protection {
+                                                    this.timeout = timeout.seconds
+                                                    factors {
+                                                        biometry = true
+                                                        deviceLock = true
+                                                    }
                                                 }
                                             }
                                         }
@@ -410,7 +417,7 @@ internal fun App() {
                         CoroutineScope(context).launch {
                             canGenerate = false
                             genTextOverride = "Loading…"
-                            Provider.getSignerForKey(ALIAS, SIGNER_CONFIG).let {
+                            catchingUnwrapped { Provider.getSignerForKey(ALIAS, SIGNER_CONFIG) }.let {
                                 Napier.w { "Priv retrieved from native: $it" }
                                 currentSigner = it
                                 verifyState = null
@@ -434,7 +441,7 @@ internal fun App() {
                         CoroutineScope(context).launch {
                             canGenerate = false
                             genTextOverride = "Deleting…"
-                            Provider.deleteSigningKey(ALIAS)
+                            catchingUnwrapped { Provider.deleteSigningKey(ALIAS) }
                                 .onFailure { Napier.e("Failed to delete key", it) }
                             currentSigner = null
                             signatureData = null
@@ -474,9 +481,8 @@ internal fun App() {
                     Napier.w { "signingKey: $currentKey" }
                     CoroutineScope(context).launch {
                         val data = inputData.encodeToByteArray()
-                        currentSigner!!
-                            .transform { it.sign(data).asKmmResult() }
-                            .also { signatureData = it; verifyState = null }
+                        signatureData = catchingUnwrapped { currentSigner!!.getOrThrow().sign(data).signature }
+                        verifyState = null
                     }
                 },
                 modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
@@ -501,10 +507,9 @@ internal fun App() {
                             Napier.w { "signingKey: $currentKey" }
                             CoroutineScope(context).launch {
 
-                                agreedKey =
-                                    (currentSigner!!.getOrThrow() as Signer.ECDSA).keyAgreement(
-                                        ephemeralKey.publicValue
-                                    )
+                                agreedKey = catchingUnwrapped {
+                                    (currentSigner!!.getOrThrow() as ECDSASigner).keyAgreement(ephemeralKey.publicValue)
+                                }
                                 Napier.i {
                                     "ECDH Key of ext_piv + hardware-backed_pub: ${
                                         agreedKey?.getOrNull()?.encodeBase64()
@@ -553,9 +558,7 @@ internal fun App() {
                             val signer = currentSigner!!.getOrThrow()
                             val data = inputData.encodeToByteArray()
                             val sig = signatureData!!.getOrThrow()
-                            signer.makeVerifier()
-                                .transform { it.verify(data, sig) }
-                                .also { verifyState = it }
+                            verifyState = catchingUnwrapped { signer.makeVerifier().verify(data, sig) }
                         }
                     },
 
@@ -600,8 +603,8 @@ internal fun App() {
                         ).forEach { alg ->
                             val k = alg.randomKey()
                             val data = Random.nextBytes(1023)
-                            val ciph = k.encrypt(data).getOrThrow()
-                            val dec= ciph.decrypt(k).getOrThrow()
+                            val ciph = k.encrypt(data)
+                            val dec= ciph.decrypt(k)
                             encRT+="ALG: ${alg.name}:\n\ndata: ${data.encodeBase64()}"
                             encRT+="\n\nencrypted: ${ciph.encryptedData.encodeBase64()}"
                             encRT+="\n\ndecrypted: ${dec.encodeBase64()}\n\n------------\n\n"

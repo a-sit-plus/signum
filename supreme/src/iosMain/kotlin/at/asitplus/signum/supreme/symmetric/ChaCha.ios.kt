@@ -28,7 +28,7 @@ internal object ChaChaIOS {
         return SymmetricEncryptionAlgorithm.ChaCha20Poly1305.sealedBox.withNonce( ciphertext.iv().toByteArray()).from(
             ciphertext.ciphertext().toByteArray(),
             ciphertext.authTag().toByteArray()
-        ).getOrThrow()
+        )
 
     }
 

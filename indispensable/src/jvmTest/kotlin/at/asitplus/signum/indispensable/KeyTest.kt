@@ -1,8 +1,6 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.signum.indispensable.sign.asn1
-import at.asitplus.KmmResult
-import at.asitplus.KmmResult.Companion.wrap
 import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.Asn1Sequence
@@ -56,9 +54,9 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
         (pair.private as JcaECPrivateKey).toCryptoPrivateKey().publicKey shouldBe publicKey
 
         val specialized: SpecializedCryptoPublicKey = object : SpecializedPublicKey {
-            override fun toPublicKey(): KmmResult<PublicKey> = KmmResult.success(publicKey)
+            override fun toPublicKey(): PublicKey = publicKey
         }
-        specialized.toCryptoPublicKey().getOrThrow() shouldBe publicKey
+        specialized.toCryptoPublicKey() shouldBe publicKey
         val signature: CryptoSignature = RsaSignature(byteArrayOf(1))
         signature shouldBe RsaSignature(byteArrayOf(1))
     }
@@ -129,7 +127,7 @@ val KeyTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }
             val listOfDidKeys = javaClass.classLoader.getResourceAsStream("did_keys.txt")?.reader()?.readLines()
                 ?: throw Exception("Test vectors missing!")
             for (key in listOfDidKeys) {
-                kotlin.runCatching { PublicKey.fromDid(key) }.wrap().getOrThrow()
+                PublicKey.fromDid(key)
             }
         }
     }

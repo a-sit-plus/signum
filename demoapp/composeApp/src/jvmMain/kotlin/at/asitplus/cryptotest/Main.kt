@@ -5,7 +5,7 @@ import androidx.compose.ui.window.application
 import at.asitplus.signum.supreme.os.JKSProvider
 import at.asitplus.signum.supreme.os.SigningProvider
 
-actual val Provider: SigningProvider = JKSProvider.Ephemeral().getOrThrow()
+actual val Provider: SigningProvider = JKSProvider.Ephemeral()
 
 fun main() = application {
     Window(onCloseRequest = ::exitApplication, title = "Supreme Demo") {
