@@ -351,33 +351,25 @@ val SignatureAlgorithm.asn1 get() =
     asn1EncodersWith(Asn1SignatureAlgorithmProvider::encodeToAsn1)
 
 val SignatureAlgorithm.Companion.fromAsn1 get() =
-    asn1DecodersWith(Asn1SignatureAlgorithmProvider::decodeFromAsn1) { source, failure ->
-        SignatureAlgorithm.Unknown.fromSource(source, failure)
-    }
+    asn1DecodersWith(Asn1SignatureAlgorithmProvider::decodeFromAsn1, SignatureAlgorithm::Unknown)
 
 val Digest.asn1 get() =
     asn1EncodersWith(Asn1DigestAlgorithmProvider::encodeToAsn1)
 
 val Digest.Companion.fromAsn1 get() =
-    asn1DecodersWith(Asn1DigestAlgorithmProvider::decodeFromAsn1) { source, failure ->
-        Digest.Unknown.fromSource(source, failure)
-    }
+    asn1DecodersWith(Asn1DigestAlgorithmProvider::decodeFromAsn1, Digest::Unknown)
 
 val MessageAuthenticationCode.asn1 get() =
     asn1EncodersWith(Asn1MACAlgorithmProvider::encodeToAsn1)
 
 val MessageAuthenticationCode.Companion.fromAsn1 get() =
-    asn1DecodersWith(Asn1MACAlgorithmProvider::decodeFromAsn1) { source, failure ->
-        MessageAuthenticationCode.Unknown.fromSource(source, failure)
-    }
+    asn1DecodersWith(Asn1MACAlgorithmProvider::decodeFromAsn1, MessageAuthenticationCode::Unknown)
 
 val PublicKey.asn1 get() =
     asn1EncodersWith(Asn1PublicKeyFormatProvider::encodeToAsn1)
 
 val PublicKey.Companion.fromAsn1 get() =
-    asn1DecodersWith(SubjectPublicKeyInfo.Companion, Asn1PublicKeyFormatProvider::decodeFromAsn1) { source, failure ->
-        PublicKey.Unknown.fromSource(source, failure)
-    }
+    asn1DecodersWith(SubjectPublicKeyInfo.Companion, Asn1PublicKeyFormatProvider::decodeFromAsn1, PublicKey::Unknown)
         .withAlternativePemDecoder(RsaPublicKey.fromAsn1.PKCS1)
 
 val KeyAgreementPublicValue.asn1 get() =
@@ -392,9 +384,7 @@ val PrivateKey.asn1 get() =
     asn1EncodersWith(Asn1PrivateKeyFormatProvider::encodeToAsn1)
 
 val PrivateKey.Companion.fromAsn1 get() =
-    asn1DecodersWith(Pkcs8PrivateKeyInfo.Companion, Asn1PrivateKeyFormatProvider::decodeFromAsn1) { source, failure ->
-        PrivateKey.Unknown.fromSource(source, failure)
-    }
+    asn1DecodersWith(Pkcs8PrivateKeyInfo.Companion, Asn1PrivateKeyFormatProvider::decodeFromAsn1, PrivateKey::Unknown)
         .withAlternativePemDecoder(RsaPrivateKey.fromAsn1.PKCS1)
         .withAlternativePemDecoder(EcdsaPrivateKey.fromAsn1.SEC1)
 
@@ -456,9 +446,7 @@ val CertificateExtension.asn1 get() =
     asn1EncodersWith(CertificateExtensionProvider::encodeToAsn1)
 
 val CertificateExtension.Companion.fromAsn1 get() =
-    asn1DecodersWith(CertificateExtensionProvider::decodeFromAsn1) { source, failure ->
-        CertificateExtension.Unknown.fromSource(source, failure)
-    }
+    asn1DecodersWith(CertificateExtensionProvider::decodeFromAsn1, CertificateExtension::Unknown)
 
 val Certificate.asn1 get() =
     asn1Encoders<X509Certificate, _> { src ->
@@ -536,9 +524,7 @@ val Name.Companion.fromAsn1 get() =
 val CsrAttribute.asn1 get() = asn1EncodersWith(CsrAttributeAsn1Provider::encodeToAsn1)
 
 val CsrAttribute.Companion.fromAsn1 get() =
-    asn1DecodersWith(CsrAttributeAsn1Provider::decodeFromAsn1) { source, failure ->
-        CsrAttribute.Unknown.fromSource(source, failure)
-    }
+    asn1DecodersWith(CsrAttributeAsn1Provider::decodeFromAsn1, CsrAttribute::Unknown)
 
 val TbsCertificationRequest.asn1 get() =
     asn1Encoders<Pkcs10CertificationRequestInfo, _> { src ->

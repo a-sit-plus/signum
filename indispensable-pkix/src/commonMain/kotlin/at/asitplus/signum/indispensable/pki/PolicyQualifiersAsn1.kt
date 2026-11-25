@@ -22,7 +22,7 @@ internal fun decodeCertificatePolicies(bytes: ByteArray): List<PolicyInformation
     Signum.Der.decodeFromByteArray(ListSerializer(PolicyInformation.Asn1Representation.serializer()), bytes).map { wire ->
         PolicyInformation(wire.oid, wire.qualifiers.map(decodeWith(
             PolicyQualifierAsn1Provider::decodeFromAsn1,
-            { src, failure -> PolicyQualifierInfo.Unknown.fromSource(src, failure) },
+            PolicyQualifierInfo::Unknown,
         )))
     }
 

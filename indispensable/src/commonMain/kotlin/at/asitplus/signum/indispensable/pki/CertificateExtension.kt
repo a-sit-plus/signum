@@ -9,7 +9,6 @@ import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.fromAsn1
-import kotlin.jvm.JvmSynthetic
 
 // @Service
 interface CertificateExtensionProvider {
@@ -25,18 +24,12 @@ interface CertificateExtension : Identifiable, WithSourceRepresentation {
     val critical: Boolean
 
     @SignumInternals
-    class Unknown private constructor(
+    class Unknown internal constructor(
         source: X509CertificateExtension,
         lookupResult: UnsupportedCryptoException,
     ) : CertificateExtension, ServiceLoader.UnknownShim(source, lookupResult) {
         override val oid = source.oid
         override val critical = source.critical
-
-        companion object {
-            @JvmSynthetic
-            internal fun fromSource(source: X509CertificateExtension, lookupResult: UnsupportedCryptoException) =
-                Unknown(source, lookupResult)
-        }
     }
 
 

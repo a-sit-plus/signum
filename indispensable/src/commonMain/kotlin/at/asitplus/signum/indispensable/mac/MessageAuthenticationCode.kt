@@ -10,7 +10,6 @@ import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.installIndispensable
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bit
-import kotlin.jvm.JvmSynthetic
 
 interface MessageAuthenticationCode : WithSourceRepresentation {
     /** output size of MAC */
@@ -36,17 +35,11 @@ interface MessageAuthenticationCode : WithSourceRepresentation {
     }
 
     @OptIn(SignumInternals::class)
-    class Unknown private constructor(
+    class Unknown internal constructor(
         source: X509AlgorithmIdentifier,
         lookupResult: UnsupportedCryptoException,
     ) : MessageAuthenticationCode, ServiceLoader.UnknownShim(source, lookupResult) {
         override val outputLength: BitLength get() = fails
-
-        companion object {
-            @JvmSynthetic
-            internal fun fromSource(source: X509AlgorithmIdentifier, lookupResult: UnsupportedCryptoException) =
-                Unknown(source, lookupResult)
-        }
     }
 
 

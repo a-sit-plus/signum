@@ -9,31 +9,24 @@ import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.pki.GeneralName
-import kotlin.jvm.JvmSynthetic
 
 /**
  * An open OID-selected name family. Register ASN.1 adapters with [at.asitplus.signum.indispensable.pki.OtherNameAsn1Provider].
  * For other formats, define conversions with [SignumEncodingHelpers.decodeFrom] and [SignumEncodingHelpers.encodeTo].
  */
 interface OtherName : GeneralName, Identifiable {
-    class Unknown private constructor(
+    class Unknown internal constructor(
         source: X509GeneralName,
         lookupResult: UnsupportedCryptoException,
     ) : OtherName, ServiceLoader.UnknownShim(source, lookupResult) {
         override val oid = (source as X509GeneralName.Other).value.oid
-
-        companion object {
-            @JvmSynthetic
-            internal fun fromSource(source: X509GeneralName, lookupResult: UnsupportedCryptoException) =
-                Unknown(source, lookupResult)
-        }
     }
 
     companion object {
         operator fun invoke(value: X509GeneralName.Other): OtherName =
             when (val decoded = GeneralName.fromAsn1(value)) {
                 is OtherName -> decoded
-                is GeneralName.Unknown -> Unknown.fromSource(value, decoded.lookupResult)
+                is GeneralName.Unknown -> Unknown(value, decoded.lookupResult)
                 else -> throw UnsupportedCryptoException(
                     "Expected OtherName for OID ${value.value.oid}, received ${decoded::class.simpleName}",
                 )

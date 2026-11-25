@@ -23,9 +23,7 @@ interface CsrAttributeAsn1Provider {
 
 @OptIn(SignumInternals::class)
 internal fun decodeAsn1Attribute(source: X500AttributeTypeAndValue): AttributeTypeAndValue =
-    decodeWith(AttributeTypeAndValueAsn1Provider::decodeFromAsn1) { value, failure ->
-        AttributeTypeAndValue.Unknown.fromSource(value, failure)
-    }(source)
+    decodeWith(AttributeTypeAndValueAsn1Provider::decodeFromAsn1, AttributeTypeAndValue::Unknown)(source)
 
 object AttributeAsn1Provider : AttributeTypeAndValueAsn1Provider {
     override fun decodeFromAsn1(value: X500AttributeTypeAndValue) =

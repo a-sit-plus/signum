@@ -8,7 +8,6 @@ import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.installIndispensable
 import at.asitplus.signum.indispensable.misc.BitLength
-import kotlin.jvm.JvmSynthetic
 
 interface Digest : WithSourceRepresentation {
     val name: String
@@ -18,19 +17,13 @@ interface Digest : WithSourceRepresentation {
     val outputLength: BitLength
 
     @SignumInternals
-    class Unknown private constructor(
+    class Unknown internal constructor(
         source: X509AlgorithmIdentifier,
         lookupResult: UnsupportedCryptoException,
     ) : Digest, ServiceLoader.UnknownShim(source, lookupResult) {
         override val name get() = fails
         override val inputBlockSize get() = fails
         override val outputLength get() = fails
-
-        companion object {
-            @JvmSynthetic
-            internal fun fromSource(source: X509AlgorithmIdentifier, lookupResult: UnsupportedCryptoException) =
-                Unknown(source, lookupResult)
-        }
     }
 
     companion object {

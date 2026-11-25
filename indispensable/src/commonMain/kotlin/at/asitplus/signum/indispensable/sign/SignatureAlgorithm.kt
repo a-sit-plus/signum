@@ -7,7 +7,6 @@ import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.installIndispensable
-import kotlin.jvm.JvmSynthetic
 
 interface SignatureAlgorithm : WithSourceRepresentation {
 
@@ -23,17 +22,11 @@ interface SignatureAlgorithm : WithSourceRepresentation {
     val preHashedSignatureFormat: SignatureInputFormat get() = null
 
     @OptIn(SignumInternals::class)
-    class Unknown private constructor(
+    class Unknown internal constructor(
         source: X509AlgorithmIdentifier,
         lookupResult: UnsupportedCryptoException,
     ) : SignatureAlgorithm, ServiceLoader.UnknownShim(source, lookupResult) {
         override val preHashedSignatureFormat get() = fails
-
-        companion object {
-            @JvmSynthetic
-            internal fun fromSource(source: X509AlgorithmIdentifier, lookupResult: UnsupportedCryptoException) =
-                Unknown(source, lookupResult)
-        }
     }
 
     companion object {

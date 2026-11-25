@@ -13,7 +13,6 @@ import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.indispensable.sign.RsaPublicKey
-import kotlin.jvm.JvmSynthetic
 
 /**
  * Representation of a public key structure
@@ -36,19 +35,13 @@ interface PublicKey : WithSourceRepresentation {
     val didKeyBytes: ByteArray
 
     @SignumInternals
-    class Unknown private constructor(
+    class Unknown internal constructor(
         source: SubjectPublicKeyInfo,
         lookupResult: UnsupportedCryptoException,
     ) : PublicKey, ServiceLoader.UnknownShim(source, lookupResult) {
         override val didKeyBytes get() = fails
         override val didCodec get() = fails
         override val additionalProperties: MutableMap<String, String> get() = fails
-
-        companion object {
-            @JvmSynthetic
-            internal fun fromSource(source: SubjectPublicKeyInfo, lookupResult: UnsupportedCryptoException) =
-                Unknown(source, lookupResult)
-        }
     }
 
     companion object {

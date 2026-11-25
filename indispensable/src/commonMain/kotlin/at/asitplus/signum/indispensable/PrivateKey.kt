@@ -9,7 +9,6 @@ import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
 import at.asitplus.signum.indispensable.sign.RsaPrivateKey
 import at.asitplus.signum.indispensable.sign.fromAsn1
-import kotlin.jvm.JvmSynthetic
 
 /** PKCS#8 representation of a private key. Equality checks remain based on cryptographic Signum properties. */
 interface PrivateKey : WithSourceRepresentation {
@@ -19,16 +18,10 @@ interface PrivateKey : WithSourceRepresentation {
     }
 
     @SignumInternals
-    class Unknown private constructor(
+    class Unknown internal constructor(
         source: Pkcs8PrivateKeyInfo,
         lookupResult: UnsupportedCryptoException,
-    ) : PrivateKey, ServiceLoader.UnknownShim(source, lookupResult) {
-        companion object {
-            @JvmSynthetic
-            internal fun fromSource(source: Pkcs8PrivateKeyInfo, lookupResult: UnsupportedCryptoException) =
-                Unknown(source, lookupResult)
-        }
-    }
+    ) : PrivateKey, ServiceLoader.UnknownShim(source, lookupResult)
 
     companion object {
         init { Signum.installIndispensable() }

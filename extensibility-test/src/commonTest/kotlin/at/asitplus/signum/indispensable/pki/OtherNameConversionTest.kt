@@ -24,13 +24,9 @@ private data class CustomName(val text: String) : OtherName {
     override val sourceRepresentation = SourceRepresentationStorage()
 }
 
-private class OpaqueName private constructor(source: NameDocument, diagnostic: UnsupportedCryptoException) :
+private class OpaqueName(source: NameDocument, diagnostic: UnsupportedCryptoException) :
     OtherName, ServiceLoader.UnknownShim(source, diagnostic) {
     override val oid = source.oid
-
-    companion object {
-        fun fromSource(source: NameDocument, diagnostic: UnsupportedCryptoException) = OpaqueName(source, diagnostic)
-    }
 }
 
 private fun OtherName.toDocument() = encodeTo<NameDocument, OtherName> {
@@ -50,7 +46,7 @@ val OtherNameConversionTest by matrixSuite {
     "A consumer module can own an opaque OtherName with its original diagnostic" {
         val source = NameDocument(ObjectIdentifier("1.2.3.457"), "opaque payload", extra = "metadata")
         val diagnostic = UnsupportedCryptoException("Unrecognized document OID")
-        val decoded = decodeFrom<NameDocument, OtherName> { OpaqueName.fromSource(it, diagnostic) }(source)
+        val decoded = decodeFrom<NameDocument, OtherName> { OpaqueName(it, diagnostic) }(source)
         val opaque = decoded.shouldBeInstanceOf<OpaqueName>()
         opaque.oid shouldBe source.oid
         opaque.toDocument() shouldBeSameInstanceAs source

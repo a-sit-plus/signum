@@ -77,9 +77,8 @@ inline fun <reified EncodedType: Any, reified AbstractType: WithSourceRepresenta
 }
 
 /** A high-level decoding function using a Provider.
- * Delegates to ServiceLoader to perform decoding. An extension's unknown leaf should be final, have a private
- * constructor, and be created by [unknownCtor] from the complete encoded value and its lookup diagnostic; this
- * helper retains that exact encoded value on the result. */
+ * Delegates to ServiceLoader to perform decoding. [unknownCtor] receives the complete encoded value and its
+ * lookup diagnostic to create a module-owned unknown leaf. This helper retains the exact encoded value on the result. */
 // with provider + unknown wants source type
 @Suppress("BOUNDS_NOT_ALLOWED_IF_BOUNDED_BY_TYPE_PARAMETER")
 inline fun <

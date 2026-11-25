@@ -90,7 +90,7 @@ object PkixAsn1Provider : CertificateExtensionProvider, GeneralNameFormatProvide
             is X509GeneralName.Other -> try {
                 decodeFrom<X509GeneralName, OtherName> { decodeOtherName(generalName) }(generalName)
             } catch (failure: UnsupportedCryptoException) {
-                OtherName.Unknown.fromSource(generalName, failure)
+                OtherName.Unknown(generalName, failure)
             }
             is X509GeneralName.EdiParty -> Signum.Der.decodeFromTlv(EDIPartyName.Asn1Representation.serializer(), Asn1Sequence(generalName.elements)).let {
                 EDIPartyName(it.partyName.value.value, it.nameAssigner?.value?.value)
@@ -107,7 +107,7 @@ object PkixAsn1Provider : CertificateExtensionProvider, GeneralNameFormatProvide
     ): OtherName = try {
         decodeOtherName(source)
     } catch (failure: UnsupportedCryptoException) {
-        defer(failure) { OtherName.Unknown.fromSource(source, it) }
+        defer(failure) { OtherName.Unknown(source, it) }
     }
 
     override fun encodeToAsn1(generalName: GeneralName): X509GeneralName? = when (generalName) {

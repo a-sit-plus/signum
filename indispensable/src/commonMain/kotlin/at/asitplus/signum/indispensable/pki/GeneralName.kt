@@ -10,16 +10,10 @@ import kotlin.jvm.JvmSynthetic
 /** An encoding-independent RFC 5280/C509 `GeneralName`. */
 interface GeneralName : WithSourceRepresentation {
     @SignumInternals
-    class Unknown private constructor(
+    class Unknown internal constructor(
         source: X509GeneralName,
         lookupResult: UnsupportedCryptoException,
-    ) : GeneralName, ServiceLoader.UnknownShim(source, lookupResult) {
-        companion object {
-            @JvmSynthetic
-            internal fun fromSource(source: X509GeneralName, lookupResult: UnsupportedCryptoException) =
-                Unknown(source, lookupResult)
-        }
-    }
+    ) : GeneralName, ServiceLoader.UnknownShim(source, lookupResult)
 
     companion object
 }
@@ -44,7 +38,7 @@ interface GeneralNameFormatProvider {
 internal fun decodeAsn1GeneralName(source: X509GeneralName): GeneralName {
     val providers = ServiceLoader.load<GeneralNameFormatProvider>()
     if (source !is X509GeneralName.Other) {
-        return providers.getWithUnknown(source, GeneralName.Unknown::fromSource, GeneralNameFormatProvider::decodeFromAsn1)
+        return providers.getWithUnknown(source, GeneralName::Unknown, GeneralNameFormatProvider::decodeFromAsn1)
     }
 
     var opaque: ((UnsupportedCryptoException) -> GeneralName)? = null
@@ -56,6 +50,6 @@ internal fun decodeAsn1GeneralName(source: X509GeneralName): GeneralName {
             }
         }
     } catch (failure: UnsupportedCryptoException) {
-        opaque?.invoke(failure) ?: GeneralName.Unknown.fromSource(source, failure)
+        opaque?.invoke(failure) ?: GeneralName.Unknown(source, failure)
     }
 }

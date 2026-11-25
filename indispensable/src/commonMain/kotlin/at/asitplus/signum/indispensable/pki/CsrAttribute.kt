@@ -6,22 +6,15 @@ import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
-import kotlin.jvm.JvmSynthetic
 
 /** An open CSR attribute family, without a format-specific payload contract. */
 interface CsrAttribute : Identifiable, WithSourceRepresentation {
     @SignumInternals
-    class Unknown private constructor(
+    class Unknown internal constructor(
         source: Pkcs10CsrAttribute,
         lookupResult: UnsupportedCryptoException,
     ) : CsrAttribute, ServiceLoader.UnknownShim(source, lookupResult) {
         override val oid = source.oid
-
-        companion object {
-            @JvmSynthetic
-            internal fun fromSource(source: Pkcs10CsrAttribute, lookupResult: UnsupportedCryptoException) =
-                Unknown(source, lookupResult)
-        }
     }
 
     companion object {

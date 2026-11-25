@@ -12,7 +12,6 @@ import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.installIndispensable
 import at.asitplus.signum.internals.hexToByteArray
-import kotlin.jvm.JvmSynthetic
 
 /**
  * X.500 Name (used in X.509 Certificates)
@@ -122,17 +121,11 @@ private fun String.caseFold(): String = buildString(length) {
 /** An open attribute family. Only interpreted subtypes expose semantic values. */
 interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
     @SignumInternals
-    class Unknown private constructor(
+    class Unknown internal constructor(
         source: X500AttributeTypeAndValue,
         lookupResult: UnsupportedCryptoException,
     ) : AttributeTypeAndValue, ServiceLoader.UnknownShim(source, lookupResult) {
         override val oid = source.oid
-
-        companion object {
-            @JvmSynthetic
-            internal fun fromSource(source: X500AttributeTypeAndValue, lookupResult: UnsupportedCryptoException) =
-                Unknown(source, lookupResult)
-        }
     }
 
     object OID {
