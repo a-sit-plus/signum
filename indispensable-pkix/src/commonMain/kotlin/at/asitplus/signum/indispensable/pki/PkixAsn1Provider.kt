@@ -5,12 +5,16 @@ import at.asitplus.awesn1.crypto.pki.X509CertificateExtension
 import at.asitplus.awesn1.crypto.pki.X509GeneralName
 import at.asitplus.awesn1.serialization.ExplicitlyTagged
 import at.asitplus.signum.Signum
+import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.UnsupportedCryptoException
+import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.pki.extn.*
 import at.asitplus.signum.indispensable.pki.x500.*
 import kotlinx.serialization.decodeFromByteArray
 import kotlinx.serialization.encodeToByteArray
+import kotlin.jvm.JvmSynthetic
 
 /** ASN.1 is one representation of the PKIX types; dispatch uses the existing provider mechanism. */
 object PkixAsn1Provider : CertificateExtensionProvider, GeneralNameFormatProvider {
@@ -83,13 +87,28 @@ object PkixAsn1Provider : CertificateExtensionProvider, GeneralNameFormatProvide
             is X509GeneralName.IpAddress -> IPAddressName.fromAsn1Model(generalName)
             is X509GeneralName.Directory -> DirectoryName.fromAsn1Model(generalName)
             is X509GeneralName.RegisteredId -> RegisteredIDName.fromAsn1Model(generalName)
-            is X509GeneralName.Other -> decodeOtherName(generalName)
+            is X509GeneralName.Other -> try {
+                decodeFrom<X509GeneralName, OtherName> { decodeOtherName(generalName) }(generalName)
+            } catch (failure: UnsupportedCryptoException) {
+                OtherName.Unknown.fromSource(generalName, failure)
+            }
             is X509GeneralName.EdiParty -> Signum.Der.decodeFromTlv(EDIPartyName.Asn1Representation.serializer(), Asn1Sequence(generalName.elements)).let {
                 EDIPartyName(it.partyName.value.value, it.nameAssigner?.value?.value)
             }
             is X509GeneralName.X400Address -> X400AddressName.fromAsn1Model(generalName)
             else -> null
         }
+
+    @SignumInternals
+    @JvmSynthetic
+    override fun decodeOtherNameForLookup(
+        source: X509GeneralName.Other,
+        defer: (UnsupportedCryptoException, (UnsupportedCryptoException) -> GeneralName) -> Nothing,
+    ): OtherName = try {
+        decodeOtherName(source)
+    } catch (failure: UnsupportedCryptoException) {
+        defer(failure) { OtherName.Unknown.fromSource(source, it) }
+    }
 
     override fun encodeToAsn1(generalName: GeneralName): X509GeneralName? = when (generalName) {
         is DNSName -> X509GeneralName.Dns(generalName.value)

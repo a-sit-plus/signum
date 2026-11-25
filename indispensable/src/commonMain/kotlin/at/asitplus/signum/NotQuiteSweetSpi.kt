@@ -21,11 +21,13 @@ object ServiceLoader {
     /** This needs the same exact class as [get] will use. You cannot register for intermediate interfaces! */
     inline fun <reified T: Any> register(it: T) { register(it, T::class) }
 
+    /** Base for a module's own opaque values, retaining the complete input and the failed lookup. */
     @SignumInternals
-    abstract class UnknownShim(
+    abstract class UnknownShim protected constructor(
+        source: Any,
         val lookupResult: UnsupportedCryptoException
     ) : WithSourceRepresentation {
-        final override val sourceRepresentation = SourceRepresentationStorage()
+        final override val sourceRepresentation = SourceRepresentationStorage().also { it.x = source }
         final override fun equals(other: Any?) = (other is UnknownShim) && (this::class == other::class) && (sourceRepresentation == other.sourceRepresentation)
         final override fun hashCode() = this::class.hashCode() * 31 + sourceRepresentation.hashCode()
         final override fun toString() = "Failed to parse ($sourceRepresentation)"

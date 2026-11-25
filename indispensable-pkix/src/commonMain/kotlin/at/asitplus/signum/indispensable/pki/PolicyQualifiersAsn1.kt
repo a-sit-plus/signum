@@ -22,11 +22,11 @@ internal fun decodeCertificatePolicies(bytes: ByteArray): List<PolicyInformation
     Signum.Der.decodeFromByteArray(ListSerializer(PolicyInformation.Asn1Representation.serializer()), bytes).map { wire ->
         PolicyInformation(wire.oid, wire.qualifiers.map(decodeWith(
             PolicyQualifierAsn1Provider::decodeFromAsn1,
-            { src, failure -> PolicyQualifierInfo.Unknown(src.oid, failure) },
+            { src, failure -> PolicyQualifierInfo.Unknown.fromSource(src, failure) },
         )))
     }
 
-internal fun encodeCertificatePolicies(policies: List<PolicyInformation>): ByteArray =
+internal fun encodeCertificatePolicies(policies: List<PolicyInformation>): ByteArray = runRethrowing {
     Signum.Der.encodeToByteArray(ListSerializer(PolicyInformation.Asn1Representation.serializer()), policies.map { policy ->
         PolicyInformation.Asn1Representation(policy.oid, policy.policyQualifiers.map { q ->
             q.encodeWith<PolicyQualifierAsn1Provider, Asn1PolicyQualifier, PolicyQualifierInfo> {
@@ -36,6 +36,7 @@ internal fun encodeCertificatePolicies(policies: List<PolicyInformation>): ByteA
             }
         })
     })
+}
 
 internal object BuiltinPolicyQualifiers : PolicyQualifierAsn1Provider {
     override fun decodeFromAsn1(value: Asn1PolicyQualifier): PolicyQualifierInfo? =

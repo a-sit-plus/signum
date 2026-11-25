@@ -3,13 +3,11 @@ package at.asitplus.signum.indispensable.pki.attributes
 import at.asitplus.awesn1.Identifiable
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
-import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.pki.AttributeAsn1Provider
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValueAsn1Provider
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValueProvider
 import at.asitplus.signum.indispensable.pki.AttributeTypeAndValueProvider.*
-import at.asitplus.signum.indispensable.pki.AtvAsn1FallbackProvider
 import at.asitplus.signum.indispensable.pki.TextAttributeTypeAndValue
 import at.asitplus.signum.indispensable.pki.wellKnownAttributeOidForAlias
 
@@ -125,17 +123,13 @@ class TelephoneNumber(text: String) : TextAttributeTypeAndValue(Companion.oid, t
 internal object PkixAttributeTypeAndValueProvider :
     AttributeTypeAndValueProvider, AttributeTypeAndValueAsn1Provider {
 
-    @OptIn(SignumInternals::class)
     override fun decodeATV(key: Key, value: Value): AttributeTypeAndValue? {
+        if (value !is StringValue) return null
         val oid = when (key) {
             is OID -> key.oid
             is StringAlias -> wellKnownAttributeOidForAlias(key.str) ?: return null
         }
-        val construct = constructorFor(oid) ?: return null
-        return when (value) {
-            is StringValue -> construct(value.str)
-            is ByteArrayValue -> AtvAsn1FallbackProvider.decodeATV(Key(oid), value)
-        }
+        return constructorFor(oid)?.invoke(value.str)
     }
 
     override fun decodeFromAsn1(value: X500AttributeTypeAndValue): AttributeTypeAndValue? {

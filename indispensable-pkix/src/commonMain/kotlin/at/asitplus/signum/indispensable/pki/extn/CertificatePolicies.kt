@@ -10,6 +10,7 @@ import at.asitplus.signum.indispensable.pki.CertificateExtension
 import at.asitplus.signum.indispensable.pki.Asn1PolicyQualifier
 import com.eygraber.uri.Uri
 import kotlinx.serialization.Serializable
+import kotlin.jvm.JvmSynthetic
 
 /**
  * Certificate Policies Extension
@@ -43,10 +44,19 @@ data class PolicyInformation(
 
 interface PolicyQualifierInfo : Identifiable, WithSourceRepresentation {
     @OptIn(SignumInternals::class)
-    class Unknown(
-        override val oid: ObjectIdentifier,
+    class Unknown private constructor(
+        source: Asn1PolicyQualifier,
         lookupResult: UnsupportedCryptoException,
-    ) : PolicyQualifierInfo, ServiceLoader.UnknownShim(lookupResult)
+    ) : PolicyQualifierInfo, ServiceLoader.UnknownShim(source, lookupResult) {
+        override val oid = source.oid
+
+        companion object {
+            @JvmSynthetic
+            internal fun fromSource(source: Asn1PolicyQualifier, lookupResult: UnsupportedCryptoException) =
+                Unknown(source, lookupResult)
+        }
+    }
+
 }
 
 data class CpsUri(val uri: Uri) : PolicyQualifierInfo {

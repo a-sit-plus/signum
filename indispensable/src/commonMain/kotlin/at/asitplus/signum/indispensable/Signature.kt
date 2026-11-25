@@ -1,3 +1,5 @@
+@file:OptIn(at.asitplus.signum.SignumInternals::class)
+
 package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.crypto.X509AlgorithmIdentifier
@@ -9,6 +11,7 @@ import at.asitplus.signum.indispensable.sign.EcdsaSignature
 import at.asitplus.signum.indispensable.sign.RsaSignature
 import at.asitplus.signum.indispensable.sign.SignatureAlgorithm
 import at.asitplus.signum.indispensable.sign.SpecializedSignatureAlgorithm
+import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
 
 /**
  * Parsed signature value. Unparsed values are [AbstractSignature] but not [Signature].
@@ -57,9 +60,21 @@ fun AbstractSignature.withSignatureAlgorithm(signatureAlgorithm: SpecializedSign
     withSignatureAlgorithm(signatureAlgorithm.algorithm)
 
 fun AbstractSignature.withX509Algorithm(x509Algorithm: X509AlgorithmIdentifier) =
-    ServiceLoader.load<SignatureFormatProvider>().get(x509Algorithm) {
-        parseSignature(it, this@withX509Algorithm.asn1.toRepresentation())
+    parseX509Signature(x509Algorithm) { algorithm, raw -> parseSignature(algorithm, raw) }
+
+internal fun parseWithSignatureAlgorithm(value: AbstractSignature, algorithm: SignatureAlgorithm): Signature =
+    value.parseX509Signature(algorithm) { key, raw -> parseSignature(key, raw) }
+
+private inline fun <reified Algorithm : Any> AbstractSignature.parseX509Signature(
+    algorithm: Algorithm,
+    crossinline parse: SignatureFormatProvider.(Algorithm, X509SignatureValue) -> Signature?,
+): Signature {
+    val raw by lazy(LazyThreadSafetyMode.NONE) {
+        realSourceRepresentation as? X509SignatureValue ?: asn1.toRepresentation()
     }
+    val signature = ServiceLoader.load<SignatureFormatProvider>().get(algorithm) { parse(it, raw) }
+    return decodeFrom<X509SignatureValue, Signature> { signature }(raw)
+}
 
 // @Service
 interface SignatureFormatProvider {

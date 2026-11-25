@@ -1,3 +1,5 @@
+@file:OptIn(at.asitplus.signum.SignumInternals::class)
+
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.*
@@ -69,6 +71,12 @@ val LenientPkixProviderTest by matrixSuite {
     "OtherName providers recover inner OID failures without hiding the name family" {
         isolatedScenario(LenientPkixScenarios::class.java, "otherNames")
     }
+    "OtherName dispatch visits general and specialized providers once in precedence order" {
+        isolatedScenario(LenientPkixScenarios::class.java, "otherNamePrecedence")
+    }
+    "Typed OtherName preserves the opaque source and diagnostic before PKIX installation" {
+        isolatedScenario(LenientPkixScenarios::class.java, "otherNameBeforeInstall")
+    }
     "Qualifier providers can accept UTF8 CPS URIs after the built-in IA5 decoder fails" {
         isolatedScenario(LenientPkixScenarios::class.java, "qualifiers")
     }
@@ -117,6 +125,92 @@ internal object LenientPkixScenarios {
         val recovered = OtherName(source).shouldBeInstanceOf<MacAddressName>()
         recovered.address shouldBe ByteArray(6) { 42 }
         (recovered.asn1.toRepresentation() as X509GeneralName.Other).value shouldBeSameInstanceAs source.value
+    }
+
+    @JvmStatic
+    fun otherNamePrecedence() {
+        val calls = mutableListOf<String>()
+        var success: String? = null
+        val failures = listOf("high", "specialized", "low").associateWith { UnsupportedCryptoException(it) }
+        fun general(label: String) = object : GeneralNameFormatProvider {
+            override fun decodeFromAsn1(generalName: X509GeneralName): GeneralName? {
+                calls += label
+                if (success == label) return DNSName("$label.example")
+                if (success == null) throw failures.getValue(label)
+                return null
+            }
+            override fun encodeToAsn1(generalName: GeneralName): X509GeneralName? = null
+        }
+        fun specialized(label: String) = object : OtherNameAsn1Provider {
+            override fun decodeFromAsn1(value: X509GeneralName.Other): OtherName? {
+                calls += label
+                if (success == label) return SmtpUtf8Mailbox("test@example.com")
+                if (success == null && label == "specialized") throw failures.getValue(label)
+                return null
+            }
+            override fun encodeToAsn1(value: OtherName): X509GeneralName.Other? = null
+        }
+
+        ServiceLoader.register<GeneralNameFormatProvider>(general("low"))
+        Signum.installPkix()
+        ServiceLoader.register<OtherNameAsn1Provider>(specialized("last"))
+        ServiceLoader.register<OtherNameAsn1Provider>(specialized("specialized"))
+        ServiceLoader.register<GeneralNameFormatProvider>(general("high"))
+        val source = X509GeneralName.Other(X509GeneralName.Other.SemanticValue.Generic(
+            ObjectIdentifier("1.2.3.99"), Asn1OctetString(byteArrayOf(1)),
+        ))
+
+        success = "high"
+        shouldThrow<UnsupportedCryptoException> { OtherName(source) }.message shouldBe
+                "Expected OtherName for OID ${source.value.oid}, received DNSName"
+        calls.toList() shouldBe listOf("high")
+
+        calls.clear()
+        success = "specialized"
+        OtherName(source).shouldBeInstanceOf<SmtpUtf8Mailbox>()
+        calls.toList() shouldBe listOf("high", "specialized")
+
+        calls.clear()
+        success = "low"
+        GeneralName.fromAsn1(source).shouldBeInstanceOf<DNSName>().value shouldBe "low.example"
+        calls.toList() shouldBe listOf("high", "specialized", "last", "low")
+
+        calls.clear()
+        success = null
+        val opaque = GeneralName.fromAsn1(source).shouldBeInstanceOf<OtherName.Unknown>()
+        calls.toList() shouldBe listOf("high", "specialized", "last", "low")
+        val before = opaque.lookupResult.suppressedExceptions
+        before.first() shouldBeSameInstanceAs failures.getValue("high")
+        before[1].suppressedExceptions.single() shouldBeSameInstanceAs failures.getValue("specialized")
+        before.last() shouldBeSameInstanceAs failures.getValue("low")
+        (opaque.asn1.toRepresentation() as X509GeneralName.Other).value shouldBeSameInstanceAs source.value
+
+        calls.clear()
+        val boxedSource: X509GeneralName = source
+        val direct = PkixAsn1Provider.decodeFromAsn1(boxedSource).shouldBeInstanceOf<OtherName.Unknown>()
+        calls.toList() shouldBe listOf("specialized", "last")
+        direct.lookupResult.suppressedExceptions.single() shouldBeSameInstanceAs failures.getValue("specialized")
+        direct.asn1.toRepresentation() shouldBeSameInstanceAs boxedSource
+        (PkixAsn1Provider.encodeToAsn1(direct) as X509GeneralName.Other).value shouldBeSameInstanceAs source.value
+    }
+
+    @JvmStatic
+    fun otherNameBeforeInstall() {
+        val source = X509GeneralName.Other(X509GeneralName.Other.SemanticValue.Generic(
+            ObjectIdentifier("1.2.3.99"), Asn1OctetString(byteArrayOf(1)),
+        ))
+        val generic = GeneralName.fromAsn1(source).shouldBeInstanceOf<GeneralName.Unknown>()
+        val initialOpaque = OtherName(source).shouldBeInstanceOf<OtherName.Unknown>()
+        initialOpaque.lookupResult.message shouldBe generic.lookupResult.message
+        initialOpaque.oid shouldBe source.value.oid
+
+        ServiceLoader.register<GeneralNameFormatProvider>(object : GeneralNameFormatProvider {
+            override fun decodeFromAsn1(generalName: X509GeneralName) = generic
+            override fun encodeToAsn1(generalName: GeneralName): X509GeneralName? = null
+        })
+        val opaque = OtherName(source).shouldBeInstanceOf<OtherName.Unknown>()
+        opaque.lookupResult shouldBeSameInstanceAs generic.lookupResult
+        (opaque.asn1.toRepresentation() as X509GeneralName.Other).value shouldBeSameInstanceAs source.value
     }
 
     @JvmStatic

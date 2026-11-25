@@ -12,6 +12,7 @@ import at.asitplus.signum.indispensable.WithSourceRepresentation
 import at.asitplus.signum.indispensable.fromAsn1
 import at.asitplus.signum.indispensable.installIndispensable
 import at.asitplus.signum.internals.hexToByteArray
+import kotlin.jvm.JvmSynthetic
 
 /**
  * X.500 Name (used in X.509 Certificates)
@@ -121,10 +122,18 @@ private fun String.caseFold(): String = buildString(length) {
 /** An open attribute family. Only interpreted subtypes expose semantic values. */
 interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
     @SignumInternals
-    class Unknown(
-        override val oid: ObjectIdentifier,
+    class Unknown private constructor(
+        source: X500AttributeTypeAndValue,
         lookupResult: UnsupportedCryptoException,
-    ) : AttributeTypeAndValue, ServiceLoader.UnknownShim(lookupResult)
+    ) : AttributeTypeAndValue, ServiceLoader.UnknownShim(source, lookupResult) {
+        override val oid = source.oid
+
+        companion object {
+            @JvmSynthetic
+            internal fun fromSource(source: X500AttributeTypeAndValue, lookupResult: UnsupportedCryptoException) =
+                Unknown(source, lookupResult)
+        }
+    }
 
     object OID {
         val commonName = ObjectIdentifier("2.5.4.3")
@@ -191,17 +200,9 @@ interface AttributeTypeAndValue : Identifiable, WithSourceRepresentation {
                     AttributeTypeAndValueProvider.Value(unescapeRfc2253(v))
                 }
 
-            @OptIn(SignumInternals::class)
-            ServiceLoader.load<AttributeTypeAndValueProvider>().getWithUnknown(type,
-                unknownCtor = { _, failure ->
-                    when (oid) {
-                        is AttributeTypeAndValueProvider.OID -> Unknown(oid.oid, failure)
-                        is AttributeTypeAndValueProvider.StringAlias -> throw failure
-                    }
-                },
-                loadBlock = {
-                    decodeATV(oid, resolvedValue)
-                })
+            ServiceLoader.load<AttributeTypeAndValueProvider>().get(type) {
+                decodeATV(oid, resolvedValue)
+            }
         }.getOrThrow()
     }
 }

@@ -4,9 +4,7 @@ import at.asitplus.awesn1.Asn1Element
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.awesn1.encoding.parse
-import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.asn1
-import at.asitplus.signum.indispensable.fromAsn1
 import kotlin.jvm.JvmInline
 
 /** Converting of ATV pairs (e.g., `cn=Alice`) to/from strings */
@@ -46,10 +44,12 @@ object AtvAsn1FallbackProvider : AttributeTypeAndValueProvider {
         key: AttributeTypeAndValueProvider.Key,
         value: AttributeTypeAndValueProvider.Value
     ): AttributeTypeAndValue? {
-        if (key !is AttributeTypeAndValueProvider.OID) return null
         if (value !is AttributeTypeAndValueProvider.ByteArrayValue) return null
-        return AttributeTypeAndValue.fromAsn1(
-            X500AttributeTypeAndValue(key.oid, Asn1Element.parse(value.bytes)))
+        val oid = when (key) {
+            is AttributeTypeAndValueProvider.OID -> key.oid
+            is AttributeTypeAndValueProvider.StringAlias -> wellKnownAttributeOidForAlias(key.str) ?: return null
+        }
+        return decodeAsn1Attribute(X500AttributeTypeAndValue(oid, Asn1Element.parse(value.bytes)))
     }
 
     override fun encodeATV(atv: AttributeTypeAndValue) =
@@ -66,13 +66,8 @@ object AtvOidFallbackProvider: AttributeTypeAndValueProvider {
         key: AttributeTypeAndValueProvider.Key,
         value: AttributeTypeAndValueProvider.Value
     ): AttributeTypeAndValue? {
-        if (key !is AttributeTypeAndValueProvider.OID) return null
-        return when (value) {
-            is AttributeTypeAndValueProvider.StringValue ->
-                TextAttributeTypeAndValue(key.oid, value.str)
-            is AttributeTypeAndValueProvider.ByteArrayValue ->
-                AtvAsn1FallbackProvider.decodeATV(key, value)
-        }
+        if (key !is AttributeTypeAndValueProvider.OID || value !is AttributeTypeAndValueProvider.StringValue) return null
+        return TextAttributeTypeAndValue(key.oid, value.str)
     }
 
     override fun encodeATV(atv: AttributeTypeAndValue) =

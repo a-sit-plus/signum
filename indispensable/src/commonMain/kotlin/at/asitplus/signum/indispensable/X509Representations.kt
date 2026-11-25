@@ -87,7 +87,7 @@ open class Asn1EncodersImpl<Asn1Type: Any> @SignumInternals constructor (
     private val convertingBuilder: ()->Asn1Type,
     protected val serializer: KSerializer<Asn1Type>,
 ) : Asn1Encoders<Asn1Type> {
-    override fun toRepresentation(): Asn1Type = convertingBuilder()
+    override fun toRepresentation(): Asn1Type = runRethrowing { convertingBuilder() }
     override fun toTlv(): Asn1Element = Signum.Der.encodeToTlv(serializer, toRepresentation())
     override fun toDer(): ByteArray = Signum.Der.encodeToByteArray(serializer, toRepresentation())
     override fun toDer(sink: Sink) = Signum.Der.encodeToSink(serializer, toRepresentation(), sink)
@@ -194,7 +194,7 @@ open class Asn1DecodersImpl<Asn1Type : Any, AbstractType : WithSourceRepresentat
 ) : Asn1Decoders<Asn1Type, AbstractType> {
 
     override operator fun invoke(asn1Representation: Asn1Type): AbstractType =
-        convertingBuilder(asn1Representation)
+        runRethrowing { convertingBuilder(asn1Representation) }
 
     override operator fun invoke(asn1Element: Asn1Element): AbstractType =
         invoke(Signum.Der.decodeFromTlv(serializer, asn1Element))
@@ -351,25 +351,33 @@ val SignatureAlgorithm.asn1 get() =
     asn1EncodersWith(Asn1SignatureAlgorithmProvider::encodeToAsn1)
 
 val SignatureAlgorithm.Companion.fromAsn1 get() =
-    asn1DecodersWith(Asn1SignatureAlgorithmProvider::decodeFromAsn1, SignatureAlgorithm::Unknown)
+    asn1DecodersWith(Asn1SignatureAlgorithmProvider::decodeFromAsn1) { source, failure ->
+        SignatureAlgorithm.Unknown.fromSource(source, failure)
+    }
 
 val Digest.asn1 get() =
     asn1EncodersWith(Asn1DigestAlgorithmProvider::encodeToAsn1)
 
 val Digest.Companion.fromAsn1 get() =
-    asn1DecodersWith(Asn1DigestAlgorithmProvider::decodeFromAsn1, Digest::Unknown)
+    asn1DecodersWith(Asn1DigestAlgorithmProvider::decodeFromAsn1) { source, failure ->
+        Digest.Unknown.fromSource(source, failure)
+    }
 
 val MessageAuthenticationCode.asn1 get() =
     asn1EncodersWith(Asn1MACAlgorithmProvider::encodeToAsn1)
 
 val MessageAuthenticationCode.Companion.fromAsn1 get() =
-    asn1DecodersWith(Asn1MACAlgorithmProvider::decodeFromAsn1, MessageAuthenticationCode::Unknown)
+    asn1DecodersWith(Asn1MACAlgorithmProvider::decodeFromAsn1) { source, failure ->
+        MessageAuthenticationCode.Unknown.fromSource(source, failure)
+    }
 
 val PublicKey.asn1 get() =
     asn1EncodersWith(Asn1PublicKeyFormatProvider::encodeToAsn1)
 
 val PublicKey.Companion.fromAsn1 get() =
-    asn1DecodersWith(SubjectPublicKeyInfo.Companion, Asn1PublicKeyFormatProvider::decodeFromAsn1, PublicKey::Unknown)
+    asn1DecodersWith(SubjectPublicKeyInfo.Companion, Asn1PublicKeyFormatProvider::decodeFromAsn1) { source, failure ->
+        PublicKey.Unknown.fromSource(source, failure)
+    }
         .withAlternativePemDecoder(RsaPublicKey.fromAsn1.PKCS1)
 
 val KeyAgreementPublicValue.asn1 get() =
@@ -384,16 +392,16 @@ val PrivateKey.asn1 get() =
     asn1EncodersWith(Asn1PrivateKeyFormatProvider::encodeToAsn1)
 
 val PrivateKey.Companion.fromAsn1 get() =
-    asn1DecodersWith(Pkcs8PrivateKeyInfo.Companion, Asn1PrivateKeyFormatProvider::decodeFromAsn1, PrivateKey::Unknown)
+    asn1DecodersWith(Pkcs8PrivateKeyInfo.Companion, Asn1PrivateKeyFormatProvider::decodeFromAsn1) { source, failure ->
+        PrivateKey.Unknown.fromSource(source, failure)
+    }
         .withAlternativePemDecoder(RsaPrivateKey.fromAsn1.PKCS1)
         .withAlternativePemDecoder(EcdsaPrivateKey.fromAsn1.SEC1)
 
 private class X509UnparsedSignature : AbstractSignature {
     override val sourceRepresentation = SourceRepresentationStorage()
     override fun withSignatureAlgorithm(signatureAlgorithm: SignatureAlgorithm) =
-        ServiceLoader.load<SignatureFormatProvider>().get(signatureAlgorithm) {
-            parseSignature(it, this@X509UnparsedSignature.asn1.toRepresentation())
-        }
+        parseWithSignatureAlgorithm(this, signatureAlgorithm)
 
     override fun toString() = "Unparsed Signature (from X.509: $sourceRepresentation)"
 }
@@ -448,11 +456,8 @@ val CertificateExtension.asn1 get() =
     asn1EncodersWith(CertificateExtensionProvider::encodeToAsn1)
 
 val CertificateExtension.Companion.fromAsn1 get() =
-    asn1DecodersWith(CertificateExtensionProvider::decodeFromAsn1) { asn1, lookup ->
-        object : CertificateExtension.Unknown(lookup) {
-            override val critical = asn1.critical
-            override val oid: ObjectIdentifier = asn1.oid
-        }
+    asn1DecodersWith(CertificateExtensionProvider::decodeFromAsn1) { source, failure ->
+        CertificateExtension.Unknown.fromSource(source, failure)
     }
 
 val Certificate.asn1 get() =
@@ -480,7 +485,7 @@ val GeneralName.asn1 get() =
     asn1EncodersWith(GeneralNameFormatProvider::encodeToAsn1)
 
 val GeneralName.Companion.fromAsn1 get() =
-    asn1DecodersWith(GeneralNameFormatProvider::decodeFromAsn1, GeneralName::Unknown)
+    asn1Decoders<X509GeneralName, GeneralName>(::decodeAsn1GeneralName)
 
 val GeneralName.asn1TagValue: ULong get() = this@asn1TagValue.asn1.toRepresentation().tag.tagValue
 
@@ -510,10 +515,11 @@ val RelativeDistinguishedName.Companion.fromAsn1 get() =
 
 val AttributeTypeAndValue.asn1 get() = asn1EncodersWith(AttributeTypeAndValueAsn1Provider::encodeToAsn1)
 
-val AttributeTypeAndValue.Companion.fromAsn1 get() =
-        asn1DecodersWith(AttributeTypeAndValueAsn1Provider::decodeFromAsn1) { src, failure ->
-            AttributeTypeAndValue.Unknown(src.oid, failure)
-        }
+val AttributeTypeAndValue.Companion.fromAsn1: Asn1EncodingHelpers.Asn1Decoders<X500AttributeTypeAndValue, AttributeTypeAndValue>
+    get() = Asn1EncodingHelpers.Asn1DecodersImpl(
+        ::decodeAsn1Attribute,
+        X500AttributeTypeAndValue.serializer(),
+    )
 
 val Name.asn1 get() =
     asn1Encoders<X500Name, _> { src ->
@@ -529,10 +535,10 @@ val Name.Companion.fromAsn1 get() =
 
 val CsrAttribute.asn1 get() = asn1EncodersWith(CsrAttributeAsn1Provider::encodeToAsn1)
 
-val CsrAttribute.Companion.fromAsn1 get() = asn1Decoders<Pkcs10CsrAttribute, CsrAttribute> { src ->
-    try { ServiceLoader.load<CsrAttributeAsn1Provider>().get(src, CsrAttributeAsn1Provider::decodeFromAsn1) }
-    catch (failure: UnsupportedCryptoException) { CsrAttribute.Unknown(src.oid, failure) }
-}
+val CsrAttribute.Companion.fromAsn1 get() =
+    asn1DecodersWith(CsrAttributeAsn1Provider::decodeFromAsn1) { source, failure ->
+        CsrAttribute.Unknown.fromSource(source, failure)
+    }
 
 val TbsCertificationRequest.asn1 get() =
     asn1Encoders<Pkcs10CertificationRequestInfo, _> { src ->

@@ -2,7 +2,6 @@
 
 package at.asitplus.signum.indispensable
 
-import at.asitplus.awesn1.runRethrowing
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
@@ -63,7 +62,7 @@ object SignumEncodingHelpers {
 inline fun <reified EncodedType: Any, reified AbstractType: WithSourceRepresentation> decodeFrom(
     crossinline fn: (EncodedType)->AbstractType
 ): (EncodedType)->AbstractType = { encoded ->
-    runRethrowing { fn(encoded) }.also {
+    fn(encoded).also {
         it.realSourceRepresentation?.let { existing ->
             // heuristic: overwriting the existing representation with a different representation of the same type is a bug
             // overwriting with a different type can be legal (because of how nested calls end up working)
@@ -78,7 +77,9 @@ inline fun <reified EncodedType: Any, reified AbstractType: WithSourceRepresenta
 }
 
 /** A high-level decoding function using a Provider.
- * Delegates to ServiceLoader to perform decoding. */
+ * Delegates to ServiceLoader to perform decoding. An extension's unknown leaf should be final, have a private
+ * constructor, and be created by [unknownCtor] from the complete encoded value and its lookup diagnostic; this
+ * helper retains that exact encoded value on the result. */
 // with provider + unknown wants source type
 @Suppress("BOUNDS_NOT_ALLOWED_IF_BOUNDED_BY_TYPE_PARAMETER")
 inline fun <
@@ -117,7 +118,7 @@ inline fun <reified EncodedType: Any, reified AbstractType: WithSourceRepresenta
     this@encodeTo.realSourceRepresentation?.let { v ->
         if (v is EncodedType) return v
     }
-    return runRethrowing { fn(this@encodeTo) }
+    return fn(this@encodeTo)
 }
 
 /** A high-level encoding function using a Provider.

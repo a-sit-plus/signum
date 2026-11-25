@@ -93,6 +93,9 @@ val X500AttributeProviderTest by matrixSuite {
     "Unsupported attribute strings report UnsupportedCryptoException" {
         shouldThrow<UnsupportedCryptoException> { AttributeTypeAndValue.fromString("UNKNOWN", "Test") }
         shouldThrow<UnsupportedCryptoException> { AttributeTypeAndValue.fromString("UNKNOWN=Test") }
+        shouldThrow<UnsupportedCryptoException> { AttributeTypeAndValue.fromString("CN") }
+        shouldThrow<UnsupportedCryptoException> { AttributeTypeAndValue.fromString("1..2", "value") }
         shouldThrow<UnsupportedCryptoException> { AttributeTypeAndValue.fromString("CN=#GG") }
+        shouldThrow<UnsupportedCryptoException> { AttributeTypeAndValue.fromString("2.5.4.3=#130241") }
     }
 }

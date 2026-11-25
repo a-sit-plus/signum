@@ -3,11 +3,11 @@
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.Asn1String
+import at.asitplus.awesn1.serialization.DER
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
 import at.asitplus.signum.UnsupportedCryptoException
-import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.encodeTo
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
@@ -17,6 +17,12 @@ import at.asitplus.signum.test.isolatedScenario
 import at.asitplus.testballoon.matrix.matrixSuite
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
+import io.kotest.matchers.types.shouldBeSameInstanceAs
+
+private class OpaqueNickname(source: String, failure: UnsupportedCryptoException) :
+    AttributeTypeAndValue, ServiceLoader.UnknownShim(source, failure) {
+    override val oid get() = Nickname.oid
+}
 
 val X500AttributeProviderIsolationTest by matrixSuite {
     "Provider-only registration supplies aliases, canonical names, and typed text construction" {
@@ -87,12 +93,16 @@ internal object X500AttributeProviderScenarios {
             override fun encodeToAsn1(value: AttributeTypeAndValue): X500AttributeTypeAndValue? = null
         })
 
+        val fromModel = AttributeTypeAndValue.fromAsn1(source).shouldBeInstanceOf<TextAttributeTypeAndValue>()
+        fromModel.text shouldBe "ALICE"
         val hex = source.value.derEncoded.toHexString()
-        for (key in listOf("CN", oid.toString())) {
-            val decoded = AttributeTypeAndValue.fromString("$key=#$hex").shouldBeInstanceOf<TextAttributeTypeAndValue>()
-            decoded.text shouldBe "ALICE"
-            decoded.asn1.toRepresentation() shouldBe source
+        val fromHex = listOf("CN", oid.toString()).map { key ->
+            AttributeTypeAndValue.fromString("$key=#$hex").shouldBeInstanceOf<TextAttributeTypeAndValue>()
+                .also { it.text shouldBe "ALICE" }
         }
+        Signum.setDer(DER {})
+        fromModel.asn1.toRepresentation() shouldBeSameInstanceAs source
+        fromHex.forEach { it.asn1.toRepresentation() shouldBe source }
     }
 
     @JvmStatic
@@ -120,9 +130,7 @@ internal object X500AttributeProviderScenarios {
             }
         })
 
-        val attribute = decodeFrom<String, AttributeTypeAndValue> {
-            AttributeTypeAndValue.Unknown(Nickname.oid, UnsupportedCryptoException("No semantic interpretation"))
-        }("Alice")
+        val attribute = OpaqueNickname("Alice", UnsupportedCryptoException("No semantic interpretation"))
         attribute.toRfc2253String() shouldBe "NICK=Alice"
     }
 }

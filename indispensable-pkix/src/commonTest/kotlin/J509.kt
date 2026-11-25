@@ -1,9 +1,10 @@
+@file:OptIn(at.asitplus.signum.SignumInternals::class)
+
 package at.asitplus.signum.indispensable.pki
 
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.nonFatalOrThrow
 import at.asitplus.signum.ServiceLoader
-import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeFrom
@@ -22,6 +23,27 @@ import kotlin.time.Instant
  * ponytail: only ECDSA/SHA-256 certificate contents are supported; extend the profile when a test needs another algorithm.
  */
 internal object J509 {
+    private class OpaqueAttribute(
+        source: JsonObject,
+        override val oid: ObjectIdentifier,
+        failure: UnsupportedCryptoException,
+    ) : AttributeTypeAndValue, ServiceLoader.UnknownShim(source, failure)
+    private class OpaqueOtherName(
+        source: JsonObject,
+        override val oid: ObjectIdentifier,
+        failure: UnsupportedCryptoException,
+    ) : OtherName, ServiceLoader.UnknownShim(source, failure)
+    private class OpaqueQualifier(
+        source: JsonObject,
+        override val oid: ObjectIdentifier,
+        failure: UnsupportedCryptoException,
+    ) : PolicyQualifierInfo, ServiceLoader.UnknownShim(source, failure)
+    private class OpaqueCsrAttribute(
+        source: JsonObject,
+        override val oid: ObjectIdentifier,
+        failure: UnsupportedCryptoException,
+    ) : CsrAttribute, ServiceLoader.UnknownShim(source, failure)
+
     private fun obj(vararg fields: Pair<String, JsonElement>) = JsonObject(mapOf(*fields))
     private fun text(value: Any) = JsonPrimitive(value.toString())
     private fun bool(value: Boolean) = JsonPrimitive(value)
@@ -42,18 +64,16 @@ internal object J509 {
         require(it is TextAttributeTypeAndValue) { "No J509 conversion for attribute ${it.oid}" }
         obj("oid" to text(it.oid), "text" to text(it.text))
     }
-    @OptIn(SignumInternals::class)
     fun attribute(node: JsonObject): AttributeTypeAndValue = read(node) {
         val oid = it.oid()
         try {
-            val text = it.optional("text")?.jsonPrimitive?.content ?: return@read AttributeTypeAndValue.Unknown(
-                oid, UnsupportedCryptoException("No semantic interpretation for J509 attribute $oid"),
+            val text = it.optional("text")?.jsonPrimitive?.content ?: return@read OpaqueAttribute(it, oid, UnsupportedCryptoException("No semantic interpretation for J509 attribute $oid"),
             )
             ServiceLoader.load<AttributeTypeAndValueProvider>().get(AttributeTypeAndValueProvider.Key(oid)) { key ->
                 decodeATV(key, AttributeTypeAndValueProvider.Value(text))
             }
         } catch (failure: Throwable) {
-            AttributeTypeAndValue.Unknown(oid, UnsupportedCryptoException("Cannot decode J509 attribute $oid", failure.nonFatalOrThrow()))
+            OpaqueAttribute(it, oid, UnsupportedCryptoException("Cannot decode J509 attribute $oid", failure.nonFatalOrThrow()))
         }
     }
     private fun name(value: Name) = JsonArray(value.relativeDistinguishedNames.map { rdn -> JsonArray(rdn.attrsAndValues.map(::attribute)) })
@@ -75,7 +95,7 @@ internal object J509 {
             HardwareModuleName.OID -> HardwareModuleName(ObjectIdentifier(value.s("hardwareType")), value.s("serial").hexToByteArray())
             SmtpUtf8Mailbox.OID -> SmtpUtf8Mailbox(value.s("address"))
             MacAddressName.OID -> MacAddressName(value.s("address").hexToByteArray())
-            else -> OtherName(oid)
+            else -> OpaqueOtherName(it, oid, UnsupportedCryptoException("Unknown J509 otherName $oid"))
         }
     }
     private fun generalName(value: GeneralName): JsonObject {
@@ -127,7 +147,7 @@ internal object J509 {
             UserNotice().oid -> UserNotice(payload.optional("notice")?.jsonObject?.let { n ->
                 NoticeReference(n.s("organization"), n.list("numbers").map { number -> BigInteger.parseString(number.jsonPrimitive.content) })
             }, payload.optional("text")?.jsonPrimitive?.content)
-            else -> PolicyQualifierInfo.Unknown(oid, UnsupportedCryptoException("Unknown OID $oid"))
+            else -> OpaqueQualifier(it, oid, UnsupportedCryptoException("Unknown OID $oid"))
         }
     }
     private fun subtree(value: GeneralSubtree) = obj("base" to generalName(value.base), "min" to text(value.minimum), "max" to (value.maximum?.let(::text) ?: JsonNull))
@@ -174,15 +194,14 @@ internal object J509 {
         require(it is ExtensionRequest) { "No J509 conversion for CSR attribute ${it.oid}" }
         obj("oid" to text(it.oid), "extensions" to JsonArray(it.extensions.map(::extension)))
     }
-    @OptIn(SignumInternals::class)
     fun csrAttribute(node: JsonObject): CsrAttribute = read(node) {
         val oid = it.oid()
         if (oid != CsrAttribute.EXTENSION_REQUEST_OID)
-            CsrAttribute.Unknown(oid, UnsupportedCryptoException("No semantic interpretation for J509 CSR attribute $oid"))
+            OpaqueCsrAttribute(it, oid, UnsupportedCryptoException("No semantic interpretation for J509 CSR attribute $oid"))
         else try {
             ExtensionRequest(it.list("extensions").map { e -> extension(e.jsonObject) })
         } catch (failure: Throwable) {
-            CsrAttribute.Unknown(oid, UnsupportedCryptoException("Cannot decode J509 CSR attribute $oid", failure.nonFatalOrThrow()))
+            OpaqueCsrAttribute(it, oid, UnsupportedCryptoException("Cannot decode J509 CSR attribute $oid", failure.nonFatalOrThrow()))
         }
     }
 

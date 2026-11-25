@@ -6,6 +6,8 @@ import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.pki.Pkcs10CsrAttribute
 import at.asitplus.awesn1.crypto.pki.X500AttributeTypeAndValue
 import at.asitplus.signum.Signum
+import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.indispensable.SignumEncodingHelpers.decodeWith
 import at.asitplus.signum.indispensable.asn1
 import at.asitplus.signum.indispensable.fromAsn1
 
@@ -18,6 +20,12 @@ interface CsrAttributeAsn1Provider {
     fun decodeFromAsn1(value: Pkcs10CsrAttribute): CsrAttribute?
     fun encodeToAsn1(value: CsrAttribute): Pkcs10CsrAttribute?
 }
+
+@OptIn(SignumInternals::class)
+internal fun decodeAsn1Attribute(source: X500AttributeTypeAndValue): AttributeTypeAndValue =
+    decodeWith(AttributeTypeAndValueAsn1Provider::decodeFromAsn1) { value, failure ->
+        AttributeTypeAndValue.Unknown.fromSource(value, failure)
+    }(source)
 
 object AttributeAsn1Provider : AttributeTypeAndValueAsn1Provider {
     override fun decodeFromAsn1(value: X500AttributeTypeAndValue) =
