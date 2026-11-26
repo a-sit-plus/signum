@@ -318,6 +318,7 @@ On Android & JVM, implement `JcaMappingProvider`:
   - `parseJCASignatureBytes` and `getJCASignatureBytes` to map Signum `Signature` <-> output of this JCA `Signature` instance
 - `publicKeyToJcaPublicKey` and `jcaPublicKeyToPublicKey` to map Signum `PublicKey` <-> JCA `PublicKey`
 - `privateKeyToJcaPrivateKey` and `jcaPrivateKeyToPrivateKey` to map Signum `PrivateKey` <-> JCA `PrivateKey`
+- `curveForJcaName` to resolve a named curve through `ECCurve.byJcaName`
 
 On iOS, implement `IosMappingProvider`:
 

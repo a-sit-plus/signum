@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.awesn1.toJavaBigInteger
 import at.asitplus.signum.HazardousMaterials
@@ -20,7 +21,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import org.bouncycastle.asn1.ASN1Sequence
-import org.bouncycastle.asn1.sec.SECNamedCurves
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.jce.ECNamedCurveTable
 import org.bouncycastle.jce.provider.JCEECPublicKey
@@ -114,6 +114,9 @@ interface JcaMappingProvider {
 
     /** Maps this JCA PrivateKey instance to a PrivateKey. */
     fun jcaPrivateKeyToPrivateKey(privateKey: JCAPrivateKey): PrivateKey.WithPublicKey? { return null }
+
+    /** Resolves a JCA curve name, or returns null when the provider does not recognize it. */
+    fun curveForJcaName(name: String): ECCurve? = null
 }
 
 /** Get a pre-configured JCA [MessageDigest] instance for this digest */
@@ -227,7 +230,12 @@ val ECCurve.jcaName
         else -> throw UnsupportedCryptoException("Unsupported JCA EC curve $this")
     }
 
-fun ECCurve.Companion.byJcaName(name: String): ShortWeierstrassCurve? = ECCurve.entries.find { it.jcaName == name }
+/** Resolves a JCA curve name using installed mappings and the built-in curve names. */
+fun ECCurve.Companion.byJcaName(name: String): ECCurve? = try {
+    ServiceLoader.load<JcaMappingProvider>().get(name, JcaMappingProvider::curveForJcaName)
+} catch (_: UnsupportedCryptoException) {
+    IndispensableJcaExtensionProvider.curveForJcaName(name)
+}
 
 fun PublicKey.toJcaPublicKey() =
     ServiceLoader.load<JcaMappingProvider>().get(this, JcaMappingProvider::publicKeyToJcaPublicKey)
@@ -255,7 +263,8 @@ fun java.security.interfaces.ECPublicKey.toPublicKey(): EcdsaPublicKey {
     val spki = SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(encoded))
     val curveOid = spki.algorithm.parameters as? ASN1ObjectIdentifier
         ?: throw UnsupportedCryptoException("Expected a named JCA EC curve")
-    val curve = SECNamedCurves.getName(curveOid)?.let(ECCurve.Companion::byJcaName)
+    val oid = ObjectIdentifier(curveOid.id)
+    val curve = ECCurve.entries.find { it.oid == oid }
         ?: throw UnsupportedCryptoException("Unsupported JCA EC curve $curveOid")
     return EcdsaPublicKey.fromUncompressed(
         curve,
