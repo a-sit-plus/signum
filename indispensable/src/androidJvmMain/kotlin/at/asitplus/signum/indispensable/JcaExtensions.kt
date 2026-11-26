@@ -117,6 +117,9 @@ interface JcaMappingProvider {
 
     /** Resolves a JCA curve name, or returns null when the provider does not recognize it. */
     fun curveForJcaName(name: String): ECCurve? = null
+
+    /** Returns the JCA name of a supported curve, or null when the provider does not recognize it. */
+    fun jcaNameForCurve(curve: ECCurve): String? = null
 }
 
 /** Get a pre-configured JCA [MessageDigest] instance for this digest */
@@ -222,12 +225,12 @@ internal val WellKnownDigest?.jcaAlgorithmComponent
         is WellKnownDigest.SHA512 -> "SHA512"
     }
 
-val ECCurve.jcaName
-    get() = when {
-        this === ECCurve.SECP_256_R_1 -> "secp256r1"
-        this === ECCurve.SECP_384_R_1 -> "secp384r1"
-        this === ECCurve.SECP_521_R_1 -> "secp521r1"
-        else -> throw UnsupportedCryptoException("Unsupported JCA EC curve $this")
+/** Resolves a curve's JCA name using installed mappings and the built-in curve names. */
+val ECCurve.jcaName: String
+    get() = try {
+        ServiceLoader.load<JcaMappingProvider>().get(this, JcaMappingProvider::jcaNameForCurve)
+    } catch (failure: UnsupportedCryptoException) {
+        IndispensableJcaExtensionProvider.jcaNameForCurve(this) ?: throw failure
     }
 
 /** Resolves a JCA curve name using installed mappings and the built-in curve names. */

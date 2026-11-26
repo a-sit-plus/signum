@@ -112,7 +112,8 @@ object SupremeJVMInMemoryKeysProvider : InMemoryKeysProvider {
             is EphemeralEcdsaConfiguration ->
                 if (!alg.curve.isBuiltIn) null else
                 getKPGInstance("EC", config.jvm.v.provider).run {
-                    initialize(ECGenParameterSpec(alg.curve.jcaName))
+                    val curveName = checkNotNull(IndispensableJcaExtensionProvider.jcaNameForCurve(alg.curve))
+                    initialize(ECGenParameterSpec(curveName))
                     generateKeyPair()
                 }.let { pair ->
                     SupremeEphemeralJvmSigner.EC(

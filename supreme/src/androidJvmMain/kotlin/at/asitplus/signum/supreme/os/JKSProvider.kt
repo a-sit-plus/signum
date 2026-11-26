@@ -82,7 +82,8 @@ object SupremeJKSOperationsProvider : JavaKeyStoreOperationsProvider {
                     else -> algSpec.digests.first()
                 }),
                 getKPGInstance("EC", config.provider).run {
-                    initialize(ECGenParameterSpec(algSpec.curve.jcaName))
+                    val curveName = checkNotNull(IndispensableJcaExtensionProvider.jcaNameForCurve(algSpec.curve))
+                    initialize(ECGenParameterSpec(curveName))
                     generateKeyPair()
                 })
             is SigningKeyConfiguration.RSAConfiguration -> {

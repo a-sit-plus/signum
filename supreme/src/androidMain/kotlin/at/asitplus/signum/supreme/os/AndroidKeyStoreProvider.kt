@@ -188,7 +188,8 @@ object SupremeAndroidKeyStoreOperationsProvider : AndroidKeyStoreOperationsProvi
                 })
             is SigningKeyConfiguration.ECConfiguration ->
                 Pair(KeyProperties.KEY_ALGORITHM_EC, builder.apply {
-                    setAlgorithmParameterSpec(ECGenParameterSpec(algSpec.curve.jcaName))
+                    val curveName = checkNotNull(IndispensableJcaExtensionProvider.jcaNameForCurve(algSpec.curve))
+                    setAlgorithmParameterSpec(ECGenParameterSpec(curveName))
                     setDigests(*algSpec.digests.map(::keyProperty).toTypedArray())
                 })
             else -> throw UnsupportedCryptoException("Unknown algorithm is configured")

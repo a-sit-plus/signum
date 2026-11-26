@@ -35,7 +35,14 @@ private fun sigGetInstance(alg: String, provider: JCAProviderRef): JCASignature 
 /** This provides semantics-aware operations for types supported by Indispensable */
 object IndispensableJcaExtensionProvider : JcaMappingProvider {
     override fun curveForJcaName(name: String): ShortWeierstrassCurve? =
-        ECCurve.entries.find { it.jcaName == name }
+        ECCurve.entries.find { jcaNameForCurve(it) == name }
+
+    override fun jcaNameForCurve(curve: ECCurve): String? = when {
+        curve === ECCurve.SECP_256_R_1 -> "secp256r1"
+        curve === ECCurve.SECP_384_R_1 -> "secp384r1"
+        curve === ECCurve.SECP_521_R_1 -> "secp521r1"
+        else -> null
+    }
 
     override fun getJCAMessageDigestInstance(digest: Digest, jcaProviderRef: JCAProviderRef): MessageDigest? {
         if (digest !is WellKnownDigest) return null
