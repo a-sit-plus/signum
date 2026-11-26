@@ -346,7 +346,7 @@ object CoseHashAlgorithmSerializer : KSerializer<CoseAlgorithm.Hash> {
 
 }
 
-/** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
+/** Finds a matching COSE algorithm and retains the required curve for ESP variants. */
 @Throws(Throwable::class)
 fun SignatureAlgorithm.toCoseAlgorithm(): CoseAlgorithm.Signature =
     when (this) {
@@ -394,7 +394,7 @@ fun SignatureAlgorithm.toCoseAlgorithm(): CoseAlgorithm.Signature =
         else -> throw UnsupportedCryptoException("COSE/JOSE providerize TODO")
     }
 
-/** Tries to find a matching COSE algorithm. Note that [CoseAlgorithm.MAC.HS256_64] cannot be mapped automatically. */
+/** Finds a matching COSE MAC, including SHA-256 truncated to 64 bits, or throws if unsupported. */
 @Throws(Throwable::class)
 fun MessageAuthenticationCode.toCoseAlgorithm(): CoseAlgorithm.MAC =
     when (this) {
@@ -431,12 +431,12 @@ fun Digest.toCoseAlgorithm(): CoseAlgorithm.Hash =
         else -> throw UnsupportedCryptoException("$this has no COSE algorithm mapping")
     }
 
-/** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
+/** Finds a matching COSE algorithm and retains the required curve for ESP variants. */
 @Throws(Throwable::class)
 fun SpecializedSignatureAlgorithm.toCoseAlgorithm(): CoseAlgorithm.Signature =
     this.algorithm.toCoseAlgorithm()
 
-/** Tries to find a matching COSE algorithm. Note that COSE imposes curve restrictions on ECDSA based on the digest. */
+/** Finds a matching COSE MAC or throws if unsupported. */
 @Throws(Throwable::class)
 fun SpecializedMessageAuthenticationCode.toCoseAlgorithm(): CoseAlgorithm.MAC =
     this.algorithm.toCoseAlgorithm()

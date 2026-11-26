@@ -1,4 +1,6 @@
-package at.asitplus.signum.indispensable.cosef
+package at.asitplus.signum.indispensable.cosef.legacy
+
+import at.asitplus.signum.indispensable.cosef.*
 
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
@@ -22,6 +24,10 @@ import kotlinx.serialization.encodeToByteArray
 @Serializable
 @CborArray
 @ConsistentCopyVisibility
+@Deprecated(
+    "Replaced by CoseSign1 and CoseMac0, which keep the protected header as transmitted",
+    level = DeprecationLevel.WARNING
+)
 data class CoseBytes internal constructor(
     /**
      * Content of the protected header byte string, i.e. the encoded [protectedHeader] exactly as it has been
@@ -35,6 +41,7 @@ data class CoseBytes internal constructor(
     @SerialName("protectedHeader")
     @ByteString
     val rawProtectedHeader: ByteArray,
+    @Serializable(with = LegacyUnprotectedHeaderSerializer::class)
     val unprotectedHeader: CoseHeader?,
     @ByteString
     val payload: ByteArray?,

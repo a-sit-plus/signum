@@ -205,7 +205,7 @@ data class JsonWebKey(
     @Deprecated("To be removed in next release")
     fun serialize() = joseCompliantSerializer.encodeToString(this)
 
-    val didEncoded: String? by lazy { catchingUnwrapped { toPublicKey() }.getOrNull()?.didEncoded }
+    val didEncoded: String? by lazy { catchingUnwrapped { toPublicKey().didEncoded }.getOrNull() }
 
     override fun toString(): String {
         return "JsonWebKey(curve=$curve," +

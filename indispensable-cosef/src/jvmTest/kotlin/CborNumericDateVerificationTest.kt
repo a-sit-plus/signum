@@ -1,7 +1,11 @@
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.cosef.CborWebToken
 import at.asitplus.signum.indispensable.cosef.CoseAlgorithm
-import at.asitplus.signum.indispensable.cosef.CoseSigned
+import at.asitplus.signum.indispensable.cosef.CoseSign1
+import at.asitplus.signum.indispensable.cosef.EmptyCoseHeader
+import at.asitplus.signum.indispensable.cosef.legacy.CoseHeader
+import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
+import kotlinx.serialization.encodeToByteArray
 import at.asitplus.signum.indispensable.getJCASignatureInstance
 import at.asitplus.signum.indispensable.jcaSignatureBytes
 import at.asitplus.signum.indispensable.parseJCASignature
@@ -42,16 +46,16 @@ val CborNumericDateVerificationTest by matrixSuite {
         val input = bytes(0x84) + protectedHeader.byteString() + bytes(0xA0) + payload.byteString() +
                 signature.coseBytes.byteString()
 
-        val cose = CoseSigned.deserialize(CborWebToken.serializer(), input)
+        val cose = CoseSign1<CoseHeader, EmptyCoseHeader, CborWebToken>(input)
 
         cose.payload?.expiration shouldBe Instant.fromEpochSeconds(1700000000, 500_000_000)
         cose.payload?.issuedAt shouldBe Instant.fromEpochSeconds(1)
-        cose.prepareCoseSignatureInput() shouldBe sigStructure
+        cose.signatureInput() shouldBe sigStructure
         algorithm.getJCASignatureInstance().run {
             initVerify(keyPair.public)
-            update(cose.prepareCoseSignatureInput())
+            update(cose.signatureInput())
             verify(cose.signature.jcaSignatureBytes)
         } shouldBe true
-        cose.serialize(CborWebToken.serializer()) shouldBe input
+        coseCompliantSerializer.encodeToByteArray(cose) shouldBe input
     }
 }

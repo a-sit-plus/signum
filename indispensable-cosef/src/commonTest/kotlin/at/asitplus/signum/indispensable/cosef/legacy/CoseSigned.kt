@@ -1,24 +1,42 @@
-package at.asitplus.signum.indispensable.cosef
+package at.asitplus.signum.indispensable.cosef.legacy
 
+import at.asitplus.signum.indispensable.cosef.*
+
+import at.asitplus.signum.indispensable.Signature
 import at.asitplus.signum.indispensable.contentEqualsIfArray
-import at.asitplus.signum.indispensable.cosef.CoseSigned.Companion.create
+import at.asitplus.signum.indispensable.contentHashCodeIfArray
+import at.asitplus.signum.indispensable.cosef.legacy.CoseSigned.Companion.create
+import at.asitplus.signum.indispensable.cosef.io.ByteStringWrapper
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
 import io.matthewnelson.encoding.base16.Base16
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToByteArray
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToByteArray
 
 /**
- * Representation of a COSE_MAC0 object with the tag value, i.e. consisting of protected header, unprotected header and payload.
+ * Representation of a signed COSE_Sign1 object, i.e. consisting of protected header, unprotected header and payload.
+ *
+ * If the payload is a generic [ByteArray], then it will be serialized as-is. Should the payload be any other type,
+ * we will tag it with 24 (see
+ * [RFC8949 3.4.5.1](https://www.rfc-editor.org/rfc/rfc8949.html#name-encoded-cbor-data-item)) for serialization.
+ * In order to prevent nested wrapping of the payload and the resulting type erasure
+ * payloads of type [ByteStringWrapper] will be rejected.
+ * In this case the payload could be handed over as the wrapped class itself or manually serialized to [ByteArray]
+ *
+ * See [RFC 9052](https://www.rfc-editor.org/rfc/rfc9052.html).
  */
 @OptIn(ExperimentalSerializationApi::class)
-@Serializable(with = CoseMacSerializer::class)
+@Serializable(with = CoseSignedSerializer::class)
 @ConsistentCopyVisibility
-data class CoseMac<P : Any?> internal constructor(
+@Deprecated(
+    "Replaced by CoseSign1 (wire) + CoseSign1Typed (typed payload)",
+    level = DeprecationLevel.WARNING,
+    replaceWith = ReplaceWith("CoseSign1Typed")
+)
+data class CoseSigned<P : Any?> internal constructor(
     val payload: P?,
-    val tag: ByteArray,
+    val signature: Signature,
     val wireFormat: CoseBytes,
 ) {
 
@@ -29,74 +47,74 @@ data class CoseMac<P : Any?> internal constructor(
     /**
      * @param detachedPayload only to be set when [payload] is null, i.e. it is transported externally
      */
-    fun prepareCoseMacInput(
+    fun prepareCoseSignatureInput(
         externalAad: ByteArray = byteArrayOf(),
         detachedPayload: ByteArray? = null,
-    ): ByteArray = wireFormat.toCoseMacInput(externalAad, detachedPayload)
+    ): ByteArray = wireFormat.toCoseSignatureInput(externalAad, detachedPayload)
 
     fun serialize(parameterSerializer: KSerializer<P>): ByteArray = coseCompliantSerializer
-        .encodeToByteArray(CoseMacSerializer(parameterSerializer), this)
+        .encodeToByteArray(CoseSignedSerializer(parameterSerializer), this)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
 
-        other as CoseMac<*>
+        other as CoseSigned<*>
 
         if (payload != null) {
             if (other.payload == null) return false
             if (!payload.contentEqualsIfArray(other.payload)) return false
         } else if (other.payload != null) return false
-        if (!tag.contentEquals(other.tag)) return false
+        if (signature != other.signature) return false
         if (wireFormat != other.wireFormat) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = payload?.hashCode() ?: 0
-        result = 31 * result + tag.contentHashCode()
+        var result = payload?.contentHashCodeIfArray() ?: 0
+        result = 31 * result + signature.hashCode()
         result = 31 * result + wireFormat.hashCode()
         return result
     }
 
     override fun toString(): String {
-        return "CoseMac(protectedHeader=$protectedHeader," +
+        return "CoseSigned(protectedHeader=$protectedHeader," +
                 " unprotectedHeader=$unprotectedHeader," +
                 " payload=${if (payload is ByteArray) payload.encodeToByteArray(Base16()) else payload}," +
-                " tag=$tag," +
+                " signature=$signature," +
                 " wireFormat=$wireFormat)"
     }
 
     companion object {
         @Throws(Throwable::class)
-        fun <P : Any> deserialize(parameterSerializer: KSerializer<P>, it: ByteArray): CoseMac<P> =
-            coseCompliantSerializer.decodeFromByteArray(CoseMacSerializer(parameterSerializer), it)
+        fun <P : Any> deserialize(parameterSerializer: KSerializer<P>, it: ByteArray): CoseSigned<P> =
+            coseCompliantSerializer.decodeFromByteArray(CoseSignedSerializer(parameterSerializer), it)
 
         /**
-         * Use this method to create a new [CoseMac] object with correct [CoseMac.wireFormat] set.
+         * Use this method to create a new [CoseSigned] object with correct [CoseSigned.wireFormat] set.
          */
         @Throws(IllegalArgumentException::class)
         fun <P : Any> create(
             protectedHeader: CoseHeader,
             unprotectedHeader: CoseHeader? = null,
             payload: P?,
-            tag: ByteArray,
+            signature: Signature,
             payloadSerializer: KSerializer<P>,
-        ): CoseMac<P> = CoseMac<P>(
+        ): CoseSigned<P> = CoseSigned<P>(
             payload = payload,
-            tag = tag,
+            signature = signature,
             wireFormat = CoseBytes(
                 protectedHeader = protectedHeader,
                 unprotectedHeader = unprotectedHeader,
                 payload = payload.toRawPayload(payloadSerializer),
-                rawAuthBytes = tag
+                rawAuthBytes = signature.coseBytes
             ),
         )
 
         /**
-         * Use this method to prepare a [CoseInput] object to calculate the tag,
-         * and then call [create] to create a [CoseMac] object.
+         * Use this method to prepare a [CoseInput] object to calculate the signature,
+         * and then call [create] to create a [CoseSigned] object.
          */
         @Throws(IllegalArgumentException::class)
         fun <P : Any> prepare(
@@ -105,10 +123,12 @@ data class CoseMac<P : Any?> internal constructor(
             payload: P?,
             payloadSerializer: KSerializer<P>,
         ): CoseInput = CoseInput(
-            contextString = "MAC0",
+            contextString = "Signature1",
             protectedHeader = protectedHeader,
             externalAad = externalAad,
             payload = payload.toRawPayload(payloadSerializer),
         )
     }
 }
+
+

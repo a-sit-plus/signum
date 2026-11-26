@@ -1,4 +1,6 @@
-package at.asitplus.signum.indispensable.cosef
+package at.asitplus.signum.indispensable.cosef.legacy
+
+import at.asitplus.signum.indispensable.cosef.*
 
 import at.asitplus.signum.indispensable.cosef.io.Base16Strict
 import at.asitplus.signum.indispensable.cosef.io.coseCompliantSerializer
@@ -11,6 +13,10 @@ import kotlinx.serialization.encodeToByteArray
 
 @Serializable
 @CborArray
+@Deprecated(
+    "Replaced by CoseSign1.signatureInput / CoseMac0.macInput",
+    level = DeprecationLevel.WARNING
+)
 data class CoseInput(
     val contextString: String,
     @Serializable(with = ProtectedCoseHeaderSerializer::class)

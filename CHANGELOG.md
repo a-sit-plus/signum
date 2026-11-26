@@ -5,6 +5,13 @@
 (any algorithm goes! any provider goes!, any platform goes!)
 at the cost of introducing breaking changes** 
 
+* Align COSEF/JOSEF authentication APIs (**breaking**):
+    * Shared specialized-key conversion contracts and COSEF conversions return values directly and throw on failure; remove conversion-specific `getOrThrow()` calls
+    * Select same-algorithm signers by unambiguous key ID, preferring exact matches over unlabeled keys; reject registration ambiguity before signing
+    * Validate JOSE critical-header placement/references and serialized authentication parameters; signing requires explicit processing of critical extensions
+    * Decode typed COSE signatures eagerly, validate required ESP curve lengths, and add covariance and structural COSE_Sign equality
+    * Preserve existing valid wire encodings, authenticated bytes, tag-24 payload policy, and the upstream CBOR preservation boundary
+
 * awesn1 instead of indispensable-asn1
 * publish javadoc redirect to save space
 * make all provider functions suspend
@@ -16,11 +23,6 @@ at the cost of introducing breaking changes**
     * Typed access now uses `.typed<H, P>()`; `JwsTypedSerializerTemplate` takes header and payload serializers and creates concrete serializers through `jwsCompactSerializer()`, `jwsFlattenedSerializer()`, and `jwsGeneralSerializer()`
     * Rename JWS conversions to `toCompact()`, `toFlattened()`, and `toGeneral()`
     * Replace typed and callback signing factories with `JwsSigner`; make typed constructors and copying internal
-* COSE: Retain the protected header bytes of deserialized `CoseSigned`/`CoseMac` as received
-    * Use them for `prepareCoseSignatureInput()`/`prepareCoseMacInput()` and for serialization, instead of re-encoding the parsed `CoseHeader`, as required by RFC 9052 Section 4.4
-    * Fixes verification of objects whose protected header is encoded differently than Signum would encode it (e.g. other key order, `h'a0'` instead of `h''`), as well as signatures breaking after a deserialize/serialize round trip
-    * Add `CoseBytes.rawProtectedHeader`; `CoseBytes` equality now compares these bytes instead of the parsed header
-    * `CoseBytes.protectedHeader` is parsed from `rawProtectedHeader`; `CoseSigned`/`CoseMac` expose `protectedHeader` and `unprotectedHeader` as getters delegating to `wireFormat` (**breaking** for destructuring, as their `componentN()` functions change)
 * COSE header parameters:
     * Add `x5t` (RFC 9360) as `CoseHeader.certificateHash`, with `CoseCertificateHash`, using the new `CoseAlgorithm.Hash` (with `Digest.toCoseAlgorithm()`)
     * Add `x5u` (RFC 9360) as `CoseHeader.certificateUrl`
@@ -43,6 +45,15 @@ at the cost of introducing breaking changes**
     * kotlinx.serialization 1.13.0
     * kotlinx.io 0.9.3
     * bignum 0.4.0
+* COSEF explicit header buckets (**breaking**), building on Srdjan Stjepanovic's contributions in PRs [#506](https://github.com/a-sit-plus/signum/pull/506) and [#507](https://github.com/a-sit-plus/signum/pull/507); all 29 original commits remain individually attributed beneath the rewrite.
+    * `CoseHeader` is an interface. Applications define annotated protected and unprotected models; reusable `X5ChainSerializer` and `CriticalHeadersSerializer` handle special properties.
+    * Add `CoseSign1<ProtectedHeader, UnprotectedHeader, Payload>`, `CoseMac0<ProtectedHeader, UnprotectedHeader, Payload>`, and their nested `.Raw<UnprotectedHeader>` envelopes.
+    * Add `CoseSigner`, `CoseMacCreator`, and `CoseSign` with ordered signature entries, distinct body/signer buckets, and one serialized payload.
+    * Retain received protected/payload bytes for authentication and typed reserialization, including detached versus attached-empty payloads. Typed payload creation keeps the legacy tag-24 policy.
+    * Use upstream kotlinx.serialization 1.13.0 and Kotlin 2.4.21. No fork repository or CBOR tree backend is required.
+    * Reject duplicate modeled labels, bucket conflicts, invalid critical references, algorithm/curve/key-ID mismatches, and unprocessed critical parameters before signing.
+    * Add `CwtClaims` for application-owned CWT implementations; `CborWebToken` implements it.
+    * Remove the legacy signed/MAC factories and combined-header APIs. Compatibility implementations live only in test fixtures. Raw unprotected headers are model-dependent and do not preserve ignored fields. See the [migration guide](https://a-sit-plus.github.io/signum/cosef-migration/).
 
 ## 3.24.0 / Supreme 0.15.0
 * HPKE support
@@ -344,13 +355,13 @@ Fix Android target pulling in JDK-21-specifics ([KT-71375](https://youtrack.jetb
     * `Asn1Element.Companion.parse`
     * `Asn1Element.Companion.decodeFromDerHexString`
     * `Asn1Element.asPrimitiveOctetString`
-    * `CryptoPublicKey.fromJcaPublicKey`
-    * `CryptoPublicKey.RSA.fromJcaPublicKey`
-    * `CryptoPublicKey.EC.fromJcaPublicKey`
-    * `CryptoSignature.invoke`
-    * `CryptoPublicKey.RSA(n: ByteArray, e: ByteArray)`
-    * `CryptoPublicKey.EC(curve: ECCurve, x: ByteArray, usePositiveY: Boolean)`
-    * `CryptoPublicKey.EC(curve: ECCurve, x: ByteArray, y: ByteArray)`
+    * `PublicKey.fromJcaPublicKey`
+    * `PublicKey.RSA.fromJcaPublicKey`
+    * `PublicKey.EC.fromJcaPublicKey`
+    * `Signature.invoke`
+    * `PublicKey.RSA(n: ByteArray, e: ByteArray)`
+    * `PublicKey.EC(curve: ECCurve, x: ByteArray, usePositiveY: Boolean)`
+    * `PublicKey.EC(curve: ECCurve, x: ByteArray, y: ByteArray)`
     * `ECCurve.keyLengthBits`
     * `ECCurve.coordinateLengthBytes`
     * `ECCurve.signatureLengthBytes`
@@ -372,7 +383,7 @@ Fix Android target pulling in JDK-21-specifics ([KT-71375](https://youtrack.jetb
 * Performance optimization: Instantiate fewer `KmmResult`s
 * Move `PemEncodable`/`PemDecodable` from _indispensable_ to _indispensable-asn1_ module.
 * More comprehensive PEM encoding/decoding support:
-    * `CryptoPublicKey`
+    * `PublicKey`
         * Note that PKCS1 encoding of RSA keys is not supported as it is discouraged (decoding is supported)
         * ANSI encoding and decoding is also unsupported, because decoding requires context and encoding this way is incomplete
     * `X509Certificate`
@@ -392,7 +403,7 @@ Fix Android target pulling in JDK-21-specifics ([KT-71375](https://youtrack.jetb
     * Create new `CoseSigned` objects by calling `CoseSigned.create()` instead of using a constructor
     * Prepare COSE signature input by calling `CoseSigned.prepare()`
     * In `CoseSigned`, member `protectedHeader` is now a `CoseHeader`, not a `ByteStringWrapper<CoseHeader>`
-    * In `CoseSigned`, member `rawSignature` (`ByteArray`) is now `signature` (`CryptoSignature.RawByteEncodable`)
+    * In `CoseSigned`, member `rawSignature` (`ByteArray`) is now `signature` (`Signature.RawByteEncodable`)
 
 ### 3.11.1 (Supreme 0.6.1)
 
@@ -407,7 +418,7 @@ Fix Android target pulling in JDK-21-specifics ([KT-71375](https://youtrack.jetb
     * Additional constructor methods: `fromByteArray`, `fromUnsignedByteArray`
     * Additional instance methods: `isZero`, `magnitude`, `bitLength`
     * Additional conversion methods for Java BigInteger and iospin BigInteger
-* Refactor `CryptoPublicKey.Rsa` to use `Asn1Integer`
+* Refactor `PublicKey.Rsa` to use `Asn1Integer`
     * Fixes JWS/COSE encoding for non-standard exponents (with MSBit 1)
 * Add type parameter to `CoseSigned` for its payload (tagging with tag 24 when necessary)
     * Changes primary constructor visibility to `internal` to check for `ByteStringWrapper` as payload type, which shall be rejected
@@ -443,7 +454,7 @@ The public API remains _almost_ unchanged. Breaking API changes are:
 
 * Some parsing methods migrating from a `ByteIterator` to kotlinx-io `Source`
 * Move `ensureSize` from package `asn1` to `misc`
-* Change CSR to take an actual `CryptoSignature` instead of a ByteArray
+* Change CSR to take an actual `Signature` instead of a ByteArray
 * Remove Legacy iOS Attestation
 * Add type parameter to `JwsSigned` for its payload
 * Add type parameter to `JweDecrypted` for its payload
@@ -480,7 +491,7 @@ The full list of changes is:
 * KmmResult 1.9.0
 * Multibase 1.2.1
 * Introduce generic tag assertion to `Asn1Element`
-* Change CSR to take an actual `CryptoSignature` instead of a ByteArray
+* Change CSR to take an actual `Signature` instead of a ByteArray
 * Introduce shorthand to create CSR from TbsCSR
 * Introduce shorthand to create certificate from TbsCertificate
 * Remove requirement from CSR to have certificate extensions
@@ -508,7 +519,7 @@ The full list of changes is:
 
 * Move `Attestation` from Supreme to Indispensable
 * Rename `parse()` to `deserialize()` in `JwsSigned` and `JweEncrypted` to align with COSE
-* Rename `CryptoPublicKey.Rsa` -> `CryptoPublicKey.RSA` for consistency reasons
+* Rename `PublicKey.Rsa` -> `PublicKey.RSA` for consistency reasons
 * Add HMAC JCA names, properties used in JSON Web Encryption
 
 ### 3.8.2 (Supreme 0.3.2)
@@ -645,25 +656,25 @@ The full list of changes is:
 
 * Move `curve` from `CryptoAlgorithm` to `JwsAlgorithm`
 * Don't assume curve information for the X.509 signature when, in fact, none exists
-    * `CryptoSignature`s in X.509 are now indefinite length
+    * `Signature`s in X.509 are now indefinite length
 
 **Changes**
 
 * Always DID-encode keys in compressed form (but keep decoding support)
 * Rename `CryptoAlgorithm` to `X509SignatureAlgorithm` to better describe what it is
     * Rename `toCryptoAlgorithm` to `toX509SignatureAlgorithm` accordingly
-* Rework CryptoSignature to two-dimensional interface:
-    * CryptoSignature <- {EC <- {IndefiniteLength, DefiniteLength}, RsaOrHmac}
-    * CryptoSignature <- {RawByteEncodable <- {EC.DefiniteLength, RsaOrHmac}, NotRawByteEncodable <- EC.IndefiniteLength}
+* Rework Signature to two-dimensional interface:
+    * Signature <- {EC <- {IndefiniteLength, DefiniteLength}, RsaOrHmac}
+    * Signature <- {RawByteEncodable <- {EC.DefiniteLength, RsaOrHmac}, NotRawByteEncodable <- EC.IndefiniteLength}
 
 ### 3.1.0
 
 **Fixes**
 
 * Standardize class names: `Ec` -> `EcdsaVerifier` everywhere
-* Fix an edge case where very small `r`/`s` in `CryptoSignature.EC` would be corrupted
+* Fix an edge case where very small `r`/`s` in `Signature.EC` would be corrupted
 * Remove bogus ASN.1 encoding from JWS Algorithms
-    * `CryptoSignature.EC` now requires specification of a curve or size when reading raw bytes
+    * `Signature.EC` now requires specification of a curve or size when reading raw bytes
 
 **Features**
 
@@ -692,8 +703,8 @@ The full list of changes is:
 
 * Restructure and fix `RelativeDistinguishedName`. **THIS IS A BREAKING CHANGE**
 * Fix `Asn1Time` not truncating to seconds
-* Fix parsing of CryptoSignature when decoding Certificates
-* Remove bogus `serialize()` function from `CryptoSignature`  **THIS IS A BREAKING CHANGE**
+* Fix parsing of Signature when decoding Certificates
+* Remove bogus `serialize()` function from `Signature`  **THIS IS A BREAKING CHANGE**
 
 
 **Features**
@@ -746,10 +757,10 @@ The full list of changes is:
 * Rename `JsonWebKey.fromKeyId` to `JsonWebKey.fromDid`
 
 ### 2.3.0
-* Change `CryptoPublicKey.toJsonWebKey()` return type from `KmmResult<JsonWebKey>` to `JsonWebKey`
-* Add `CryptoSignature.parseFromJca` function
-* Refactor `CryptoPublicKey.keyID` to `CryptoPublicKey.didEncoded` to better reflect what it actually is
-* Rename `CryptoPublicKey.fromKeyId` to `CryptoPublicKey.fromDid`
+* Change `PublicKey.toJsonWebKey()` return type from `KmmResult<JsonWebKey>` to `JsonWebKey`
+* Add `Signature.parseFromJca` function
+* Refactor `PublicKey.keyID` to `PublicKey.didEncoded` to better reflect what it actually is
+* Rename `PublicKey.fromKeyId` to `PublicKey.fromDid`
 
 ### 2.2.1
 * Update conventions
@@ -760,12 +771,12 @@ The full list of changes is:
 * Dependency Updates
     * KmmResult 1.5.4
 * Refactor `MultiBaseHelper` to only handle conversion
-* Change `JwsHeader.publicKey` from JsonWebKey to CryptoPublicKey
+* Change `JwsHeader.publicKey` from JsonWebKey to PublicKey
 * Remove `SignatureValueLength` parameters from JWS & COSE Algorithm Enum class
 * Remove deprecated functions
 * Rename `Jws` classes
     * New `CryptoAlgorithm` class
-    * New `CryptoSignature` class for easy Asn1 - RawByteArray conversion
+    * New `Signature` class for easy Asn1 - RawByteArray conversion
 * Rename function in file `JcaExtensions.kt` from `.toPublicKey` to `.toJcaPublicKey` to reflect connection to JVM
 * Remove VcLib-specific constants
 
@@ -781,7 +792,7 @@ The full list of changes is:
     * Throw `IllegalArgumentException` for input-related errors
     * Add `xxxOrNull()` functions for all encoding/decoding/parsing functions
     * Add `xxxSafe()` functions to encapsulate encoding/decoding in `KmmResult`
-    * Return `KmmResult` for conversions between different key representations ( i.e. `CryptoPublicKey`, `CoseKey` and `JsonWebKey`)
+    * Return `KmmResult` for conversions between different key representations ( i.e. `PublicKey`, `CoseKey` and `JsonWebKey`)
 
 
 ### 2.0.0
