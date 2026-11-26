@@ -39,9 +39,7 @@ sealed interface RSAPadding : Enumerable {
 
 }
 
-// TODO extensible, no more sealed
-// TODO WithSourceRepresentation
-sealed interface AsymmetricEncryptionAlgorithm : Identifiable {
+interface AsymmetricEncryptionAlgorithm : Identifiable {
     data class RSA(
         /** The padding to apply to the data. */
         val padding: RSAPadding

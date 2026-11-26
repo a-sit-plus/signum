@@ -4,6 +4,8 @@ import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.sign.Signer
+import at.asitplus.signum.indispensable.asymmetric.RSAPadding
+import at.asitplus.signum.UnsupportedCryptoException
 import io.kotest.assertions.throwables.shouldThrow
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe
@@ -12,6 +14,43 @@ import java.security.NoSuchProviderException
 import java.security.Security
 
 val ConfigTests  by matrixSuite {
+    "External asymmetric algorithms are rejected before key validation" {
+        val externalAlgorithm = object : AsymmetricEncryptionAlgorithm {
+            override val oid = AsymmetricEncryptionAlgorithm.RSA.oid
+        }
+        val ecSigner = Signer.Ephemeral { ec {} }
+        @OptIn(SecretExposure::class)
+        val ecPrivateKey = ecSigner.exportPrivateKey()
+
+        shouldThrow<UnsupportedCryptoException> {
+            externalAlgorithm.encryptorFor(ecSigner.publicKey)
+        }
+        shouldThrow<UnsupportedCryptoException> {
+            externalAlgorithm.decryptorFor(ecPrivateKey)
+        }
+    }
+
+    "All exposed RSA padding variants round trip" {
+        val kp = Signer.Ephemeral { rsa { bits = 2048 } }
+        val plaintext = byteArrayOf(1, 3, 3, 7)
+        @OptIn(at.asitplus.signum.HazardousMaterials::class)
+        val paddings = listOf(
+            RSAPadding.NONE,
+            RSAPadding.PKCS1,
+            RSAPadding.OAEP.SHA1,
+            RSAPadding.OAEP.SHA256,
+            RSAPadding.OAEP.SHA384,
+            RSAPadding.OAEP.SHA512
+        )
+        paddings.forEach { padding ->
+            val algorithm = AsymmetricEncryptionAlgorithm.RSA(padding)
+            val ciphertext = algorithm.encryptorFor(kp.publicKey).encrypt(plaintext)
+            @OptIn(SecretExposure::class)
+            val privateKey = kp.exportPrivateKey()
+            algorithm.decryptorFor(privateKey).decrypt(ciphertext) shouldBe plaintext
+        }
+    }
+
     "Asymmetric Provider Config" {
         val kp =
             Signer.Ephemeral {
