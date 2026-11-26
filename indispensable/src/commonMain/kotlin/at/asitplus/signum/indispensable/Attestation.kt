@@ -24,7 +24,6 @@ import kotlinx.serialization.json.JsonEncoder
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
-import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.JsonClassDiscriminator
 
 @Serializable
@@ -102,46 +101,40 @@ data class IosHomebrewAttestation(
             override val descriptor: SerialDescriptor = LegacyClientDataWire.serializer().descriptor
 
             override fun serialize(encoder: Encoder, value: ClientData) {
-                val jsonEncoder = encoder as? JsonEncoder
-                    ?: throw SerializationException("ClientData requires a JSON encoder")
-                val useV1 = value.publicKey.isLegacyIosKey()
-                val element = if (useV1) {
-                    jsonEncoder.json.encodeToJsonElement(
+                if (value.publicKey.isLegacyIosKey()) {
+                    encoder.encodeSerializableValue(
                         LegacyClientDataWire.serializer(),
                         LegacyClientDataWire(value.purpose, value.publicKey, value.challenge)
                     )
                 } else {
-                    jsonEncoder.json.encodeToJsonElement(
+                    if (encoder !is JsonEncoder) throw SerializationException("ClientData v2 requires a JSON encoder")
+                    encoder.encodeSerializableValue(
                         Version2ClientDataWire.serializer(),
                         Version2ClientDataWire(value.purpose, value.publicKey.asn1.toDer(), value.challenge, 2)
                     )
                 }
-                jsonEncoder.encodeJsonElement(element)
             }
 
             override fun deserialize(decoder: Decoder): ClientData {
-                val jsonDecoder = decoder as? JsonDecoder
-                    ?: throw SerializationException("ClientData requires a JSON decoder")
-                val obj = jsonDecoder.decodeJsonElement() as? JsonObject
-                    ?: throw SerializationException("ClientData must be a JSON object")
-                val versionField = obj["version"]
-                val data = if (versionField == null) {
-                    jsonDecoder.json.decodeFromJsonElement(LegacyClientDataWire.serializer(), obj).let {
-                        ClientData(it.purpose, it.publicKey, it.challenge)
-                    }
-                } else {
-                    val primitive = versionField as? JsonPrimitive
-                    if (primitive == null || primitive.isString || primitive.content != "2") {
-                        throw SerializationException("Unsupported ClientData version")
-                    }
-                    val wire = jsonDecoder.json.decodeFromJsonElement(Version2ClientDataWire.serializer(), obj)
-                    val publicKey = PublicKey.fromAsn1(wire.publicKey).also {
-                        if (it is PublicKey.Unknown) throw SerializationException("No key format provider decoded the v2 public key")
-                    }
-                    ClientData(wire.purpose, publicKey, wire.challenge)
+                if (decoder !is JsonDecoder) {
+                    return decoder.decodeSerializableValue(LegacyClientDataWire.serializer()).toClientData()
                 }
-                return data
+                val obj = decoder.decodeJsonElement() as? JsonObject
+                    ?: throw SerializationException("ClientData must be a JSON object")
+                val version = obj["version"]
+                    ?: return decoder.json.decodeFromJsonElement(LegacyClientDataWire.serializer(), obj).toClientData()
+                if (version !is JsonPrimitive || version.isString || version.content != "2") {
+                    throw SerializationException("Unsupported ClientData version")
+                }
+                val wire = decoder.json.decodeFromJsonElement(Version2ClientDataWire.serializer(), obj)
+                val publicKey = PublicKey.fromAsn1(wire.publicKey)
+                if (publicKey is PublicKey.Unknown) {
+                    throw SerializationException("No key format provider decoded the v2 public key")
+                }
+                return ClientData(wire.purpose, publicKey, wire.challenge)
             }
+
+            private fun LegacyClientDataWire.toClientData() = ClientData(purpose, publicKey, challenge)
         }
     }
 
@@ -166,6 +159,7 @@ data class IosHomebrewAttestation(
 }
 
 @Serializable
+@SerialName("at.asitplus.signum.indispensable.IosHomebrewAttestation.ClientData")
 private data class LegacyClientDataWire(
     val purpose: String,
     @Serializable(with = IosPublicKeySerializer::class)
@@ -186,7 +180,7 @@ private data class Version2ClientDataWire(
 
 private fun PublicKey.isLegacyIosKey(): Boolean = when (this) {
     is RsaPublicKey -> true
-    is EcdsaPublicKey -> curve === ECCurve.SECP_256_R_1 || curve === ECCurve.SECP_384_R_1 || curve === ECCurve.SECP_521_R_1
+    is EcdsaPublicKey -> curve.isBuiltIn
     else -> false
 }
 

@@ -127,6 +127,7 @@ sealed class EcdsaPrivateKey private constructor(
         KeyAgreementPrivateValue.ECDH {
 
         init {
+            curve.requireBuiltIn()
             require(publicKey.publicPoint == privateKey.times(publicKey.curve.generator)) {
                 "Public key must match the private key!"
             }
@@ -137,7 +138,7 @@ sealed class EcdsaPrivateKey private constructor(
             curve: ECCurve,
         ) : this(
             privateKey,
-            curve.generator.times(privateKey).asPublicKey(preferCompressed = true),
+            curve.requireBuiltIn().generator.times(privateKey).asPublicKey(preferCompressed = true),
         )
 
         val curve: ECCurve get() = publicKey.curve
@@ -221,7 +222,11 @@ object IndispensableAsn1PrivateKeyFormatsProvider : Asn1PrivateKeyFormatProvider
         require(privateKeyInfo.version == Pkcs8PrivateKeyInfo.Version.V1) { "PKCS#8 Private Key VERSION must be 1" }
         return when (privateKeyInfo.algorithmOid) {
             RsaPrivateKey.oid -> RsaPrivateKey.fromAsn1(privateKeyInfo)
-            EcdsaPrivateKey.oid -> EcdsaPrivateKey.fromAsn1(privateKeyInfo)
+            EcdsaPrivateKey.oid -> {
+                val curveOid = (privateKeyInfo.algorithmParameters as? Asn1Primitive)?.let(ObjectIdentifier::decodeFromTlv)
+                if (curveOid != null && ECCurve.entries.none { it.oid == curveOid }) null
+                else EcdsaPrivateKey.fromAsn1(privateKeyInfo)
+            }
             else -> null
         }
     }

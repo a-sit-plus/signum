@@ -2,9 +2,12 @@ package at.asitplus.signum.supreme.asymmetric
 
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
+import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.dsl.rsa
 import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.indispensable.asymmetric.RSAPadding
+import at.asitplus.signum.indispensable.jcaName
+import at.asitplus.signum.indispensable.jcaParameterSpec
 import at.asitplus.signum.UnsupportedCryptoException
 import io.kotest.assertions.throwables.shouldThrow
 import at.asitplus.testballoon.matrix.*
@@ -13,13 +16,13 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.security.NoSuchProviderException
 import java.security.Security
 
+@OptIn(at.asitplus.signum.HazardousMaterials::class, SecretExposure::class)
 val ConfigTests  by matrixSuite {
     "External asymmetric algorithms are rejected before key validation" {
         val externalAlgorithm = object : AsymmetricEncryptionAlgorithm {
             override val oid = AsymmetricEncryptionAlgorithm.RSA.oid
         }
         val ecSigner = Signer.Ephemeral { ec {} }
-        @OptIn(SecretExposure::class)
         val ecPrivateKey = ecSigner.exportPrivateKey()
 
         shouldThrow<UnsupportedCryptoException> {
@@ -28,12 +31,13 @@ val ConfigTests  by matrixSuite {
         shouldThrow<UnsupportedCryptoException> {
             externalAlgorithm.decryptorFor(ecPrivateKey)
         }
+        shouldThrow<UnsupportedCryptoException> { externalAlgorithm.jcaName }
+        shouldThrow<UnsupportedCryptoException> { externalAlgorithm.jcaParameterSpec }
     }
 
     "All exposed RSA padding variants round trip" {
         val kp = Signer.Ephemeral { rsa { bits = 2048 } }
-        val plaintext = byteArrayOf(1, 3, 3, 7)
-        @OptIn(at.asitplus.signum.HazardousMaterials::class)
+        val privateKey = kp.exportPrivateKey()
         val paddings = listOf(
             RSAPadding.NONE,
             RSAPadding.PKCS1,
@@ -43,10 +47,9 @@ val ConfigTests  by matrixSuite {
             RSAPadding.OAEP.SHA512
         )
         paddings.forEach { padding ->
+            val plaintext = if (padding == RSAPadding.NONE) ByteArray(256) { 7 } else byteArrayOf(1, 3, 3, 7)
             val algorithm = AsymmetricEncryptionAlgorithm.RSA(padding)
             val ciphertext = algorithm.encryptorFor(kp.publicKey).encrypt(plaintext)
-            @OptIn(SecretExposure::class)
-            val privateKey = kp.exportPrivateKey()
             algorithm.decryptorFor(privateKey).decrypt(ciphertext) shouldBe plaintext
         }
     }

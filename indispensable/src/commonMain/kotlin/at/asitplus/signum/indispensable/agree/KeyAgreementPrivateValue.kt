@@ -31,7 +31,10 @@ interface UsableECDHPrivateValue : KeyAgreementPrivateValue.ECDH {
 suspend fun KeyAgreementPrivateValue.keyAgreement(publicValue: KeyAgreementPublicValue): ByteArray {
     return when (this) {
         is UsableECDHPrivateValue -> this.keyAgreement(publicValue.requireECDHPeer())
-        is EcdsaPrivateKey.WithPublicKey -> EcdsaAlgorithm.withSHA256.signerFor(this).keyAgreement(publicValue.requireECDHPeer())
+        is EcdsaPrivateKey.WithPublicKey -> {
+            val peer = publicValue.requireECDHPeer()
+            EcdsaAlgorithm.withSHA256.signerFor(this).keyAgreement(peer)
+        }
 
         else -> throw UnsupportedCryptoException("Key agreement is not supported for ${this::class.simpleName ?: "<unknown>"}")
     }

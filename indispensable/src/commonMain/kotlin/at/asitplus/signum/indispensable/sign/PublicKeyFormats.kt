@@ -200,7 +200,7 @@ class EcdsaPublicKey(
 object IndispensableAsn1PublicKeyFormatsProvider : Asn1PublicKeyFormatProvider {
     override fun encodeToAsn1(value: PublicKey): SubjectPublicKeyInfo? = when (value) {
         is RsaPublicKey -> value.asn1.toRepresentation()
-        is EcdsaPublicKey -> value.asn1.toRepresentation()
+        is EcdsaPublicKey -> if (value.curve.isBuiltIn) value.asn1.toRepresentation() else null
         else -> null
     }
 

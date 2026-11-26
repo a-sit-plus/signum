@@ -7,6 +7,7 @@ import at.asitplus.signum.dsl.jvm
 import at.asitplus.signum.ecmath.straussShamir
 import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.Signature
+import at.asitplus.signum.indispensable.isBuiltIn
 import at.asitplus.signum.indispensable.sign.EcdsaVerifier
 import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey

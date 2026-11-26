@@ -20,7 +20,7 @@ object FallbackToDERFormat : JcaMappingProvider {
 
     override fun jcaPrivateKeyToPrivateKey(privateKey: JCAPrivateKey): PrivateKey.WithPublicKey? =
         if (privateKey.format?.equals("PKCS#8", ignoreCase = true) == true)
-            PrivateKey.fromAsn1(privateKey.encoded) as PrivateKey.WithPublicKey
+            PrivateKey.fromAsn1(privateKey.encoded) as? PrivateKey.WithPublicKey
         else null
 }
 
@@ -45,7 +45,7 @@ object IndispensableJcaExtensionProvider : JcaMappingProvider {
     }
 
     override fun getJCASignatureInstance(algorithm: SignatureAlgorithm, jcaProviderRef: JCAProviderRef) = when (algorithm) {
-        is EcdsaAlgorithm -> when (val digest = algorithm.digest) {
+        is EcdsaAlgorithm -> if (algorithm.requiredCurve?.isBuiltIn == false) null else when (val digest = algorithm.digest) {
             is WellKnownDigest? -> sigGetInstance("${digest.jcaAlgorithmComponent}withECDSA", jcaProviderRef)
             else -> null
         }
@@ -73,12 +73,13 @@ object IndispensableJcaExtensionProvider : JcaMappingProvider {
 
     override fun getJCASignatureInstancePreHashed(algorithm: SignatureAlgorithm, jcaProviderRef: JCAProviderRef) = when (algorithm) {
         is EcdsaAlgorithm ->
-            sigGetInstance("NONEwithECDSA", jcaProviderRef)
+            if (algorithm.requiredCurve?.isBuiltIn == false) null else sigGetInstance("NONEwithECDSA", jcaProviderRef)
         else -> null
     }
 
     override fun parseJCASignatureBytes(algorithm: SignatureAlgorithm, sigBytes: ByteArray): Signature? = when (algorithm) {
-        is EcdsaAlgorithm -> EcdsaSignature.fromRawSignatureValue(sigBytes)
+        is EcdsaAlgorithm ->
+            if (algorithm.requiredCurve?.isBuiltIn == false) null else EcdsaSignature.fromRawSignatureValue(sigBytes)
         is RsaAlgorithm -> RsaSignature.fromRawSignatureValue(sigBytes)
         else -> null
     }
@@ -89,7 +90,7 @@ object IndispensableJcaExtensionProvider : JcaMappingProvider {
     }
 
     override fun publicKeyToJcaPublicKey(publicKey: PublicKey) = when(publicKey) {
-        is EcdsaPublicKey -> publicKey.toJcaPublicKey()
+        is EcdsaPublicKey -> if (publicKey.curve.isBuiltIn) publicKey.toJcaPublicKey() else null
         is RsaPublicKey -> publicKey.toJcaPublicKey()
         else -> null
     }

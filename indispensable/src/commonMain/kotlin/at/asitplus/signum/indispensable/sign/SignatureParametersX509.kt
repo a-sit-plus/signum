@@ -108,8 +108,8 @@ class EcdsaPrivateKeyAsn1Converters(self: EcdsaPrivateKey) :
 
 val EcdsaPrivateKey.asn1 get() = EcdsaPrivateKeyAsn1Converters(this)
 
-private fun decodeEcCurve(element: Asn1Element): ECCurve =
-    ECCurve.withOid(ObjectIdentifier.decodeFromTlv(element as Asn1Primitive))
+private fun decodeEcCurve(oid: ObjectIdentifier): ECCurve =
+    ECCurve.entries.firstOrNull { it.oid == oid } ?: throw UnsupportedCryptoException("Unsupported EC curve $oid")
 
 val PssPadded.Companion.fromAsn1 get() = asn1Decoders<RsaSsaPssParams,_> { src ->
     PssPadded(
@@ -178,15 +178,19 @@ private fun ecPrivateKey(
 ): EcdsaPrivateKey {
     require(parsed.version == Sec1EcPrivateKeyInfo.Version.V1) { "EC private key version must be 1" }
     val privateValue = BigInteger.fromByteArray(parsed.privateKey, Sign.POSITIVE)
-    return if (parsed.parameters != null || curveFromPkcs8 != null) EcdsaPrivateKey.WithPublicKey(
+    val outerCurve = curveFromPkcs8?.let {
+        val oid = it as? Asn1Primitive ?: throw UnsupportedCryptoException("Expected a named PKCS#8 EC curve")
+        decodeEcCurve(ObjectIdentifier.decodeFromTlv(oid))
+    }
+    val innerCurve = parsed.parameters?.let(::decodeEcCurve)
+    require(outerCurve == null || innerCurve == null || outerCurve === innerCurve) {
+        "PKCS#8 and SEC1 curve identifiers differ"
+    }
+    val curve = innerCurve ?: outerCurve
+    return if (curve != null) EcdsaPrivateKey.WithPublicKey(
         privateKey = privateValue,
-        publicKey = run {
-            val resolvedCurve = requireNotNull(
-                parsed.parameters?.let(ECCurve::withOid) ?: curveFromPkcs8?.let(::decodeEcCurve)
-            ) { "EC private key has no public key or curve" }
-            parsed.publicKey?.let { EcdsaPublicKey.fromAnsiX963Bytes(resolvedCurve, it.bitCarryingBytes) }
-                ?: resolvedCurve.generator.times(privateValue).asPublicKey(preferCompressed = true)
-        },
+        publicKey = parsed.publicKey?.let { EcdsaPublicKey.fromAnsiX963Bytes(curve, it.bitCarryingBytes) }
+            ?: curve.generator.times(privateValue).asPublicKey(preferCompressed = true),
     ) else EcdsaPrivateKey.WithoutPublicKey(
         privateKey = privateValue,
         publicKeyBytes = parsed.publicKey?.let { require(it.numPaddingBits == 0); it.bitCarryingBytes },

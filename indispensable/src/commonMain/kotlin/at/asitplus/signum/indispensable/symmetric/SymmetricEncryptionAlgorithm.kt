@@ -14,6 +14,7 @@ import at.asitplus.signum.internals.ImplementationError
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 import kotlin.jvm.JvmName
+import kotlin.jvm.JvmStatic
 
 /**
  * Base interface for every symmetric encryption algorithm. A Symmetric encryption algorithm is characterised by:
@@ -503,7 +504,7 @@ private data class BuiltInMode(
 }
 
 /**
- * Marker interface indicating a block cipher. Purely informational
+ * Marker interface indicating a stream cipher. Purely informational.
  */
 interface StreamCipher<A : AuthCapability<*>, I : NonceTrait<*>> : SymmetricEncryptionAlgorithm<A, I>
 

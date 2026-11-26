@@ -4,9 +4,6 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
-import at.asitplus.signum.indispensable.ECCurve.SECP_256_R_1
-import at.asitplus.signum.indispensable.ECCurve.SECP_384_R_1
-import at.asitplus.signum.indispensable.ECCurve.SECP_521_R_1
 import at.asitplus.signum.indispensable.josef.JwsAlgorithm.MAC.UNOFFICIAL_HS1
 import at.asitplus.signum.Enumerable
 import at.asitplus.signum.Enumeration
@@ -44,13 +41,13 @@ sealed class JwsAlgorithm(override val identifier: String) :
 
         sealed class EC(identifier: String, override val algorithm: EcdsaAlgorithm) : Signature(identifier) {
             @Serializable(with = JwsAlgorithmSerializer::class)
-            data object ES256 : EC("ES256", EcdsaAlgorithm(SHA256, SECP_256_R_1))
+            data object ES256 : EC("ES256", EcdsaAlgorithm(SHA256, ECCurve.SECP_256_R_1))
 
             @Serializable(with = JwsAlgorithmSerializer::class)
-            data object ES384 : EC("ES384", EcdsaAlgorithm(SHA384, SECP_384_R_1))
+            data object ES384 : EC("ES384", EcdsaAlgorithm(SHA384, ECCurve.SECP_384_R_1))
 
             @Serializable(with = JwsAlgorithmSerializer::class)
-            data object ES512 : EC("ES512", EcdsaAlgorithm(SHA512, SECP_521_R_1))
+            data object ES512 : EC("ES512", EcdsaAlgorithm(SHA512, ECCurve.SECP_521_R_1))
 
             /** The curve to create signatures on.
              * This is fixed by RFC7518, as opposed to X.509 where other combinations are possible. */

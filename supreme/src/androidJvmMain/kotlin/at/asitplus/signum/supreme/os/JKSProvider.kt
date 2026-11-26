@@ -73,7 +73,7 @@ interface JavaKeyStoreOperationsProvider {
 object SupremeJKSOperationsProvider : JavaKeyStoreOperationsProvider {
     override fun createKeyPair(config: JKSSigningKeyConfiguration): Pair<SignatureAlgorithm, KeyPair>? =
         when (val algSpec = DSL.options(config.ec, config.rsa)) {
-            is SigningKeyConfiguration.ECConfiguration -> Pair(
+            is SigningKeyConfiguration.ECConfiguration -> if (!algSpec.curve.isBuiltIn) null else Pair(
                 EcdsaAlgorithm(when {
                     algSpec.digests.contains(algSpec.curve.nativeDigest) -> algSpec.curve.nativeDigest
                     algSpec.digests.contains(Digest.SHA256) -> Digest.SHA256
@@ -119,11 +119,13 @@ object SupremeJKSOperationsProvider : JavaKeyStoreOperationsProvider {
 
     override fun getJKSSigner(jcaPrivateKey: PrivateKey, alias: String, config: JKSSignerConfiguration, attestation: SelfAttestation): JKSSigner? =
         when (val publicKey = attestation.certificate.publicKey) {
-            is EcdsaPublicKey -> JKSSigner.EC(jcaPrivateKey as ECPrivateKey, config.provider, publicKey,
-                EcdsaAlgorithm(
-                    digest = if (config.ec.v.digestSpecified) config.ec.v.digest else Digest.SHA256,
-                    requiredCurve = publicKey.curve),
-                alias, attestation)
+            is EcdsaPublicKey -> if (publicKey.curve.isBuiltIn && jcaPrivateKey is ECPrivateKey) {
+                JKSSigner.EC(jcaPrivateKey, config.provider, publicKey,
+                    EcdsaAlgorithm(
+                        digest = if (config.ec.v.digestSpecified) config.ec.v.digest else Digest.SHA256,
+                        requiredCurve = publicKey.curve),
+                    alias, attestation)
+            } else null
             is RsaPublicKey -> {
                 val padding = if (config.rsa.v.paddingSpecified) config.rsa.v.padding else RsaAlgorithm.Padding.PSS
                 val digest= if (config.rsa.v.digestSpecified) config.rsa.v.digest else Digest.SHA256

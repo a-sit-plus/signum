@@ -13,14 +13,7 @@ import kotlin.jvm.JvmName
 @Throws(Throwable::class)
 suspend fun <E: SymmetricEncryptionAlgorithm<*, *>> SymmetricKey<E>.encrypt(
     data: ByteArray
-): SealedBox<E> =
-    @OptIn(SecretExposure::class)
-    Encryptor(
-        algorithm,
-        if (this.hasDedicatedMacKey()) encryptionKey else secretKey,
-        if (this.hasDedicatedMacKey()) macKey else null,
-        aad = null
-    ).encrypt(data)
+): SealedBox<E> = encryptWithAad(data, null)
 
 
 /**
@@ -38,18 +31,26 @@ suspend fun <E: SymmetricEncryptionAlgorithm<*, *>> SymmetricKey<E>.encrypt(
 suspend fun <E: SymmetricEncryptionAlgorithm.Authenticated<*>> SymmetricKey<E>.encrypt(
     data: ByteArray,
     authenticatedData: ByteArray? = null
-): SealedBox<E> =
-    @OptIn(SecretExposure::class)
-    Encryptor(
+): SealedBox<E> = encryptWithAad(data, authenticatedData)
+
+@OptIn(SecretExposure::class)
+private suspend fun <E : SymmetricEncryptionAlgorithm<*, *>> SymmetricKey<E>.encryptWithAad(
+    data: ByteArray,
+    authenticatedData: ByteArray?,
+): SealedBox<E> {
+    algorithm.requireSupremeSymmetricBuiltin()
+    return Encryptor(
         algorithm,
         if (this.hasDedicatedMacKey()) encryptionKey else secretKey,
         if (this.hasDedicatedMacKey()) macKey else null,
         aad = authenticatedData,
     ).encrypt(data)
+}
 
 @Throws(Throwable::class)
 suspend fun SpecializedSymmetricKey.encrypt(data: ByteArray, authenticatedData: ByteArray? = null): SealedBox<*> {
     val key = toSymmetricKey()
+    key.algorithm.requireSupremeSymmetricBuiltin()
     return if (key.isAuthenticated()) key.encrypt(data, authenticatedData)
     else {
         require(authenticatedData == null) { "Cannot specify AAD with non-AAD cipher" }
