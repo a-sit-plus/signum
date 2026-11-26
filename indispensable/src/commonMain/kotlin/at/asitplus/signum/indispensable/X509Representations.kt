@@ -373,11 +373,15 @@ val PublicKey.Companion.fromAsn1 get() =
         .withAlternativePemDecoder(RsaPublicKey.fromAsn1.PKCS1)
 
 val KeyAgreementPublicValue.asn1 get() =
-    (this as KeyAgreementPublicValue.ECDH).asPublicKey().asn1
+    (this as? PublicKey)?.asn1
+        ?: (this as? KeyAgreementPublicValue.ECDH)?.asPublicKey()?.asn1
+        ?: throw UnsupportedCryptoException("Key agreement public value cannot be encoded as an ASN.1 public key: ${this::class.simpleName}")
 
 val KeyAgreementPublicValue.Companion.fromAsn1 get() =
     asn1Decoders(SubjectPublicKeyInfo) {
-        PublicKey.fromAsn1(it) as KeyAgreementPublicValue
+        val publicKey = PublicKey.fromAsn1(it)
+        publicKey as? KeyAgreementPublicValue
+            ?: throw UnsupportedCryptoException("Decoded public key does not support key agreement: ${publicKey::class.simpleName}")
     }
 
 val PrivateKey.asn1 get() =
