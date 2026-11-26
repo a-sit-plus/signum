@@ -10,6 +10,7 @@ import at.asitplus.signum.dsl.Of
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.digest.WellKnownDigest
+import at.asitplus.signum.indispensable.mac.HMAC
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
@@ -337,11 +338,11 @@ fun java.security.interfaces.RSAPrivateKey.toCryptoPrivateKey(): RsaPrivateKey =
 @Deprecated("Use toPrivateKey() instead", ReplaceWith("this.toPrivateKey()", "at.asitplus.signum.indispensable.toPrivateKey"))
 fun JCAPrivateKey.toCryptoPrivateKey(): PrivateKey.WithPublicKey = toPrivateKey()
 
-val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
+val SymmetricEncryptionAlgorithm<*, *>.jcaName: String
     @OptIn(HazardousMaterials::class)
     get() = when (this) {
         is SymmetricEncryptionAlgorithm.AES.GCM -> "AES/GCM/NoPadding"
-        is SymmetricEncryptionAlgorithm.AES.CBC<*, *> -> "AES/CBC/PKCS5Padding"
+        is SymmetricEncryptionAlgorithm.AES.CBC<*> -> "AES/CBC/PKCS5Padding"
         is SymmetricEncryptionAlgorithm.AES.ECB -> "AES/ECB/PKCS5Padding"
         is SymmetricEncryptionAlgorithm.AES.ECB_NOPADDING -> "AES/ECB/NoPadding"
         is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> "AESWrap"
@@ -349,13 +350,20 @@ val SymmetricEncryptionAlgorithm<*, *, *>.jcaName: String
         //else -> TODO("$this is unsupported")
     }
 
-val SymmetricEncryptionAlgorithm<*, *, *>.jcaKeySpec: String
+val SymmetricEncryptionAlgorithm<*, *>.jcaKeySpec: String
     get() = when (this) {
-        is SymmetricEncryptionAlgorithm.AES<*, *, *> -> "AES"
+        is SymmetricEncryptionAlgorithm.AES<*, *> -> "AES"
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20"
         //else -> TODO("$this keyspec is unsupported UNSUPPORTED")
     }
-
+val HMAC.jcaName: String
+    get() = when (this) {
+        HMAC.SHA1 -> "HmacSHA1"
+        HMAC.SHA256 -> "HmacSHA256"
+        HMAC.SHA384 -> "HmacSHA384"
+        HMAC.SHA512 -> "HmacSHA512"
+        else -> TODO("unuspported")
+    }
 /**
  * An encryption algorithm's JCA name. This is publicly exposed because it could come in handy under _very specific_ circumstances.
  * **Double and triple check before feeding this into `Cipher.getInstance`!**.
