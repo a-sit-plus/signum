@@ -5,6 +5,8 @@ import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.ECPoint
 import at.asitplus.signum.indispensable.digest.digest
 import at.asitplus.signum.indispensable.nativeDigest
+import at.asitplus.signum.indispensable.isBuiltIn
+import at.asitplus.signum.indispensable.requireBuiltIn
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
@@ -22,11 +24,16 @@ private typealias ClearCofactorFn = (ECPoint) -> ECPoint
 private typealias ExpandMessageFn = suspend (msg: Sequence<ByteArray>, domain: ByteArray, lenInBytes: Int) -> Buffer
 
 /** RFC 9380 8.2ff */
-private inline val ECCurve.Z get() = BigInteger(when (this) {
-    ECCurve.SECP_256_R_1 -> -10
-    ECCurve.SECP_384_R_1 -> -12
-    ECCurve.SECP_521_R_1 -> -4
-}).toModularBigInteger(this.modulus)
+private inline val ECCurve.Z get(): ModularBigInteger {
+    requireBuiltIn()
+    val z = when (this) {
+        ECCurve.SECP_256_R_1 -> -10
+        ECCurve.SECP_384_R_1 -> -12
+        ECCurve.SECP_521_R_1 -> -4
+        else -> error("unreachable")
+    }
+    return BigInteger(z).toModularBigInteger(modulus)
+}
 
 @Suppress("NOTHING_TO_INLINE")
 private inline fun ModularBigInteger.sqrt() =
@@ -39,10 +46,14 @@ private inline val ECCurve.c2 get() = (-Z).sqrt()
 
 /** log2(modulus) * (3/2), this matches RFC9380 NIST curve suites, and also matches RFC9497 */
 @Suppress("NOTHING_TO_INLINE")
-private inline val ECCurve.L get() = when(this) {
-    ECCurve.SECP_256_R_1 -> 48
-    ECCurve.SECP_384_R_1 -> 72
-    ECCurve.SECP_521_R_1 -> 98
+private inline val ECCurve.L get(): Int {
+    requireBuiltIn()
+    return when (this) {
+        ECCurve.SECP_256_R_1 -> 48
+        ECCurve.SECP_384_R_1 -> 72
+        ECCurve.SECP_521_R_1 -> 98
+        else -> error("unreachable")
+    }
 }
 
 /** per RFC9794 4.7.2.
@@ -241,9 +252,13 @@ object RFC9380 {
      *   It does **not** produce a random scalar multiplier (mod [ECCurve.order]).
      *
      *  @see ECCurve.hashToScalar */
-    fun hash_to_field(expandMessage: ExpandMessageFn, curve: ECCurve, domain: ByteArray) = when (curve) {
+    fun hash_to_field(expandMessage: ExpandMessageFn, curve: ECCurve, domain: ByteArray): HashToECScalar {
+        curve.requireBuiltIn()
+        return when (curve) {
         ECCurve.SECP_256_R_1, ECCurve.SECP_384_R_1, ECCurve.SECP_521_R_1 ->
             HashToECScalar(hashToFieldRFC9380ForPrimeField(expandMessage, curve, domain))
+        else -> error("unreachable")
+        }
     }
 
     /** the expand_message_xmd function as specified in RFC9380;
@@ -252,9 +267,13 @@ object RFC9380 {
         expandMessageXMD(digest)
 
     /** the map_to_curve_simple_swu function as specified in RFC9380 */
-    fun map_to_curve_simple_swu(curve: ECCurve) = when (curve) {
+    fun map_to_curve_simple_swu(curve: ECCurve): MapToCurveFn {
+        curve.requireBuiltIn()
+        return when (curve) {
         ECCurve.SECP_256_R_1, ECCurve.SECP_384_R_1, ECCurve.SECP_521_R_1 ->
             mapToCurveSimplifiedSWUWeierstrassABNonZero(curve)
+        else -> error("unreachable")
+        }
     }
 
     /** The P256_XMD:SHA-256_SSWU_RO_ suite as defined in RFC9380;
@@ -332,10 +351,14 @@ object RFC9380 {
  * @param L security parameter controlling the drift from uniform;
  *            defaults to `log2(modulus) * (3/2)`, which is the value used in RFC9380 suites
  * @return a function mapping arbitrary bytes to a scalar multiplier in [0, [ECCurve.order]) */
-fun ECCurve.hashToScalar(domain: ByteArray, L: Int = this.L) = RFC9380.HashToECScalar(when (this) {
+fun ECCurve.hashToScalar(domain: ByteArray, L: Int = this.L): RFC9380.HashToECScalar {
+    requireBuiltIn()
+    return RFC9380.HashToECScalar(when (this) {
     ECCurve.SECP_256_R_1, ECCurve.SECP_384_R_1, ECCurve.SECP_521_R_1 ->
         hashToFieldRFC9380ForPrimeField(expandMessageXMD(this.nativeDigest), this.order, L, domain)
-})
+    else -> error("unreachable")
+    })
+}
 
 /** Obtains a suitable secure hash-to-curve suite as defined in [RFC9380].
  * @param domain a suitable _domain separation tag_ (DST) for your use case;
@@ -344,8 +367,12 @@ fun ECCurve.hashToScalar(domain: ByteArray, L: Int = this.L) = RFC9380.HashToECS
  *                      for guidance
  * @return a function mapping arbitrary bytes to a point on the curve */
 @Suppress("NOTHING_TO_INLINE")
-inline fun ECCurve.hashToCurve(domain: ByteArray) = when (this) {
+inline fun ECCurve.hashToCurve(domain: ByteArray) = when {
+    isBuiltIn -> when (this) {
     ECCurve.SECP_256_R_1 -> RFC9380.`P256_XMD∶SHA-256_SSWU_RO_`(domain)
     ECCurve.SECP_384_R_1 -> RFC9380.`P384_XMD∶SHA-384_SSWU_RO_`(domain)
     ECCurve.SECP_521_R_1 -> RFC9380.`P521_XMD∶SHA-512_SSWU_RO_`(domain)
+    else -> error("unreachable")
+    }
+    else -> throw at.asitplus.signum.UnsupportedCryptoException("RFC 9380 is not supported for curve $jwkName")
 }

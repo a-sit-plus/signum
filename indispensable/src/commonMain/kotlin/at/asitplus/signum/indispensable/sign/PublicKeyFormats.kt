@@ -2,10 +2,12 @@ package at.asitplus.signum.indispensable.sign
 
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
+import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo
 import at.asitplus.catchingUnwrapped
 import at.asitplus.io.UVarInt
 import at.asitplus.io.UVarInt.Companion.varint
 import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
@@ -122,6 +124,7 @@ class EcdsaPublicKey(
         ECCurve.SECP_256_R_1 -> DID_KEY_CODEC_P256
         ECCurve.SECP_384_R_1 -> DID_KEY_CODEC_P384
         ECCurve.SECP_521_R_1 -> DID_KEY_CODEC_P521
+        else -> throw at.asitplus.signum.UnsupportedCryptoException("DID key encoding does not support ${curve.jwkName}")
     }
     override val didKeyBytes get() = toAnsiX963Encoded(useCompressed = true)
 
@@ -202,7 +205,11 @@ object IndispensableAsn1PublicKeyFormatsProvider : Asn1PublicKeyFormatProvider {
     }
 
     override fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo) = when(publicKeyInfo.algorithmOid) {
-        EcdsaPublicKey.oid -> EcdsaPublicKey.fromAsn1(publicKeyInfo)
+        EcdsaPublicKey.oid -> {
+            val spki = Sec1EcPublicKeyInfo.of(publicKeyInfo, Signum.Der)
+            if (ECCurve.entries.none { it.oid == spki.curveOid }) null
+            else EcdsaPublicKey.fromAsn1.SEC1(spki)
+        }
         RsaPublicKey.oid -> RsaPublicKey.fromAsn1(publicKeyInfo)
         else -> null
     }

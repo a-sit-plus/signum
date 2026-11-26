@@ -4,11 +4,13 @@ import at.asitplus.awesn1.*
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import com.ionspin.kotlin.bignum.BigNumber
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.toBigInteger
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -27,10 +29,64 @@ inline fun Int.ceilDiv(other: Int) =
  * EC Curve Class [jwkName] really does use established JWK curve names
  */
 @Serializable(with = ECCurveSerializer::class)
-enum class ECCurve(
-    val jwkName: String,
+interface ECCurve : Identifiable {
+    val name: String
+    val jwkName: String
+    val modulus: BigInteger
+    val a: ModularBigInteger
+    val b: ModularBigInteger
+    val generator: ECPoint.Normalized
+    val order: BigInteger
+    val cofactor: Int
+    val coordinateCreator: BigNumber.Creator<ModularBigInteger>
+    val scalarCreator: BigNumber.Creator<ModularBigInteger>
+
+    val IDENTITY: ECPoint
+    val scalarLength: BitLength get() = BitLength.of(order)
+    val coordinateLength: BitLength get() = BitLength.of(modulus)
+
+    companion object {
+        val SECP_256_R_1: ECCurve = BuiltInECCurve.SECP_256_R_1
+        val SECP_384_R_1: ECCurve = BuiltInECCurve.SECP_384_R_1
+        val SECP_521_R_1: ECCurve = BuiltInECCurve.SECP_521_R_1
+        val entries: List<ECCurve> = BuiltInECCurve.entries
+
+        fun of(bits: UInt) = entries.find { it.scalarLength.bits == bits }
+        fun withOid(oid: ObjectIdentifier) = entries.find { it.oid == oid } ?:
+            throw IllegalArgumentException("No curve with OID $oid is supported")
+        fun valueOf(name: String) = entries.find { it.name == name } ?:
+            throw IllegalArgumentException("No built-in curve named $name")
+    }
+}
+
+/** Convenience implementation for external providers defining a named short-Weierstrass curve. */
+class CustomECCurve(
+    override val name: String,
+    override val jwkName: String,
     override val oid: ObjectIdentifier,
-) : Identifiable {
+    override val modulus: BigInteger,
+    a: BigInteger,
+    b: BigInteger,
+    generatorX: BigInteger,
+    generatorY: BigInteger,
+    override val order: BigInteger,
+    override val cofactor: Int = 1,
+) : ECCurve {
+    override val coordinateCreator by lazy { ModularBigInteger.creatorForModulo(modulus) }
+    override val scalarCreator by lazy { ModularBigInteger.creatorForModulo(order) }
+    override val a by lazy { coordinateCreator.fromBigInteger(a) }
+    override val b by lazy { coordinateCreator.fromBigInteger(b) }
+    override val generator by lazy { ECPoint.fromXY(this, generatorX, generatorY) }
+    override val IDENTITY by lazy {
+        ECPoint.General.unsafeFromXYZ(this, coordinateCreator.ZERO, coordinateCreator.ONE, coordinateCreator.ZERO)
+    }
+    override fun toString() = name
+}
+
+private enum class BuiltInECCurve(
+    override val jwkName: String,
+    override val oid: ObjectIdentifier,
+) : ECCurve {
     /** NIST curve [secp256r1](https://neuromancer.sk/std/nist/P-256) */
     SECP_256_R_1("P-256", KnownOIDs.prime256v1),
 
@@ -40,15 +96,15 @@ enum class ECCurve(
     /** NIST curve [secp521r1](https://neuromancer.sk/std/nist/P-521) */
     SECP_521_R_1("P-521", KnownOIDs.secp521r1);
 
-    val IDENTITY: ECPoint by lazy {
+    override val IDENTITY: ECPoint by lazy {
         ECPoint.General.unsafeFromXYZ(this, coordinateCreator.ZERO, coordinateCreator.ONE, coordinateCreator.ZERO)
     }
 
     /** the number of bits/bytes needed to store scalar multipliers (such as private keys) in unsigned form */
-    inline val scalarLength get() = BitLength.of(order)
+    override val scalarLength get() = BitLength.of(order)
 
     /** the number of bits/bytes needed to store point coordinates (such as public key coordinates) in unsigned form */
-    inline val coordinateLength get() = BitLength.of(modulus)
+    override val coordinateLength get() = BitLength.of(modulus)
 
     @Deprecated(
         "Use scalarLength to express private key lengths",
@@ -74,14 +130,14 @@ enum class ECCurve(
     /** the number of bytes needed to store a raw signature (r and s concatenated) over this curve */
     inline val signatureLengthBytes: UInt get() = scalarLength.bytes * 2u
 
-    internal val coordinateCreator by lazy { ModularBigInteger.creatorForModulo(this.modulus) }
-    internal val scalarCreator by lazy { ModularBigInteger.creatorForModulo(this.order) }
+    override val coordinateCreator by lazy { ModularBigInteger.creatorForModulo(this.modulus) }
+    override val scalarCreator by lazy { ModularBigInteger.creatorForModulo(this.order) }
 
     /**
      * p: Prime modulus of the underlying prime field
      * See https://www.secg.org/sec2-v2.pdf
      */
-    val modulus: BigInteger by lazy {
+    override val modulus: BigInteger by lazy {
         when (this) {
             SECP_256_R_1 ->
                 "FFFFFFFF 00000001 00000000 00000000 00000000 FFFFFFFF FFFFFFFF FFFFFFFF"
@@ -102,7 +158,7 @@ enum class ECCurve(
      * a: Curve equation coefficient
      * See https://www.secg.org/sec2-v2.pdf
      */
-    val a: ModularBigInteger by lazy {
+    override val a: ModularBigInteger by lazy {
         when (this) {
             SECP_256_R_1 ->
                 "FFFFFFFF 00000001 00000000 00000000 00000000 FFFFFFFF FFFFFFFF FFFFFFFC"
@@ -124,7 +180,7 @@ enum class ECCurve(
      * b: Curve equation coefficient
      * See https://www.secg.org/sec2-v2.pdf
      */
-    val b: ModularBigInteger by lazy {
+    override val b: ModularBigInteger by lazy {
         when (this) {
             SECP_256_R_1 ->
                 "5AC635D8 AA3A93E7 B3EBBD55 769886BC 651D06B0 CC53B0F6 3BCE3C3E 27D2604B"
@@ -146,7 +202,7 @@ enum class ECCurve(
      * G: Generator of cyclic curve subgroup
      * See https://www.secg.org/sec2-v2.pdf
      */
-    val generator: ECPoint.Normalized by lazy {
+    override val generator: ECPoint.Normalized by lazy {
         when (this) {
             SECP_256_R_1 ->
                 "04 6B17D1F2 E12C4247 F8BCE6E5 63A440F2 77037D81 2DEB33A0" +
@@ -173,7 +229,7 @@ enum class ECCurve(
      * r: Order of (the cyclic subgroup generated by) G
      * See https://www.secg.org/sec2-v2.pdf
      */
-    val order: BigInteger by lazy {
+    override val order: BigInteger by lazy {
         when (this) {
             SECP_256_R_1 ->
                 "FFFFFFFF 00000000 FFFFFFFF FFFFFFFF BCE6FAAD A7179E84 F3B9CAC2" +
@@ -194,19 +250,13 @@ enum class ECCurve(
      * h: Cofactor of the cyclic subgroup generated by G
      * See https://www.secg.org/sec2-v2.pdf
      */
-    val cofactor: Int
+    override val cofactor: Int
         get() =
             when (this) {
                 SECP_256_R_1 -> 1
                 SECP_384_R_1 -> 1
                 SECP_521_R_1 -> 1
             }
-
-    companion object {
-        fun of(bits: UInt) = entries.find { it.scalarLength.bits == bits }
-        fun withOid(oid: ObjectIdentifier) = entries.find { it.oid == oid } ?:
-            throw IllegalArgumentException("No curve with OID $oid is supported")
-    }
 
 }
 
@@ -216,7 +266,9 @@ object ECCurveSerializer : KSerializer<ECCurve?> {
         PrimitiveSerialDescriptor("EcCurveSerializer", PrimitiveKind.STRING)
 
     override fun serialize(encoder: Encoder, value: ECCurve?) {
-        value?.jwkName?.let { encoder.encodeString(it) } ?: encoder.encodeNull()
+        if (value == null) encoder.encodeNull()
+        else if (value.isBuiltIn) encoder.encodeString(value.jwkName)
+        else throw SerializationException("No ECCurveSerializer mapping for custom curve ${value.jwkName}")
     }
 
     override fun deserialize(decoder: Decoder): ECCurve? {
@@ -227,10 +279,19 @@ object ECCurveSerializer : KSerializer<ECCurve?> {
 }
 
 /** A digest well-suited to operations on this curve, with output length near the curve's coordinate length. */
-val ECCurve.nativeDigest get() = when (this) {
-    ECCurve.SECP_256_R_1 -> Digest.SHA256
-    ECCurve.SECP_384_R_1 -> Digest.SHA384
-    ECCurve.SECP_521_R_1 -> Digest.SHA512
+val ECCurve.isBuiltIn: Boolean
+    get() = this === ECCurve.SECP_256_R_1 || this === ECCurve.SECP_384_R_1 || this === ECCurve.SECP_521_R_1
+
+fun ECCurve.requireBuiltIn(): ECCurve {
+    if (!isBuiltIn) throw at.asitplus.signum.UnsupportedCryptoException("Unsupported built-in EC curve $jwkName")
+    return this
+}
+
+val ECCurve.nativeDigest get() = when {
+    this === ECCurve.SECP_256_R_1 -> Digest.SHA256
+    this === ECCurve.SECP_384_R_1 -> Digest.SHA384
+    this === ECCurve.SECP_521_R_1 -> Digest.SHA512
+    else -> throw at.asitplus.signum.UnsupportedCryptoException("No built-in digest for curve $jwkName")
 }
 
 /**
@@ -238,20 +299,22 @@ val ECCurve.nativeDigest get() = when (this) {
  * This is handy, because Apple does not encode curve identifiers, but implies them based on the length of the key
  */
 val ECCurve.iosEncodedPublicKeyLength: Int
-    get() = when (this) {
-        ECCurve.SECP_256_R_1 -> 65
-        ECCurve.SECP_384_R_1 -> 97
-        ECCurve.SECP_521_R_1 -> 133
+    get() = when {
+        this === ECCurve.SECP_256_R_1 -> 65
+        this === ECCurve.SECP_384_R_1 -> 97
+        this === ECCurve.SECP_521_R_1 -> 133
+        else -> throw at.asitplus.signum.UnsupportedCryptoException("No iOS raw key length for curve $jwkName")
     }
 /**
  * Returns the length of a private key, when it is exported from iOS.
  * This is handy, because Apple does not encode curve identifiers, but implies them based on the length of the key
  */
 val ECCurve.iosEncodedPrivateKeyLength: Int
-    get() = when (this) {
-        ECCurve.SECP_256_R_1 -> 97
-        ECCurve.SECP_384_R_1 -> 145
-        ECCurve.SECP_521_R_1 -> 199
+    get() = when {
+        this === ECCurve.SECP_256_R_1 -> 97
+        this === ECCurve.SECP_384_R_1 -> 145
+        this === ECCurve.SECP_521_R_1 -> 199
+        else -> throw at.asitplus.signum.UnsupportedCryptoException("No iOS raw key length for curve $jwkName")
     }
 
 

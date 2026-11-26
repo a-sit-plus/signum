@@ -159,6 +159,7 @@ sealed class EcdsaPrivateKey private constructor(
         fun withCurve(
             curve: ECCurve,
         ): WithPublicKey {
+            curve.requireBuiltIn()
             require(curve.scalarLength.bytes.toInt() == curveOrderLengthInBytes) {
                 "Encoded private key was padded to $curveOrderLengthInBytes bytes, but curve $curve needs padding to ${curve.scalarLength.bytes.toInt()} bytes"
             }

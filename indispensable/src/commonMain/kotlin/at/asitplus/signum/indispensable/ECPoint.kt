@@ -94,7 +94,7 @@ sealed class ECPoint private constructor(
 
     override fun equals(other: Any?): Boolean {
         if (other !is ECPoint) return false
-        if (this.curve != other.curve) return false
+        if (this.curve !== other.curve) return false
         if (this.isPointAtInfinity) return other.isPointAtInfinity
         if (this.homZ == other.homZ) return ((this.homX == other.homX) && (this.homY == other.homY))
 
@@ -164,13 +164,13 @@ object ECPointSerializer : KSerializer<ECPoint.Normalized> {
         PrimitiveSerialDescriptor("ECPointSerializer", PrimitiveKind.STRING)
 
     override fun serialize(encoder: Encoder, value: ECPoint.Normalized) {
-        encoder.encodeSerializableValue(ECCurve.serializer(), value.curve)
+        encoder.encodeSerializableValue(ECCurveSerializer, value.curve)
         encoder.encodeSerializableValue(ByteArrayBase64Serializer, value.x.toByteArray())
         encoder.encodeBoolean(value.yCompressed == Sign.POSITIVE)
     }
 
     override fun deserialize(decoder: Decoder): ECPoint.Normalized {
-        val curve = decoder.decodeSerializableValue(ECCurve.serializer())
+        val curve = requireNotNull(decoder.decodeSerializableValue(ECCurveSerializer))
         val xBytes = decoder.decodeSerializableValue(ByteArrayBase64Serializer)
         val yIsPositive = decoder.decodeBoolean()
         return ECPoint.fromCompressed(curve, xBytes, yIsPositive)

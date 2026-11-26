@@ -59,6 +59,8 @@ object SupremeKotlinVerifierProvider : SignatureVerifierProvider {
         if (algorithm !is EcdsaAlgorithm) return null
         if (key !is EcdsaPublicKey)
             throw IllegalArgumentException("Non-EC public key passed to ECDSA algorithm")
+        if (!key.curve.isBuiltIn) return null
+        require(algorithm.matchesRequiredCurve(key.curve)) { "ECDSA requires ${algorithm.requiredCurve}, key uses ${key.curve}" }
         return KotlinEcdsaVerifier(algorithm, key)
     }
 }

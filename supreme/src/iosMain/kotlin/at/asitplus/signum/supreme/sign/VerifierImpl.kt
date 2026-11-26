@@ -23,9 +23,12 @@ object SupremeCCVerifierProvider : SignatureVerifierProvider {
         is EcdsaAlgorithm -> {
             require (key is EcdsaPublicKey)
                 { "Attempt to create ECDSA ($algorithm) verifier using non-ECDSA public key ($key)"}
+            if (!key.curve.isBuiltIn) null else {
+            require(algorithm.matchesRequiredCurve(key.curve)) { "ECDSA requires ${algorithm.requiredCurve}, key uses ${key.curve}" }
             when (algorithm.digest) {
                 null -> SupremeCCVerifier.EcdsaPreHashed(algorithm, key)
                 else -> SupremeCCVerifier.Ecdsa(algorithm, key)
+            }
             }
         }
         is RsaAlgorithm -> {
@@ -60,13 +63,21 @@ abstract class SupremeCCVerifier: SignatureVerifier {
     class Ecdsa(override val signatureAlgorithm: EcdsaAlgorithm, override val publicKey: EcdsaPublicKey)
         : SupremeCCVerifier(), at.asitplus.signum.indispensable.sign.EcdsaVerifier
     {
-        init { require(signatureAlgorithm.digest != null) }
+        init {
+            publicKey.curve.requireBuiltIn()
+            require(signatureAlgorithm.matchesRequiredCurve(publicKey.curve)) { "ECDSA requires ${signatureAlgorithm.requiredCurve}, key uses ${publicKey.curve}" }
+            require(signatureAlgorithm.digest != null)
+        }
     }
 
     class EcdsaPreHashed(override val signatureAlgorithm: EcdsaAlgorithm, override val publicKey: EcdsaPublicKey)
         : at.asitplus.signum.indispensable.sign.EcdsaVerifier
     {
-        init { require(signatureAlgorithm.digest == null) }
+        init {
+            publicKey.curve.requireBuiltIn()
+            require(signatureAlgorithm.matchesRequiredCurve(publicKey.curve)) { "ECDSA requires ${signatureAlgorithm.requiredCurve}, key uses ${publicKey.curve}" }
+            require(signatureAlgorithm.digest == null)
+        }
         private val targetDigest = publicKey.curve.nativeDigest
         private val inner = Ecdsa(EcdsaAlgorithm(targetDigest, null), publicKey)
 

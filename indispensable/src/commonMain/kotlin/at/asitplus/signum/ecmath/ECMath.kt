@@ -1,6 +1,7 @@
 package at.asitplus.signum.ecmath
 
 import at.asitplus.signum.indispensable.ECPoint
+import at.asitplus.signum.indispensable.requireBuiltIn
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
 import kotlin.math.max
@@ -8,7 +9,8 @@ import kotlin.math.max
 /** adds `other` to `this` and returns the result */
 /* Algorithm 4 from https://eprint.iacr.org/2015/1060.pdf */
 operator fun ECPoint.plus(other: ECPoint): ECPoint {
-    require(this.curve == other.curve)
+    require(this.curve === other.curve)
+    curve.requireBuiltIn()
     val b = this.curve.b
     val X1 = this.homX
     val Y1 = this.homY
@@ -73,6 +75,7 @@ operator fun ECPoint.plus(other: ECPoint): ECPoint {
 /** adds `this` to `this` and returns the result */
 /* Algorithm 6 from https://eprint.iacr.org/2015/1060.pdf */
 fun ECPoint.double(): ECPoint {
+    curve.requireBuiltIn()
     val b = this.curve.b
     val X = this.homX
     val Y = this.homY
@@ -126,11 +129,11 @@ inline operator fun ECPoint.unaryPlus() = this
 
 @Suppress("NOTHING_TO_INLINE")
 inline operator fun ECPoint.unaryMinus() =
-    ECPoint.General.unsafeFromXYZ(curve, homX, -homY, homZ)
+    curve.requireBuiltIn().let { ECPoint.General.unsafeFromXYZ(curve, homX, -homY, homZ) }
 
 @Suppress("NOTHING_TO_INLINE")
 inline operator fun ECPoint.Normalized.unaryMinus() =
-    ECPoint.Normalized.unsafeFromXY(curve, x, -y)
+    curve.requireBuiltIn().let { ECPoint.Normalized.unsafeFromXY(curve, x, -y) }
 
 @Suppress("NOTHING_TO_INLINE")
 inline operator fun ECPoint.minus(other: ECPoint) = this + (-other)
@@ -138,6 +141,7 @@ inline operator fun ECPoint.minus(other: ECPoint) = this + (-other)
 // TODO: i'm sure this could be smarter (keyword: "comb")
 // i'm also sure this isn't resistant to timing side channels if that is something you care about
 operator fun BigInteger.times(point: ECPoint): ECPoint {
+    point.curve.requireBuiltIn()
     var o = point
     var sum = if (this.bitAt(0)) point else point.curve.IDENTITY
     /* double-and-add */

@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.misc
 
 import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.requireBuiltIn
 import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
 
@@ -58,8 +59,10 @@ enum class ANSIECPrefix(val prefixByte: Byte) {
  * the compression bit is defined as 2 + (y mod 2) for all curves
  * We assume y is big-endian encoding of valid y coordinate!
  */
-internal fun compressY(curve: ECCurve, x: ModularBigInteger, y: ModularBigInteger): Sign =
-    if (y.residue.bitAt(0)) Sign.POSITIVE else Sign.NEGATIVE
+internal fun compressY(curve: ECCurve, x: ModularBigInteger, y: ModularBigInteger): Sign {
+    curve.requireBuiltIn()
+    return if (y.residue.bitAt(0)) Sign.POSITIVE else Sign.NEGATIVE
+}
 
 
 /**
@@ -78,6 +81,7 @@ internal fun compressY(curve: ECCurve, x: ModularBigInteger, y: ModularBigIntege
  */
 @Throws(Throwable::class)
 internal fun decompressY(curve: ECCurve, x: ModularBigInteger, sign: Sign): ModularBigInteger {
+    curve.requireBuiltIn()
     require(sign != Sign.ZERO)
     val alpha = x.pow(3) + curve.a * x + curve.b
 

@@ -9,6 +9,7 @@ import at.asitplus.signum.indispensable.kdf.HKDF
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.indispensable.nativeDigest
+import at.asitplus.signum.indispensable.isBuiltIn
 import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.indispensable.symmetric.*
@@ -317,6 +318,9 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
         KEM.WithSerializablePrivateKey<KeyAgreementPublicValue.ECDH, KeyAgreementPrivateValue.ECDH>,
         SuiteKDFContext
     {
+        init {
+            if (!dhGroup.isBuiltIn) throw UnsupportedCryptoException("Built-in DHKEM does not support curve ${dhGroup.jwkName}")
+        }
         override val suiteId = concat("KEM".encodeToByteArray(), i2ospForLen2(kemId))
         private suspend fun DH(sk: KeyAgreementPrivateValue.ECDH, pk: KeyAgreementPublicValue.ECDH) =
               sk.keyAgreement(pk)

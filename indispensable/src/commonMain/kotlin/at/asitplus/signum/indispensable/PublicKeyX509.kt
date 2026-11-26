@@ -96,7 +96,7 @@ object EcdsaPublicKeyAsn1Constructors :
 {
     val SEC1 get() = decodeFrom { parsed: Sec1EcPublicKeyInfo -> runRethrowing {
         val curve = ECCurve.entries.find { it.oid == parsed.curveOid }
-            ?: throw Asn1Exception("Curve not supported: ${parsed.curveOid}")
+            ?: throw at.asitplus.signum.UnsupportedCryptoException("Curve not supported: ${parsed.curveOid}")
         val key = when (parsed) {
             is Sec1EcPublicKeyInfo.Compressed -> EcdsaPublicKey.fromCompressed(curve, parsed.x, parsed.positiveY)
             is Sec1EcPublicKeyInfo.Uncompressed -> EcdsaPublicKey.fromUncompressed(curve, parsed.x, parsed.y)

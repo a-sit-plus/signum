@@ -174,6 +174,7 @@ object SupremeAndroidKeyStoreOperationsProvider : AndroidKeyStoreOperationsProvi
     ): Pair<String, KeyGenParameterSpec.Builder>? {
         val algSpec = DSL.options(config.ec, config.rsa)
             ?: throw UnsupportedCryptoException("Unknown chosen key type")
+        if (algSpec is SigningKeyConfiguration.ECConfiguration && !algSpec.curve.isBuiltIn) return null
         val builder = KeyGenParameterSpec.Builder(alias,
                 (if (algSpec.allowsSigning) KeyProperties.PURPOSE_SIGN else 0) or
                     (if (algSpec.allowsKeyAgreement) KeyProperties.PURPOSE_AGREE_KEY else 0))
@@ -221,7 +222,7 @@ object SupremeAndroidKeyStoreOperationsProvider : AndroidKeyStoreOperationsProvi
         jcaPrivateKey: PrivateKey, alias: String, keyInfo: KeyInfo, config: AndroidSignerConfiguration,
         publicKey: PublicKey, attestation: AndroidKeystoreAttestation?
     ): AndroidKeystoreSigner? = when (publicKey) {
-        is EcdsaPublicKey -> {
+        is EcdsaPublicKey -> if (!publicKey.curve.isBuiltIn) null else {
             val ecConfig = config.ec.v
             val digest = resolveOption("digest", keyInfo.digests, WellKnownDigest.entries.asSequence() + sequenceOf<WellKnownDigest?>(null), ecConfig.digestSpecified, { ecConfig.digest as WellKnownDigest }, ::keyProperty)
             AndroidKeystoreSigner.ECDSA(
@@ -446,6 +447,9 @@ abstract class AndroidKeystoreSigner protected constructor(
             publicValue: KeyAgreementPublicValue.ECDH,
             configure: DSLConfigureFn<AndroidSignerSigningConfiguration>
         ) : ByteArray {
+            val peer = publicValue.asPublicKey()
+            if (!peer.curve.isBuiltIn) throw UnsupportedCryptoException("Android Keystore ECDH does not support curve ${peer.curve.jwkName}")
+            require(peer.curve === publicKey.curve) { "ECDH peer curve ${peer.curve.jwkName} does not match local curve ${publicKey.curve.jwkName}" }
             val signingConfig = DSL.resolve(::AndroidSignerSigningConfiguration, configure)
             javax.crypto.KeyAgreement.getInstance("ECDH", "AndroidKeyStore").run {
                 //Android bug here: impossible to do for auth-on-every use keys. Earliest possible fix: Android 16, if ever
@@ -455,7 +459,7 @@ abstract class AndroidKeystoreSigner protected constructor(
                     attemptBiometry(DSL.ConfigStack(signingConfig.unlockPrompt.v, config.unlockPrompt.v), null)
                     init(jcaPrivateKey)
                 }
-                doPhase(publicValue.asPublicKey().toJcaPublicKey(), true)
+                doPhase(peer.toJcaPublicKey(), true)
                 return generateSecret()
             }
         }
