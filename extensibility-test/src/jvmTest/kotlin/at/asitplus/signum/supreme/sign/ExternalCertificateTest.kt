@@ -10,6 +10,9 @@ import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.Signum
 import at.asitplus.signum.dsl.EphemeralSignerConfiguration
 import at.asitplus.signum.dsl.InMemorySignerConfiguration
+import at.asitplus.signum.dsl.DSL
+import at.asitplus.signum.dsl.JCAProviderRef
+import at.asitplus.signum.dsl.jvm
 import at.asitplus.signum.dsl.VerifierConfiguration
 import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.indispensable.*
@@ -21,6 +24,13 @@ import at.asitplus.signum.indispensable.pki.installPkix
 import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.supreme.installSupreme
+import at.asitplus.signum.supreme.os.JKSProvider
+import at.asitplus.signum.supreme.os.JKSSigningKeyConfiguration
+import at.asitplus.signum.supreme.os.JKSSigner
+import at.asitplus.signum.supreme.os.JKSSignerConfiguration
+import at.asitplus.signum.supreme.os.JavaKeyStoreOperationsProvider
+import at.asitplus.signum.supreme.sign.SupremeEphemeralJvmSigner
+import at.asitplus.signum.supreme.sign.SupremeJVMVerifier
 import at.asitplus.signum.test.isolatedScenario
 import at.asitplus.testballoon.matrix.matrixSuite
 import com.ionspin.kotlin.bignum.integer.BigInteger
@@ -37,6 +47,8 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.jce.spec.ECNamedCurveSpec
 import java.security.KeyFactory
 import java.security.KeyPairGenerator
+import java.security.Security
+import java.nio.file.Files
 import java.security.interfaces.ECKey
 import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.ECPublicKey
@@ -55,6 +67,9 @@ val ExternalCertificateTest by matrixSuite {
     }
     "ML-DSA self-signed certificate uses the add-on alongside Supreme NIST" {
         isolatedScenario(ExternalCertificateScenarios::class.java, "mlDsaCertificate")
+    }
+    "External ML-DSA provider round-trips through a persisted JKS and built-ins still dispatch" {
+        isolatedScenario(ExternalCertificateScenarios::class.java, "mlDsaJksRoundTrip")
     }
 }
 
@@ -90,6 +105,7 @@ internal object ExternalCertificateScenarios {
     @JvmStatic
     fun mlDsaCertificate() = runBlocking {
         installProviders()
+        ServiceLoader.register<JcaMappingProvider>(CertificateAddon)
         val pair = KeyPairGenerator.getInstance(ML_DSA_44, bc).generateKeyPair()
         val decoded = PublicKey.fromAsn1(pair.public.encoded).shouldBeInstanceOf<MlDsaPublicKey>()
         // Rebuild the decoded key so certificate creation calls the add-on encoder.
@@ -98,6 +114,61 @@ internal object ExternalCertificateScenarios {
         val _ = certificate.publicKey.shouldBeInstanceOf<MlDsaPublicKey>()
         val _ = certificate.signature.shouldBeInstanceOf<MlDsaSignature>()
         verifyNistDispatch()
+    }
+
+    @JvmStatic
+    fun mlDsaJksRoundTrip() = runBlocking {
+        installProviders()
+        ServiceLoader.register<JcaMappingProvider>(CertificateAddon)
+        ServiceLoader.register<JavaKeyStoreOperationsProvider>(CertificateAddon)
+        val addedBouncyCastle = Security.addProvider(bc) != -1
+        val storePath = Files.createTempFile("external-ml-dsa", ".jks").also { Files.delete(it) }
+        try {
+            val provider = JKSProvider {
+                file {
+                    file = storePath
+                    password = "store-password".toCharArray()
+                }
+            }
+            val alias = "external-ml-dsa"
+            val keyPassword = "key-password".toCharArray()
+            val created = provider.createSigningKey(alias) {
+                mlDsa44 {}
+                this.provider = JCAProviderRef.Of(bc.name)
+                privateKeyPassword = keyPassword
+            }
+            val loaded = provider.getSignerForKey(alias) {
+                this.provider = JCAProviderRef.Of(bc.name)
+                privateKeyPassword = keyPassword
+            }
+            loaded.publicKey.asn1.toDer().contentEquals(created.publicKey.asn1.toDer()) shouldBe true
+            loaded.alias shouldBe alias
+            loaded.shouldBeInstanceOf<ExternalMlDsaJksSigner>()
+
+            val message = byteArrayOf(3, 1, 4, 1, 5, 9)
+            val signature = loaded.sign(message).signature
+            MlDsa44.verifierFor(loaded.publicKey).verify(message, signature) shouldBe SignatureVerifier.Success
+
+            provider.deleteSigningKey(alias)
+            shouldThrow<NoSuchElementException> { provider.getSignerForKey(alias) }
+
+            // The external operation declines EC, so Supreme's existing JKS operation and signer remain active.
+            val builtinAlias = "builtin-ecdsa"
+            val builtin = provider.createSigningKey(builtinAlias) {
+                ec {}
+                privateKeyPassword = keyPassword
+            }
+            builtin.shouldBeInstanceOf<JKSSigner.EC>()
+            val builtinReloaded = provider.getSignerForKey(builtinAlias) { privateKeyPassword = keyPassword }
+            builtinReloaded.shouldBeInstanceOf<JKSSigner.EC>()
+            builtinReloaded.publicKey shouldBe builtin.publicKey
+            builtinReloaded.makeVerifier().verify(message, builtinReloaded.sign(message).signature) shouldBe SignatureVerifier.Success
+            provider.deleteSigningKey(builtinAlias)
+            verifyNistDispatch()
+        } finally {
+            Files.deleteIfExists(storePath)
+            if (addedBouncyCastle) Security.removeProvider(bc.name)
+        }
     }
 
     private fun installProviders() {
@@ -136,7 +207,10 @@ internal object ExternalCertificateScenarios {
         )
         val certificate = Certificate.fromAsn1(signer.sign(tbs).asn1.toDer())
         certificate.tbsCertificate.issuerName shouldBe certificate.tbsCertificate.subjectName
-        certificate.verifier().shouldBeInstanceOf<BcVerifier>().verify(certificate) shouldBe SignatureVerifier.Success
+        val verifier = certificate.verifier()
+        if (algorithm === MlDsa44) verifier.shouldBeInstanceOf<ExternalMlDsaJksVerifier>()
+        else verifier.shouldBeInstanceOf<BcVerifier>()
+        verifier.verify(certificate) shouldBe SignatureVerifier.Success
         return certificate
     }
 
@@ -269,8 +343,49 @@ private fun JcaSignature.updateFrom(input: SignatureInput) {
     input.data.forEach(::update)
 }
 
+private class MlDsaJksConfiguration : DSL.Data()
+private val JKSSigningKeyConfiguration.mlDsa44 get() = _algSpecific.option("EXTERNAL_ML_DSA_44", ::MlDsaJksConfiguration)
+
+private class ExternalMlDsaJksSigner(
+    private val externalPrivateKey: JcaPrivateKey,
+    override val publicKey: MlDsaPublicKey,
+    provider: JCAProviderRef,
+    override val alias: String,
+    override val attestation: SelfAttestation,
+) : SupremeEphemeralJvmSigner(externalPrivateKey, provider), JKSSigner {
+    override val signatureAlgorithm: SignatureAlgorithm = MlDsa44
+    override fun parseFromJca(bytes: ByteArray): Signature = MlDsaSignature(X509SignatureValue(bytes))
+
+    @SecretExposure
+    override suspend fun exportPrivateKey(): PrivateKey.WithPublicKey = BcPrivateKey(externalPrivateKey, publicKey)
+}
+
+private class ExternalMlDsaJksVerifier(
+    algorithm: SignatureAlgorithm,
+    key: PublicKey,
+    provider: JCAProviderRef,
+) : SupremeJVMVerifier(algorithm, key, provider) {
+    override val signatureAlgorithm: SignatureAlgorithm = algorithm
+    override val publicKey: PublicKey = key
+}
+
 private object CertificateAddon : InMemoryKeysProvider, SignatureVerifierProvider,
-    Asn1PublicKeyFormatProvider, Asn1SignatureAlgorithmProvider, SignatureFormatProvider, JcaMappingProvider {
+    Asn1PublicKeyFormatProvider, Asn1SignatureAlgorithmProvider, SignatureFormatProvider, JcaMappingProvider,
+    JavaKeyStoreOperationsProvider {
+
+    override fun createKeyPair(config: JKSSigningKeyConfiguration): Pair<SignatureAlgorithm, java.security.KeyPair>? =
+        config.mlDsa44.v?.let { MlDsa44 to KeyPairGenerator.getInstance(ML_DSA_44, bc).generateKeyPair() }
+
+    override fun getJKSSigner(
+        jcaPrivateKey: JcaPrivateKey,
+        alias: String,
+        config: JKSSignerConfiguration,
+        attestation: SelfAttestation,
+    ): JKSSigner? {
+        val key = attestation.certificate.publicKey as? MlDsaPublicKey ?: return null
+        if (jcaPrivateKey.algorithm != ML_DSA_44) return null
+        return ExternalMlDsaJksSigner(jcaPrivateKey, key, config.provider, alias, attestation)
+    }
 
     override suspend fun makeEphemeralSigner(config: EphemeralSignerConfiguration) = null
 
@@ -281,7 +396,10 @@ private object CertificateAddon : InMemoryKeysProvider, SignatureVerifierProvide
         return jcaName(algorithm, key.publicKey)?.let { BcSigner(algorithm, key, it) }
     }
 
-    override fun verifierFor(algorithm: SignatureAlgorithm, key: PublicKey, config: VerifierConfiguration): BcVerifier? {
+    override fun verifierFor(algorithm: SignatureAlgorithm, key: PublicKey, config: VerifierConfiguration): SignatureVerifier? {
+        if (algorithm === MlDsa44 && key is MlDsaPublicKey) {
+            return ExternalMlDsaJksVerifier(algorithm, key, config.jvm.v.provider)
+        }
         val name = jcaName(algorithm, key) ?: return null
         val jcaKey = when (key) {
             is EcdsaPublicKey -> key.toJcaPublicKey()
@@ -290,14 +408,19 @@ private object CertificateAddon : InMemoryKeysProvider, SignatureVerifierProvide
         return BcVerifier(algorithm, key, jcaKey, name)
     }
 
-    override fun jcaPublicKeyToPublicKey(publicKey: JcaPublicKey): EcdsaPublicKey? {
-        if (publicKey !is ECPublicKey || !publicKey.isBrainpool()) return null
-        return EcdsaPublicKey.fromUncompressed(brainpool, publicKey.w.affineX.toByteArray(), publicKey.w.affineY.toByteArray())
+    override fun jcaPublicKeyToPublicKey(publicKey: JcaPublicKey): PublicKey? = when {
+        publicKey.algorithm == ML_DSA_44 -> PublicKey.fromAsn1(publicKey.encoded)
+        publicKey is ECPublicKey && publicKey.isBrainpool() ->
+            EcdsaPublicKey.fromUncompressed(brainpool, publicKey.w.affineX.toByteArray(), publicKey.w.affineY.toByteArray())
+        else -> null
     }
 
-    override fun publicKeyToJcaPublicKey(publicKey: PublicKey): ECPublicKey? {
-        if (publicKey !is EcdsaPublicKey || publicKey.curve !== brainpool) return null
-        return KeyFactory.getInstance("EC", bc).generatePublic(X509EncodedKeySpec(publicKey.asn1.toDer())) as ECPublicKey
+    override fun publicKeyToJcaPublicKey(publicKey: PublicKey): JcaPublicKey? = when (publicKey) {
+        is MlDsaPublicKey -> KeyFactory.getInstance(ML_DSA_44, bc).generatePublic(X509EncodedKeySpec(publicKey.asn1.toDer()))
+        is EcdsaPublicKey -> if (publicKey.curve === brainpool)
+            KeyFactory.getInstance("EC", bc).generatePublic(X509EncodedKeySpec(publicKey.asn1.toDer())) as ECPublicKey
+        else null
+        else -> null
     }
 
     override fun jcaPrivateKeyToPrivateKey(privateKey: JcaPrivateKey): BcPrivateKey? {
@@ -309,6 +432,22 @@ private object CertificateAddon : InMemoryKeysProvider, SignatureVerifierProvide
         val jcaKey = (privateKey as? BcPrivateKey)?.jcaKey as? ECPrivateKey ?: return null
         return jcaKey.takeIf { it.isBrainpool() }
     }
+
+    override fun getJCASignatureInstance(
+        algorithm: SignatureAlgorithm,
+        jcaProviderRef: JCAProviderRef,
+    ): JcaSignature? = if (algorithm !== MlDsa44) null else when (jcaProviderRef) {
+        is JCAProviderRef.ByName -> JcaSignature.getInstance(ML_DSA_44, jcaProviderRef.provider)
+        is at.asitplus.signum.dsl.JCAProviderRefO -> JcaSignature.getInstance(ML_DSA_44, jcaProviderRef.provider)
+        JCAProviderRef.None -> JcaSignature.getInstance(ML_DSA_44, bc)
+        else -> null
+    }
+
+    override fun parseJCASignatureBytes(algorithm: SignatureAlgorithm, sigBytes: ByteArray): Signature? =
+        if (algorithm === MlDsa44) MlDsaSignature(X509SignatureValue(sigBytes)) else null
+
+    override fun getJCASignatureBytes(signature: Signature): ByteArray? =
+        (signature as? MlDsaSignature)?.asn1?.toRepresentation()?.rawBytes
 
     private fun jcaName(algorithm: SignatureAlgorithm, key: PublicKey): String? = when {
         algorithm === MlDsa44 && key is MlDsaPublicKey -> ML_DSA_44
