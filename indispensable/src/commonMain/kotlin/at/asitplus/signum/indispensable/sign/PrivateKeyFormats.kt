@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.sign
 
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
+import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.ecmath.times
 import at.asitplus.signum.indispensable.*
@@ -104,6 +105,22 @@ class RsaPrivateKey(
 
 }
 
+/** Derives the public point for ECDSA private keys on external short-Weierstrass curves. */
+interface EcdsaPublicKeyDerivationProvider {
+    /** Returns the public point on [curve], or null when this provider does not support the curve. */
+    fun derivePublicPoint(curve: ShortWeierstrassCurve, privateKey: BigInteger): ShortWeierstrassCurve.Point.Normalized?
+}
+
+private fun deriveEcdsaPublicPoint(curve: ShortWeierstrassCurve, privateKey: BigInteger): ShortWeierstrassCurve.Point {
+    if (curve.isBuiltIn) return privateKey * curve.generator
+    require(privateKey > BigInteger.ZERO && privateKey < curve.order) { "EC private scalar is out of range" }
+    return ServiceLoader.load<EcdsaPublicKeyDerivationProvider>().get(curve) {
+        derivePublicPoint(it, privateKey)?.also { point ->
+            require(point.curve === curve) { "Derived public point uses a different curve" }
+        }
+    }
+}
+
 sealed class EcdsaPrivateKey private constructor(
     val privateKey: BigInteger
 ) : PrivateKey {
@@ -127,8 +144,7 @@ sealed class EcdsaPrivateKey private constructor(
         KeyAgreementPrivateValue.ECDH {
 
         init {
-            curve.requireBuiltIn()
-            require(publicKey.publicPoint == privateKey.times(publicKey.curve.generator)) {
+            require(publicKey.publicPoint == deriveEcdsaPublicPoint(curve, privateKey)) {
                 "Public key must match the private key!"
             }
         }
@@ -138,7 +154,7 @@ sealed class EcdsaPrivateKey private constructor(
             curve: ShortWeierstrassCurve,
         ) : this(
             privateKey,
-            curve.requireBuiltIn().generator.times(privateKey).asPublicKey(preferCompressed = true),
+            deriveEcdsaPublicPoint(curve, privateKey).asPublicKey(preferCompressed = curve.isBuiltIn),
         )
 
         val curve: ShortWeierstrassCurve get() = publicKey.curve
@@ -160,7 +176,6 @@ sealed class EcdsaPrivateKey private constructor(
         fun withCurve(
             curve: ShortWeierstrassCurve,
         ): WithPublicKey {
-            curve.requireBuiltIn()
             require(curve.scalarLength.bytes.toInt() == curveOrderLengthInBytes) {
                 "Encoded private key was padded to $curveOrderLengthInBytes bytes, but curve $curve needs padding to ${curve.scalarLength.bytes.toInt()} bytes"
             }
@@ -214,7 +229,8 @@ internal fun positive(value: BigInteger): Asn1Integer.Positive =
 object IndispensableAsn1PrivateKeyFormatsProvider : Asn1PrivateKeyFormatProvider {
     override fun encodeToAsn1(value: PrivateKey): Pkcs8PrivateKeyInfo? = when (value) {
         is RsaPrivateKey -> value.asn1.toRepresentation()
-        is EcdsaPrivateKey -> value.asn1.toRepresentation()
+        is EcdsaPrivateKey.WithPublicKey -> if (value.curve.isBuiltIn) value.asn1.toRepresentation() else null
+        is EcdsaPrivateKey.WithoutPublicKey -> value.asn1.toRepresentation()
         else -> null
     }
 

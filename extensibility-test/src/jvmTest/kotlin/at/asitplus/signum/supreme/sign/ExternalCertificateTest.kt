@@ -25,7 +25,9 @@ import at.asitplus.signum.test.isolatedScenario
 import at.asitplus.testballoon.matrix.matrixSuite
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
+import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.runBlocking
@@ -35,11 +37,14 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.jce.spec.ECNamedCurveSpec
 import java.security.KeyFactory
 import java.security.KeyPairGenerator
+import java.security.interfaces.ECKey
+import java.security.interfaces.ECPrivateKey
 import java.security.interfaces.ECPublicKey
 import java.security.PrivateKey as JcaPrivateKey
 import java.security.PublicKey as JcaPublicKey
 import java.security.Signature as JcaSignature
 import java.security.spec.ECGenParameterSpec
+import java.security.spec.ECPrivateKeySpec
 import java.security.spec.X509EncodedKeySpec
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Instant
@@ -57,6 +62,9 @@ internal object ExternalCertificateScenarios {
     @JvmStatic
     fun brainpoolCertificate() = runBlocking {
         installProviders()
+        ServiceLoader.register<EcdsaPublicKeyDerivationProvider>(BrainpoolPrivateKeyProvider)
+        ServiceLoader.register<JcaMappingProvider>(BrainpoolPrivateKeyProvider)
+        // Generic import selects the wrapper first. Typed import continues to the typed mapper.
         ServiceLoader.register<JcaMappingProvider>(CertificateAddon)
         val pair = KeyPairGenerator.getInstance("EC", bc).apply {
             initialize(ECGenParameterSpec(brainpool.name))
@@ -67,7 +75,13 @@ internal object ExternalCertificateScenarios {
             override fun getFormat(): String? = null
         }
         val publicKey: EcdsaPublicKey = jcaKey.toPublicKey()
-        val certificate = verifySelfSigned(EcdsaAlgorithm(Digest.SHA256, brainpool), BcPrivateKey(pair.private, publicKey))
+        val jcaPrivateKey = BcPrivateKey(pair.private, publicKey).toJcaPrivateKey()
+        (jcaPrivateKey === pair.private) shouldBe true
+        val privateKey = jcaPrivateKey.toPrivateKey().shouldBeInstanceOf<BcPrivateKey>()
+        privateKey.publicKey shouldBe publicKey
+        verifyTypedBrainpoolPrivateKey(jcaPrivateKey as ECPrivateKey, publicKey)
+
+        val certificate = verifySelfSigned(EcdsaAlgorithm(Digest.SHA256, brainpool), privateKey)
         (certificate.publicKey.shouldBeInstanceOf<EcdsaPublicKey>().curve === brainpool) shouldBe true
         brainpool.IDENTITY.isPointAtInfinity shouldBe true
         verifyNistDispatch()
@@ -94,6 +108,17 @@ internal object ExternalCertificateScenarios {
         ServiceLoader.register<Asn1PublicKeyFormatProvider>(CertificateAddon)
         ServiceLoader.register<Asn1SignatureAlgorithmProvider>(CertificateAddon)
         ServiceLoader.register<SignatureFormatProvider>(CertificateAddon)
+    }
+
+    private fun verifyTypedBrainpoolPrivateKey(jcaKey: ECPrivateKey, publicKey: EcdsaPublicKey) {
+        val privateKey: EcdsaPrivateKey.WithPublicKey = jcaKey.toPrivateKey()
+        privateKey.publicKey shouldBe publicKey
+        val roundTripped: ECPrivateKey = privateKey.toJcaPrivateKey()
+        (roundTripped.s == jcaKey.s) shouldBe true
+        EcdsaPrivateKey.WithPublicKey(privateKey.privateKey, brainpool).publicKey shouldBe publicKey
+
+        val mismatchedScalar = if (privateKey.privateKey == BigInteger.ONE) BigInteger.fromInt(2) else BigInteger.ONE
+        shouldThrow<IllegalArgumentException> { EcdsaPrivateKey.WithPublicKey(mismatchedScalar, publicKey) }
     }
 
     private suspend fun verifySelfSigned(algorithm: SignatureAlgorithm, key: BcPrivateKey): Certificate {
@@ -128,16 +153,18 @@ internal object ExternalCertificateScenarios {
 }
 
 private val bc = BouncyCastleProvider()
+private const val BRAINPOOL_NAME = "brainpoolP256r1"
+private val brainpoolParameters = TeleTrusTNamedCurves.getByName(BRAINPOOL_NAME)
 private const val ML_DSA_44 = "ML-DSA-44"
 private val mlDsaIdentifier = X509AlgorithmIdentifier(ObjectIdentifier(NISTObjectIdentifiers.id_ml_dsa_44.id), null)
 
 private fun java.math.BigInteger.toSignumInteger() = BigInteger.fromByteArray(toByteArray(), Sign.POSITIVE)
 
 private val brainpool = object : ShortWeierstrassCurve {
-    override val name = "brainpoolP256r1"
+    override val name = BRAINPOOL_NAME
     override val jwkName = name
     override val oid = ObjectIdentifier(TeleTrusTNamedCurves.getOID(name).id)
-    private val parameters = TeleTrusTNamedCurves.getByName(name)
+    private val parameters = brainpoolParameters
 
     override val modulus = parameters.curve.field.characteristic.toSignumInteger()
     override val order = parameters.n.toSignumInteger()
@@ -153,6 +180,32 @@ private val brainpool = object : ShortWeierstrassCurve {
     override fun toString() = name
 }
 private val brainpoolIdentifier = X509AlgorithmIdentifier(EcdsaPublicKey.oid, brainpool.oid.encodeToTlv())
+
+private fun ECKey.isBrainpool() = (params as? ECNamedCurveSpec)?.name == BRAINPOOL_NAME
+
+private fun deriveBrainpoolPoint(privateKey: java.math.BigInteger): ShortWeierstrassCurve.Point.Normalized {
+    val point = brainpoolParameters.g.multiply(privateKey).normalize()
+    return ShortWeierstrassCurve.Point.fromXY(
+        brainpool, point.affineXCoord.toBigInteger().toSignumInteger(), point.affineYCoord.toBigInteger().toSignumInteger(),
+    )
+}
+
+private object BrainpoolPrivateKeyProvider : JcaMappingProvider, EcdsaPublicKeyDerivationProvider {
+    override fun derivePublicPoint(curve: ShortWeierstrassCurve, privateKey: BigInteger) =
+        if (curve === brainpool) deriveBrainpoolPoint(privateKey.toJavaBigInteger()) else null
+
+    override fun jcaPrivateKeyToPrivateKey(privateKey: JcaPrivateKey): EcdsaPrivateKey.WithPublicKey? {
+        if (privateKey !is ECPrivateKey || !privateKey.isBrainpool()) return null
+        return EcdsaPrivateKey.WithPublicKey(privateKey.s.toSignumInteger(), brainpool)
+    }
+
+    override fun privateKeyToJcaPrivateKey(privateKey: PrivateKey): ECPrivateKey? {
+        if (privateKey !is EcdsaPrivateKey.WithPublicKey || privateKey.curve !== brainpool) return null
+        val params = with(brainpoolParameters) { ECNamedCurveSpec(BRAINPOOL_NAME, curve, g, n, h) }
+        val spec = ECPrivateKeySpec(privateKey.privateKey.toJavaBigInteger(), params)
+        return KeyFactory.getInstance("EC", bc).generatePrivate(spec) as ECPrivateKey
+    }
+}
 
 private object MlDsa44 : SignatureAlgorithm {
     override val sourceRepresentation get() = SourceRepresentationStorage()
@@ -238,13 +291,23 @@ private object CertificateAddon : InMemoryKeysProvider, SignatureVerifierProvide
     }
 
     override fun jcaPublicKeyToPublicKey(publicKey: JcaPublicKey): EcdsaPublicKey? {
-        if (publicKey !is ECPublicKey || (publicKey.params as? ECNamedCurveSpec)?.name != brainpool.name) return null
+        if (publicKey !is ECPublicKey || !publicKey.isBrainpool()) return null
         return EcdsaPublicKey.fromUncompressed(brainpool, publicKey.w.affineX.toByteArray(), publicKey.w.affineY.toByteArray())
     }
 
     override fun publicKeyToJcaPublicKey(publicKey: PublicKey): ECPublicKey? {
         if (publicKey !is EcdsaPublicKey || publicKey.curve !== brainpool) return null
         return KeyFactory.getInstance("EC", bc).generatePublic(X509EncodedKeySpec(publicKey.asn1.toDer())) as ECPublicKey
+    }
+
+    override fun jcaPrivateKeyToPrivateKey(privateKey: JcaPrivateKey): BcPrivateKey? {
+        if (privateKey !is ECPrivateKey || !privateKey.isBrainpool()) return null
+        return BcPrivateKey(privateKey, EcdsaPublicKey(deriveBrainpoolPoint(privateKey.s), false))
+    }
+
+    override fun privateKeyToJcaPrivateKey(privateKey: PrivateKey): ECPrivateKey? {
+        val jcaKey = (privateKey as? BcPrivateKey)?.jcaKey as? ECPrivateKey ?: return null
+        return jcaKey.takeIf { it.isBrainpool() }
     }
 
     private fun jcaName(algorithm: SignatureAlgorithm, key: PublicKey): String? = when {

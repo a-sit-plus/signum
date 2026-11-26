@@ -158,6 +158,8 @@ Your private key class should implement `PrivateKey`, and likely `PrivateKey.Wit
 Use `ECCurve` for named curve parameters and `ECPoint` for a curve-specific point representation.
 Implement `ShortWeierstrassCurve` to use `ShortWeierstrassCurve.Point` with an external curve over a
 prime field. External curves can use their own key formats and signing through the existing providers.
+Register an `EcdsaPublicKeyDerivationProvider` to construct `EcdsaPrivateKey.WithPublicKey` on an
+external curve. Signum uses the derived point to validate supplied public keys.
 Signum's built-in EC arithmetic and Supreme's built-in operations support P-256, P-384, and P-521.
 `ECCurveSerializer` retains the existing wire names for those curves.
 

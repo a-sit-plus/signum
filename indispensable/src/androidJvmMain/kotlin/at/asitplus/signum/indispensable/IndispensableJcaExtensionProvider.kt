@@ -126,7 +126,8 @@ object IndispensableJcaExtensionProvider : JcaMappingProvider {
     override fun privateKeyToJcaPrivateKey(privateKey: PrivateKey) =
         when (privateKey) {
             is RsaPrivateKey -> privateKey.toJcaPrivateKey()
-            is EcdsaPrivateKey -> privateKey.toBuiltInJcaPrivateKey()
+            is EcdsaPrivateKey.WithPublicKey -> if (privateKey.curve.isBuiltIn) privateKey.toBuiltInJcaPrivateKey() else null
+            is EcdsaPrivateKey.WithoutPublicKey -> privateKey.toBuiltInJcaPrivateKey()
             else -> null
         }
 
