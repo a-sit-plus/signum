@@ -59,30 +59,6 @@ interface ECCurve : Identifiable {
     }
 }
 
-/** Convenience implementation for external providers defining a named short-Weierstrass curve. */
-class CustomECCurve(
-    override val name: String,
-    override val jwkName: String,
-    override val oid: ObjectIdentifier,
-    override val modulus: BigInteger,
-    a: BigInteger,
-    b: BigInteger,
-    generatorX: BigInteger,
-    generatorY: BigInteger,
-    override val order: BigInteger,
-    override val cofactor: Int = 1,
-) : ECCurve {
-    override val coordinateCreator by lazy { ModularBigInteger.creatorForModulo(modulus) }
-    override val scalarCreator by lazy { ModularBigInteger.creatorForModulo(order) }
-    override val a by lazy { coordinateCreator.fromBigInteger(a) }
-    override val b by lazy { coordinateCreator.fromBigInteger(b) }
-    override val generator by lazy { ECPoint.fromXY(this, generatorX, generatorY) }
-    override val IDENTITY by lazy {
-        ECPoint.General.unsafeFromXYZ(this, coordinateCreator.ZERO, coordinateCreator.ONE, coordinateCreator.ZERO)
-    }
-    override fun toString() = name
-}
-
 private enum class BuiltInECCurve(
     override val jwkName: String,
     override val oid: ObjectIdentifier,

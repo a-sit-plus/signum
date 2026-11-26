@@ -25,6 +25,7 @@ import at.asitplus.signum.test.isolatedScenario
 import at.asitplus.testballoon.matrix.matrixSuite
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Sign
+import com.ionspin.kotlin.bignum.modular.ModularBigInteger
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import kotlinx.coroutines.runBlocking
@@ -127,22 +128,25 @@ private val mlDsaIdentifier = X509AlgorithmIdentifier(ObjectIdentifier(NISTObjec
 
 private fun java.math.BigInteger.toSignumInteger() = BigInteger.fromByteArray(toByteArray(), Sign.POSITIVE)
 
-private val brainpool = run {
-    val name = "brainpoolP256r1"
-    val parameters = TeleTrusTNamedCurves.getByName(name)
-    val generator = parameters.g.normalize()
-    CustomECCurve(
-        name = name,
-        jwkName = name,
-        oid = ObjectIdentifier(TeleTrusTNamedCurves.getOID(name).id),
-        modulus = parameters.curve.field.characteristic.toSignumInteger(),
-        a = parameters.curve.a.toBigInteger().toSignumInteger(),
-        b = parameters.curve.b.toBigInteger().toSignumInteger(),
-        generatorX = generator.affineXCoord.toBigInteger().toSignumInteger(),
-        generatorY = generator.affineYCoord.toBigInteger().toSignumInteger(),
-        order = parameters.n.toSignumInteger(),
-        cofactor = parameters.h.intValueExact(),
-    )
+private val brainpool = object : ECCurve {
+    override val name = "brainpoolP256r1"
+    override val jwkName = name
+    override val oid = ObjectIdentifier(TeleTrusTNamedCurves.getOID(name).id)
+    private val parameters = TeleTrusTNamedCurves.getByName(name)
+
+    override val modulus = parameters.curve.field.characteristic.toSignumInteger()
+    override val order = parameters.n.toSignumInteger()
+    override val cofactor = parameters.h.intValueExact()
+    override val coordinateCreator = ModularBigInteger.creatorForModulo(modulus)
+    override val scalarCreator by lazy { ModularBigInteger.creatorForModulo(order) }
+    override val a = coordinateCreator.fromBigInteger(parameters.curve.a.toBigInteger().toSignumInteger())
+    override val b = coordinateCreator.fromBigInteger(parameters.curve.b.toBigInteger().toSignumInteger())
+    override val generator by lazy {
+        val point = parameters.g.normalize()
+        ECPoint.fromXY(this, point.affineXCoord.toBigInteger().toSignumInteger(), point.affineYCoord.toBigInteger().toSignumInteger())
+    }
+    override val IDENTITY: ECPoint get() = error("Point arithmetic is outside this fixture")
+    override fun toString() = name
 }
 private val brainpoolIdentifier = X509AlgorithmIdentifier(EcdsaPublicKey.oid, brainpool.oid.encodeToTlv())
 
