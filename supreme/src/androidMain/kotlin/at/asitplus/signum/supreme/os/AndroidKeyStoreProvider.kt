@@ -13,6 +13,7 @@ import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.catchingUnwrapped
 import at.asitplus.nonFatalOrThrow
 import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.*
 import at.asitplus.signum.indispensable.*
@@ -78,56 +79,15 @@ private inline fun <reified E> resolveOption(what: String, valid: Array<String>,
 interface AndroidKeyStoreOperationsProvider {
     /**
      * Allows overriding the entire key pair generation process if desired.
-     * You will need to handle the entire [config] object, including attestation settings.
+     * Use [generateAndroidKeystoreKeyPair] to keep Supreme's generation policy in an override.
      * **This is likely not what you want to override**. A default implementation that forwards to [initKeyGenSpec] is provided.
      *
      * If you override this function, [initKeyGenSpec] becomes unused and can be dummied out
      */
+    @OptIn(SignumInternals::class)
     fun generateKeyPair(alias: String, config: AndroidSigningKeyConfiguration): KeyPair? {
         val (algorithm, builder) = initKeyGenSpec(alias, config) ?: return null
-        builder.apply {
-            setCertificateNotBefore(Date.from(Instant.now()))
-            setCertificateSubject(X500Principal("CN=$alias")) // TODO
-            config.hardware.v?.let { hw ->
-                hw.attestation.v?.let {
-                    setAttestationChallenge(it.challenge)
-                }
-                hw.protection.v?.let {
-                    setInvalidatedByBiometricEnrollment(it.factors.v.biometry &&
-                            !it.factors.v.biometryWithNewFactors)
-                    setUserAuthenticationRequired(true)
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        setUserAuthenticationParameters(it.timeout.inWholeSeconds.toInt(),
-                            (if (it.factors.v.biometry) KeyProperties.AUTH_BIOMETRIC_STRONG else 0) or
-                                    (if (it.factors.v.deviceLock) KeyProperties.AUTH_DEVICE_CREDENTIAL else 0))
-                    } else {
-                        it.factors.v.let { factors -> when {
-                            factors.biometry && !factors.deviceLock -> {
-                                @Suppress("DEPRECATION")
-                                setUserAuthenticationValidityDurationSeconds(-1)
-                            }
-                            else -> {
-                                @Suppress("DEPRECATION")
-                                setUserAuthenticationValidityDurationSeconds(max(1, it.timeout.inWholeSeconds.toInt()))
-                            }
-                        }}
-                    }
-                }
-            }
-        }
-        fun generate(useStrongBox: Boolean) =
-            KeyPairGenerator.getInstance(algorithm, "AndroidKeyStore")
-                .apply { initialize(builder.apply { setIsStrongBoxBacked(useStrongBox) }.build()) }
-                .generateKeyPair()
-        return when (config.hardware.v?.strongBox) {
-            REQUIRED ->
-                generate(true)
-            PREFERRED ->
-                try { generate(true) }
-                catch (_: StrongBoxUnavailableException) { generate(false) }
-            DISCOURAGED, null ->
-                generate(false)
-        }
+        return generateAndroidKeystoreKeyPair(alias, config, algorithm, builder)
     }
 
     /**
@@ -165,6 +125,68 @@ private fun getAndroidKeystoreRSAParams(digest: Digest): RsaAlgorithm.Parameters
         saltLength = digest.outputLength.bytes,
         trailerField = 1,
     )
+
+/**
+ * Generates a key through Android Keystore while applying Supreme's certificate, attestation, authentication, and
+ * backing policy. Providers supply algorithm-specific parameters in [builder] before calling this helper. The alias
+ * argument must match the alias already prepared in the builder.
+ *
+ * Set [supportsStrongBox] to false for algorithms supported by Android Keystore's TEE but not by StrongBox.
+ */
+@SignumInternals
+@SuppressLint("WrongConstant")
+fun generateAndroidKeystoreKeyPair(
+    alias: String,
+    config: AndroidSigningKeyConfiguration,
+    algorithm: String,
+    builder: KeyGenParameterSpec.Builder,
+    supportsStrongBox: Boolean = true,
+): KeyPair {
+    builder.apply {
+        setCertificateNotBefore(Date.from(Instant.now()))
+        setCertificateSubject(X500Principal("CN=$alias")) // TODO
+        config.hardware.v?.let { hw ->
+            hw.attestation.v?.let { setAttestationChallenge(it.challenge) }
+            hw.protection.v?.let {
+                setInvalidatedByBiometricEnrollment(it.factors.v.biometry && !it.factors.v.biometryWithNewFactors)
+                setUserAuthenticationRequired(true)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    setUserAuthenticationParameters(
+                        it.timeout.inWholeSeconds.toInt(),
+                        (if (it.factors.v.biometry) KeyProperties.AUTH_BIOMETRIC_STRONG else 0) or
+                                (if (it.factors.v.deviceLock) KeyProperties.AUTH_DEVICE_CREDENTIAL else 0)
+                    )
+                } else {
+                    it.factors.v.let { factors -> when {
+                        factors.biometry && !factors.deviceLock -> {
+                            @Suppress("DEPRECATION")
+                            setUserAuthenticationValidityDurationSeconds(-1)
+                        }
+                        else -> {
+                            @Suppress("DEPRECATION")
+                            setUserAuthenticationValidityDurationSeconds(max(1, it.timeout.inWholeSeconds.toInt()))
+                        }
+                    }}
+                }
+            }
+        }
+    }
+
+    val strongBoxPreference = config.hardware.v?.strongBox
+    if (!supportsStrongBox && strongBoxPreference == REQUIRED) {
+        throw UnsupportedCryptoException("The selected algorithm does not support StrongBox")
+    }
+    fun generate(useStrongBox: Boolean) = KeyPairGenerator.getInstance(algorithm, "AndroidKeyStore")
+        .apply { initialize(builder.apply { setIsStrongBoxBacked(useStrongBox) }.build()) }
+        .generateKeyPair()
+    return when {
+        !supportsStrongBox -> generate(false)
+        strongBoxPreference == REQUIRED -> generate(true)
+        strongBoxPreference == PREFERRED -> try { generate(true) }
+            catch (_: StrongBoxUnavailableException) { generate(false) }
+        else -> generate(false)
+    }
+}
 
 object SupremeAndroidKeyStoreOperationsProvider : AndroidKeyStoreOperationsProvider {
     @SuppressLint("WrongConstant")
@@ -264,24 +286,27 @@ object AndroidKeyStoreProvider:
             throw NoSuchElementException("Key with alias $alias already exists")
         }
         val config = DSL.resolve(::AndroidSigningKeyConfiguration, configure)
-        val _ = ServiceLoader.load<AndroidKeyStoreOperationsProvider>().get(alias) {
-            generateKeyPair(it, config)
+        // Only an explicit decline may select another provider after the generation callback.
+        ServiceLoader.load<AndroidKeyStoreOperationsProvider>()
+            .firstNotNullOfOrNull { it.generateKeyPair(alias, config) }
+            ?: throw UnsupportedCryptoException("No Android Keystore provider supports the key configuration for $alias")
+        try {
+            val signer = getSignerForKey(alias, config.signer.v)
+            config.hardware.v?.let { hw ->
+                if (hw.strongBox == REQUIRED && signer.isStrongBoxBacked == false) {
+                    throw UnsupportedCryptoException("Generated key is not backed by StrongBox")
+                }
+                if ((hw.backing == REQUIRED || hw.strongBox == REQUIRED) && !signer.isInsideSecureHardware) {
+                    throw UnsupportedCryptoException("Generated key is not backed by secure hardware")
+                }
+            }
+            return@withContext signer
+        } catch (failure: Throwable) {
+            try { ks.deleteEntry(alias) } catch (cleanupFailure: Throwable) {
+                failure.addSuppressed(cleanupFailure.nonFatalOrThrow())
+            }
+            throw failure
         }
-        return@withContext getSignerForKey(alias, config.signer.v)
-            .also { signer -> config.hardware.v?.let { hw ->
-                if (hw.strongBox == REQUIRED) {
-                    if (signer.isStrongBoxBacked == false) {
-                        try { ks.deleteEntry(alias) } catch (x: Throwable) { val _ = x.nonFatalOrThrow() }
-                        throw UnsupportedCryptoException("Generated key is not backed by StrongBox")
-                    }
-                }
-                if (hw.backing == REQUIRED || hw.strongBox == REQUIRED) {
-                    if (!signer.isInsideSecureHardware) {
-                        try { ks.deleteEntry(alias) } catch (x: Throwable) { val _ = x.nonFatalOrThrow() }
-                        throw UnsupportedCryptoException("Generated key is not backed by secure hardware")
-                    }
-                }
-            }}
     }
 
     override suspend fun getSignerForKey(
