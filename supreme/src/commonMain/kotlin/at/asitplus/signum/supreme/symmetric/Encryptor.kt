@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.internals.ImplementationError
 import at.asitplus.signum.indispensable.mac.mac
@@ -25,6 +26,7 @@ internal sealed interface Encryptor<out E : SymmetricEncryptionAlgorithm<*, *>> 
             nonce: ByteArray? = if (algorithm.requiresNonce()) algorithm.randomNonce() else null,
             aad: ByteArray?,
         ): Encryptor<E> {
+            algorithm.requireSupremeSymmetricBuiltin()
             if (algorithm.requiresNonce()) {
                 require(nonce != null) { "$algorithm requires a nonce" }
                 require(nonce.size.toUInt() == algorithm.nonceSize.bytes) { "$algorithm IV must be exactly ${algorithm.nonceSize} bits long" }
@@ -97,6 +99,21 @@ internal sealed interface Encryptor<out E : SymmetricEncryptionAlgorithm<*, *>> 
     ) : Encryptor<E> {
         override suspend fun encrypt(data: ByteArray): SealedBox<E> = platformCipher.doEncrypt(data)
     }
+}
+
+@OptIn(HazardousMaterials::class)
+internal fun <E : SymmetricEncryptionAlgorithm<*, *>> E.requireSupremeSymmetricBuiltin(): E {
+    when (this) {
+        is SymmetricEncryptionAlgorithm.ChaCha20Poly1305,
+        is SymmetricEncryptionAlgorithm.AES.GCM,
+        is SymmetricEncryptionAlgorithm.AES.CBC.Unauthenticated,
+        is SymmetricEncryptionAlgorithm.AES.CBC.HMAC,
+        is SymmetricEncryptionAlgorithm.AES.ECB,
+        is SymmetricEncryptionAlgorithm.AES.ECB_NOPADDING,
+        is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> Unit
+        else -> throw UnsupportedCryptoException("Supreme does not support symmetric algorithm $this")
+    }
+    return this
 }
 
 /**

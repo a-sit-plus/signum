@@ -23,7 +23,8 @@ val AsymmetricEncryptionAlgorithm.secKeyAlgorithm: SecKeyAlgorithm get() = when 
         at.asitplus.signum.indispensable.asymmetric.RSAPadding.PKCS1 -> kSecKeyAlgorithmRSAEncryptionPKCS1
         @OptIn(HazardousMaterials::class)
         at.asitplus.signum.indispensable.asymmetric.RSAPadding.NONE -> kSecKeyAlgorithmRSAEncryptionRaw
-    }!!
+    } ?: throw UnsupportedCryptoException("Unavailable iOS RSA padding $padding")
+    else -> throw UnsupportedCryptoException("Unsupported iOS asymmetric encryption algorithm $this")
 }
 
 interface IosMappingProvider {

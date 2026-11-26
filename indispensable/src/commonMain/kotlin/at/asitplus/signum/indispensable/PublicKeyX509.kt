@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.runRethrowing
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.awesn1.crypto.Pkcs1RsaPublicKeyInfo
@@ -10,6 +9,7 @@ import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo.Companion.from
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
 import at.asitplus.io.UVarInt
 import at.asitplus.signum.Signum
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1Decoders
 import at.asitplus.signum.indispensable.Asn1EncodingHelpers.asn1Encoders
 import at.asitplus.signum.indispensable.Asn1EncodingHelpers.withAlternativePemDecoder
@@ -23,7 +23,10 @@ import com.ionspin.kotlin.bignum.integer.Sign
 // TODO: this should probably be its own source format
 val PublicKey.iosEncoded: ByteArray
     get() = when (this) {
-        is EcdsaPublicKey -> this.toAnsiX963Encoded(useCompressed = false)
+        is EcdsaPublicKey -> {
+            curve.requireBuiltIn()
+            toAnsiX963Encoded(useCompressed = false)
+        }
         else -> this.asn1.toRepresentation().subjectPublicKey.also {
             require(it.numPaddingBits == 0) { "SPKI is not full octets, cannot convert to iOS" }
         }.bitCarryingBytes
@@ -79,9 +82,12 @@ class EcdsaPublicKeyAsn1Converters(self: EcdsaPublicKey) :
     val toSec1 = { self.encodeTo(::convert) }
 
     companion object {
-        private fun convert(self: EcdsaPublicKey) = when (self.preferCompressedRepresentation) {
-            true -> Sec1EcPublicKeyInfo.Compressed(self.curve.oid, self.xBytes, self.yCompressed == Sign.POSITIVE)
-            false -> Sec1EcPublicKeyInfo.Uncompressed(self.curve.oid, self.xBytes, self.yBytes)
+        private fun convert(self: EcdsaPublicKey): Sec1EcPublicKeyInfo {
+            self.curve.requireBuiltIn()
+            return when (self.preferCompressedRepresentation) {
+                true -> Sec1EcPublicKeyInfo.Compressed(self.curve.oid, self.xBytes, self.yCompressed == Sign.POSITIVE)
+                false -> Sec1EcPublicKeyInfo.Uncompressed(self.curve.oid, self.xBytes, self.yBytes)
+            }
         }
     }
 }
@@ -96,7 +102,7 @@ object EcdsaPublicKeyAsn1Constructors :
 {
     val SEC1 get() = decodeFrom { parsed: Sec1EcPublicKeyInfo -> runRethrowing {
         val curve = ECCurve.entries.find { it.oid == parsed.curveOid }
-            ?: throw Asn1Exception("Curve not supported: ${parsed.curveOid}")
+            ?: throw UnsupportedCryptoException("Unsupported EC curve ${parsed.curveOid}")
         val key = when (parsed) {
             is Sec1EcPublicKeyInfo.Compressed -> EcdsaPublicKey.fromCompressed(curve, parsed.x, parsed.positiveY)
             is Sec1EcPublicKeyInfo.Uncompressed -> EcdsaPublicKey.fromUncompressed(curve, parsed.x, parsed.y)

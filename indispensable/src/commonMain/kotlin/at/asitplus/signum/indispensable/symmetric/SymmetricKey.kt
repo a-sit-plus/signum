@@ -1,6 +1,7 @@
 package at.asitplus.signum.indispensable.symmetric
 
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.symmetric.SymmetricKey.WithDedicatedMac
 import kotlin.contracts.ExperimentalContracts
@@ -9,7 +10,7 @@ import kotlin.contracts.contract
 /**
  * Symmetric encryption key. Can only be used for the specified [algorithm].
  */
-sealed interface SymmetricKey<out E: SymmetricEncryptionAlgorithm<*, *>> {
+interface SymmetricKey<out E: SymmetricEncryptionAlgorithm<*, *>> {
     val algorithm: E
 
     /**
@@ -96,6 +97,7 @@ private class SymmetricKeyIntegrated<out E: SymmetricEncryptionAlgorithm.Integra
 val SymmetricKey.Integrated<*>.secretKey: ByteArray get() = when(this) {
     is SymmetricKeyIntegrated -> secretKey
     is SymmetricKeyWithDedicatedMac<*> -> algorithm.absurd()
+    else -> throw UnsupportedCryptoException("This symmetric key does not expose raw key material")
 }
 
 private class SymmetricKeyWithDedicatedMac<E: SymmetricEncryptionAlgorithm.EncryptThenMAC<*>> @HazardousMaterials("This constructor is public to enable testing. DO NOT USE IT!") constructor(
@@ -146,12 +148,14 @@ private class SymmetricKeyWithDedicatedMac<E: SymmetricEncryptionAlgorithm.Encry
 val WithDedicatedMac<*>.encryptionKey: ByteArray get() = when (this) {
     is SymmetricKeyWithDedicatedMac -> encryptionKey
     is SymmetricKeyIntegrated<*> -> algorithm.absurd()
+    else -> throw UnsupportedCryptoException("This symmetric key does not expose raw key material")
 }
 
 @SecretExposure
 val WithDedicatedMac<*>.macKey: ByteArray get() = when (this) {
     is SymmetricKeyWithDedicatedMac -> macKey
     is SymmetricKeyIntegrated<*> -> algorithm.absurd()
+    else -> throw UnsupportedCryptoException("This symmetric key does not expose raw key material")
 }
 
 /**Use to smart cast*/

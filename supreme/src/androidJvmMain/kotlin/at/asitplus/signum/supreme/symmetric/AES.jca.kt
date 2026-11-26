@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.jcaKeySpec
 import at.asitplus.signum.indispensable.jcaName
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
@@ -38,7 +39,7 @@ internal object AESJCA {
                 mode.jcaCipherMode,
                 SecretKeySpec(key, algorithm.jcaKeySpec),
             )
-        } else TODO("Algorithm $algorithm is unsupported ")
+        } else throw UnsupportedCryptoException("Supreme does not support symmetric algorithm $algorithm")
         aad?.let { if (algorithm is SymmetricEncryptionAlgorithm.AES.GCM) updateAAD(it) /*CBC-HMAC we do ourselves*/ }
     }
 }

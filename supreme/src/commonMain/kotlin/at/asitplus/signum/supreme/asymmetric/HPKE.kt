@@ -9,6 +9,7 @@ import at.asitplus.signum.indispensable.kdf.HKDF
 import at.asitplus.signum.indispensable.misc.BitLength
 import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.indispensable.nativeDigest
+import at.asitplus.signum.indispensable.requireBuiltIn
 import at.asitplus.signum.indispensable.sign.EcdsaPrivateKey
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.indispensable.symmetric.*
@@ -317,6 +318,7 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
         KEM.WithSerializablePrivateKey<KeyAgreementPublicValue.ECDH, KeyAgreementPrivateValue.ECDH>,
         SuiteKDFContext
     {
+        private val curve = dhGroup.requireBuiltIn()
         override val suiteId = concat("KEM".encodeToByteArray(), i2ospForLen2(kemId))
         private suspend fun DH(sk: KeyAgreementPrivateValue.ECDH, pk: KeyAgreementPublicValue.ECDH) =
               sk.keyAgreement(pk)
@@ -324,7 +326,7 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
         override val Nsecret get() = dhGroup.nativeDigest.outputLength
         override val Nenc get() = Npk
         // encoding length uncompressed
-        override val Npk get() = dhGroup.coordinateLength + dhGroup.coordinateLength + 1.bytes
+        override val Npk get() = curve.coordinateLength + curve.coordinateLength + 1.bytes
         override val Nsk get() = dhGroup.scalarLength
 
         override suspend fun GenerateKeyPair(): KeyPair<KeyAgreementPrivateValue.ECDH, KeyAgreementPublicValue.ECDH> {
@@ -345,14 +347,14 @@ class HPKE<SecretKey,PublicKey>(val kem: KEM<PublicKey,SecretKey>, override val 
                 sk = os2ip(bytes)
                 counter += 1
             }
-            val key = EcdsaPrivateKey.WithPublicKey(sk, dhGroup)
+            val key = EcdsaPrivateKey.WithPublicKey(sk, curve)
             return KeyPair(key, key.publicValue)
         }
 
         override fun SerializePublicKey(pkX: KeyAgreementPublicValue.ECDH) = pkX.asPublicKey().toAnsiX963Encoded(useCompressed = false)
-        override fun DeserializePublicKey(pkXm: ByteArray): KeyAgreementPublicValue.ECDH = EcdsaPublicKey.fromAnsiX963Bytes(dhGroup, pkXm)
+        override fun DeserializePublicKey(pkXm: ByteArray): KeyAgreementPublicValue.ECDH = EcdsaPublicKey.fromAnsiX963Bytes(curve, pkXm)
         override fun SerializePrivateKey(skX: KeyAgreementPrivateValue.ECDH) = (skX as EcdsaPrivateKey.WithPublicKey).privateKeyBytes
-        override fun DeserializePrivateKey(skXm: ByteArray): KeyAgreementPrivateValue.ECDH = EcdsaPrivateKey.WithPublicKey(BigInteger.fromByteArray(skXm, Sign.POSITIVE), dhGroup)
+        override fun DeserializePrivateKey(skXm: ByteArray): KeyAgreementPrivateValue.ECDH = EcdsaPrivateKey.WithPublicKey(BigInteger.fromByteArray(skXm, Sign.POSITIVE), curve)
 
         private suspend fun ExtractAndExpand(dh: ByteArray, kem_context: ByteArray): ByteArray {
             val eae_prk = LabeledExtract(byteArrayOf(), "eae_prk".encodeToByteArray(), dh)

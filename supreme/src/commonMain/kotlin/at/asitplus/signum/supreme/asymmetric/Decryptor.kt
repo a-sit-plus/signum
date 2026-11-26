@@ -3,6 +3,7 @@ package at.asitplus.signum.supreme.asymmetric
 import at.asitplus.signum.indispensable.PrivateKey
 import at.asitplus.signum.indispensable.asymmetric.AsymmetricEncryptionAlgorithm
 import at.asitplus.signum.indispensable.sign.RsaPrivateKey
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.DSL
 import at.asitplus.signum.dsl.DSLConfigureFn
 
@@ -70,6 +71,7 @@ private fun AsymmetricEncryptionAlgorithm.decryptorForImpl(
             privateKey.let { require(it is RsaPrivateKey);it },
             configure
         )
+        else -> throw UnsupportedCryptoException("Unsupported asymmetric encryption algorithm: $this")
     }
 /**
  * Obtains a Decryptor.

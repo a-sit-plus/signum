@@ -134,6 +134,19 @@ Implement `KDFOperationProvider`.
 Your KDF identifier should implement `KDF`.
 `KDFOperationProvider` should implement the actual KDF operation as `deriveKey`.
 
+## Encryption and key agreement
+
+Implement `SymmetricEncryptionAlgorithm` and supply `requiredNonceSize` and `authenticationTagSize`
+when applicable. For an encrypt-then-MAC construction, implement `SymmetricEncryptionAlgorithmEncryptThenMac`
+to supply the inner cipher, MAC, preferred MAC key length, and transformations. The standard
+`SealedBox` factories use this metadata to check nonce and tag lengths. `isBlockCipher` and
+`isStreamCipher` report independent classifications. An external `SymmetricKey` can keep its key material opaque.
+
+External implementations of `SymmetricEncryptionAlgorithm`, `AsymmetricEncryptionAlgorithm`, and
+`KeyAgreementPrivateValue` supply their own operations. The built-in operation entry points throw
+`UnsupportedCryptoException` for unsupported implementations. An agreement public value that also
+implements `PublicKey` can use its registered public-key format provider for SPKI encoding.
+
 ## Signatures
 
 For data formats, implement `Asn1SignatureAlgorithmProvider`, `SignatureFormatProvider`, `Asn1PublicKeyFormatProvider`, and `Asn1PrivateKeyFormatProvider`.
@@ -141,6 +154,14 @@ Your signature algorithm identifier should implement `SignatureAlgorithm`.
 Your signature format class should implement `Signature`.
 Your public key class should implement `PublicKey`.
 Your private key class should implement `PrivateKey`, and likely `PrivateKey.WithPublicKey`.
+
+Use `ECCurve` for named curve parameters and `ECPoint` for a curve-specific point representation.
+Implement `ShortWeierstrassCurve` to use `ShortWeierstrassCurve.Point` with an external curve over a
+prime field. External curves can use their own key formats and signing through the existing providers.
+Register an `EcdsaPublicKeyDerivationProvider` to construct `EcdsaPrivateKey.WithPublicKey` on an
+external curve. Signum uses the derived point to validate supplied public keys.
+Signum's built-in EC arithmetic and Supreme's built-in operations support P-256, P-384, and P-521.
+`ECCurveSerializer` retains the existing wire names for those curves.
 
 `Asn1SignatureAlgorithmProvider` should implement `decodeFromAsn1` to map an `X509AlgorithmIdentifier` to your algorithm identifier.
 `SignatureFormatProvider` should implement `parseSignature` to parse `X509SignatureValue`s given an algorithm identifier.
@@ -276,6 +297,14 @@ Encoding back to the source format preserves its representation, including inval
 to another format requires a supporting provider. Certificate serial-number parsing remains lenient,
 while programmatic serial-number construction remains strict.
 
+## App Attest client data
+
+`IosHomebrewAttestation.ClientData` encodes RSA keys and EC keys on the built-in curves in the
+original JSON form. For other keys it emits an integer `version` of `2` and uses the registered
+public-key format provider to encode and decode a base64url DER SubjectPublicKeyInfo. Install that
+provider before preparing or parsing client data. App Attest binds the exact `clientDataJSON` bytes
+to the App Attest key. Use a separate proof of possession for the public key in the client data.
+
 ## Platform type conversions
 
 Sometimes, low-level interfacing with the platform types is required.
@@ -291,6 +320,7 @@ On Android & JVM, implement `JcaMappingProvider`:
   - `parseJCASignatureBytes` and `getJCASignatureBytes` to map Signum `Signature` <-> output of this JCA `Signature` instance
 - `publicKeyToJcaPublicKey` and `jcaPublicKeyToPublicKey` to map Signum `PublicKey` <-> JCA `PublicKey`
 - `privateKeyToJcaPrivateKey` and `jcaPrivateKeyToPrivateKey` to map Signum `PrivateKey` <-> JCA `PrivateKey`
+- `curveForJcaName` and `jcaNameForCurve` to implement `ECCurve.byJcaName` and `ECCurve.jcaName`
 
 On iOS, implement `IosMappingProvider`:
 

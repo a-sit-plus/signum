@@ -1,6 +1,7 @@
 package at.asitplus.signum.ecmath
 
 import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.ShortWeierstrassCurve
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.supreme.azString
 import com.ionspin.kotlin.bignum.integer.BigInteger
@@ -33,7 +34,7 @@ val RFC9380Test by matrixSuite {
     compact("RFC 9380 Appendix J. Test Vectors") - {
         data class SuiteTestInfo(
             val suiteName: String, val suiteRef: (ByteArray) -> RFC9380.HashToEllipticCurve,
-            val curve: ECCurve, val dst: String, val tests: String
+            val curve: ShortWeierstrassCurve, val dst: String, val tests: String
         ) {
             val dstB get() = dst.encodeToByteArray()
         }

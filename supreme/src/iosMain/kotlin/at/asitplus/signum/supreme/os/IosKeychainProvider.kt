@@ -292,6 +292,9 @@ sealed class IosSigner(final override val alias: String,
             publicValue: KeyAgreementPublicValue.ECDH,
             configure: DSLConfigureFn<IosSignerSigningConfiguration>
         ): ByteArray {
+            val peer = publicValue.asPublicKey()
+            if (!peer.curve.isBuiltIn) throw UnsupportedCryptoException("iOS Keychain ECDH does not support curve ${peer.curve.jwkName}")
+            require(peer.curve === publicKey.curve) { "ECDH peer curve ${peer.curve.jwkName} does not match local curve ${publicKey.curve.jwkName}" }
             require(metadata.allowKeyAgreement) { "Key agreement purpose not set! Key agreement disallowed!" }
             val config = DSL.resolve(::IosSignerSigningConfiguration, configure)
             val key = privateKeyManager.get(kSecKeyOperationTypeKeyExchange, kSecKeyAlgorithmECDHKeyExchangeStandard, config).value
@@ -299,7 +302,7 @@ sealed class IosSigner(final override val alias: String,
                 SecKeyCopyKeyExchangeResult(
                     key,
                     kSecKeyAlgorithmECDHKeyExchangeStandard,
-                    publicValue.asPublicKey().toSecKey().value,
+                    peer.toSecKey().value,
                     parameters = null,
                     error
                 )
@@ -408,7 +411,7 @@ object SupremeIosKeychainOperationsProvider: IosKeychainOperationsProvider {
     private class ECDSAOps(val config: PlatformSigningKeyConfigurationBase.ECConfiguration) : IosKeychainOperationsProvider.OperationsBundle {
         override fun CFDictionaryInitScope.initTopLevelDictionary() {
             kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
-            kSecAttrKeySizeInBits mapsTo config.curve.coordinateLength.bits.toInt()
+            kSecAttrKeySizeInBits mapsTo config.curve.requireBuiltIn().coordinateLength.bits.toInt()
         }
 
         override fun CFDictionaryInitScope.initPrivateKeyDictionary() {
@@ -441,14 +444,14 @@ object SupremeIosKeychainOperationsProvider: IosKeychainOperationsProvider {
 
     override fun getOperationsBundle(config: IosSigningKeyConfiguration): IosKeychainOperationsProvider.OperationsBundle? =
         when (val algSpecific = DSL.options(config.ec, config.rsa)) {
-            is PlatformSigningKeyConfigurationBase.ECConfiguration -> ECDSAOps(algSpecific)
+            is PlatformSigningKeyConfigurationBase.ECConfiguration -> if (algSpecific.curve.isBuiltIn) ECDSAOps(algSpecific) else null
             is PlatformSigningKeyConfigurationBase.RSAConfiguration -> RSAOps(algSpecific)
             else -> null
         }
 
     override fun makeIosSigner(alias: String, publicKey: PublicKey, metadata: IosKeyMetadata, config: IosSignerConfiguration): IosSigner? =
         when (publicKey) {
-            is EcdsaPublicKey -> IosSigner.ECDSA(alias, publicKey, metadata, config)
+            is EcdsaPublicKey -> if (publicKey.curve.isBuiltIn) IosSigner.ECDSA(alias, publicKey, metadata, config) else null
             is RsaPublicKey -> IosSigner.RSA(alias, publicKey, metadata, config)
             else -> null
         }

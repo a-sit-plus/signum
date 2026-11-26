@@ -42,7 +42,10 @@ abstract class SupremeJVMVerifier(algorithm: SignatureAlgorithm, key: PublicKey,
     }
 
     class Ecdsa(override val signatureAlgorithm: EcdsaAlgorithm, override val publicKey: EcdsaPublicKey, provider: JCAProviderRef)
-        : SupremeJVMVerifier(signatureAlgorithm, publicKey, provider), at.asitplus.signum.indispensable.sign.EcdsaVerifier
+        : SupremeJVMVerifier(signatureAlgorithm, publicKey.also {
+            it.curve.requireBuiltIn()
+            require(signatureAlgorithm.matchesRequiredCurve(it.curve)) { "ECDSA requires ${signatureAlgorithm.requiredCurve}, key uses ${it.curve}" }
+        }, provider), at.asitplus.signum.indispensable.sign.EcdsaVerifier
 
     class Rsa(override val signatureAlgorithm: RsaAlgorithm, override val publicKey: RsaPublicKey, provider: JCAProviderRef)
         : SupremeJVMVerifier(signatureAlgorithm, publicKey, provider), at.asitplus.signum.indispensable.sign.RsaVerifier
@@ -54,7 +57,10 @@ object SupremeJVMVerifierProvider : SignatureVerifierProvider {
             is EcdsaAlgorithm -> {
                 require(key is EcdsaPublicKey)
                     { "Cannot instantiate ECDSA ($algorithm) verifier using non-ECDSA public key $key" }
-                SupremeJVMVerifier.Ecdsa(algorithm, key, config.jvm.v.provider)
+                if (!key.curve.isBuiltIn) null else {
+                    require(algorithm.matchesRequiredCurve(key.curve)) { "ECDSA requires ${algorithm.requiredCurve}, key uses ${key.curve}" }
+                    SupremeJVMVerifier.Ecdsa(algorithm, key, config.jvm.v.provider)
+                }
             }
             is RsaAlgorithm -> {
                 require(key is RsaPublicKey)

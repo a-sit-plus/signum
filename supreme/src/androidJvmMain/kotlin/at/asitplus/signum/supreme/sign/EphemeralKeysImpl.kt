@@ -20,6 +20,7 @@ import at.asitplus.signum.indispensable.sign.RsaAlgorithm
 import at.asitplus.signum.indispensable.sign.RsaPublicKey
 import at.asitplus.signum.internals.ImplementationError
 import at.asitplus.signum.dsl.DSL
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.sign.ExportableECDSASigner
 import at.asitplus.signum.indispensable.sign.EcdsaSignature
@@ -68,6 +69,10 @@ abstract class SupremeEphemeralJvmSigner (internal val privateKey: JCAPrivateKey
         final override suspend fun exportPrivateKey() = (privateKey as ECPrivateKey).toPrivateKey()
 
         override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH): ByteArray =
+            run {
+            val peer = publicValue.asPublicKey()
+            if (!peer.curve.isBuiltIn) throw UnsupportedCryptoException("JVM ECDH does not support curve ${peer.curve.jwkName}")
+            require(peer.curve === publicKey.curve) { "ECDH peer curve ${peer.curve.jwkName} does not match local curve ${publicKey.curve.jwkName}" }
             when (provider) {
                 is JCAProviderRef.ByName -> KeyAgreement.getInstance("ECDH", provider.provider)
                 is JCAProviderRefO -> KeyAgreement.getInstance("ECDH", provider.provider)
@@ -75,8 +80,9 @@ abstract class SupremeEphemeralJvmSigner (internal val privateKey: JCAPrivateKey
                 else -> throw ImplementationError("invalid JCAProvider ref")
             }.run {
                 init(privateKey)
-                doPhase(publicValue.asPublicKey().toJcaPublicKey(), true)
+                doPhase(peer.toJcaPublicKey(), true)
                 generateSecret()
+            }
             }
     }
 
@@ -104,8 +110,10 @@ object SupremeJVMInMemoryKeysProvider : InMemoryKeysProvider {
     override suspend fun makeEphemeralSigner(config: EphemeralSignerConfiguration) : SupremeEphemeralJvmSigner? =
         when (val alg = DSL.options(config.ec, config.rsa)) {
             is EphemeralEcdsaConfiguration ->
+                if (!alg.curve.isBuiltIn) null else
                 getKPGInstance("EC", config.jvm.v.provider).run {
-                    initialize(ECGenParameterSpec(alg.curve.jcaName))
+                    val curveName = checkNotNull(IndispensableJcaExtensionProvider.jcaNameForCurve(alg.curve))
+                    initialize(ECGenParameterSpec(curveName))
                     generateKeyPair()
                 }.let { pair ->
                     SupremeEphemeralJvmSigner.EC(
@@ -141,6 +149,8 @@ object SupremeJVMInMemoryKeysProvider : InMemoryKeysProvider {
             is EcdsaAlgorithm -> {
                 require(privateKey is EcdsaPrivateKey.WithPublicKey)
                     { "Trying to use a non-ECDSA private key (${privateKey::class.simpleName}) with $algorithm" }
+                if (!privateKey.curve.isBuiltIn) return null
+                require(algorithm.matchesRequiredCurve(privateKey.curve)) { "ECDSA requires ${algorithm.requiredCurve}, key uses ${privateKey.curve}" }
                 return SupremeEphemeralJvmSigner.EC(
                     privateKey.toJcaPrivateKey(), config.jvm.v.provider, privateKey.publicKey, algorithm)
             }

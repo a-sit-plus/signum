@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.misc.bytes
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
@@ -66,7 +67,7 @@ internal object AESIOS {
             )
         }
 
-        else -> TODO("ALGORITHM UNSUPPORTED")
+        else -> throw UnsupportedCryptoException("Supreme does not support symmetric algorithm $alg")
     }
 
     internal fun gcmDecrypt(
@@ -161,7 +162,7 @@ internal object AESIOS {
                                 )
                             }
 
-                            else -> throw ImplementationError("Illegal State in AES ${if (encrypt) "encryption" else "decryption"}.")
+                            else -> throw UnsupportedCryptoException("Supreme does not support symmetric algorithm $algorithm")
                         }
                     }
                 }
@@ -180,5 +181,5 @@ val SymmetricEncryptionAlgorithm.AES<*, out AuthCapability.Integrated>.iosOption
     get() = @OptIn(HazardousMaterials::class) when (this) {
         is AES.CBC.Unauthenticated, is AES.WRAP.RFC3394 -> 0u //no options (=manual padding).
         is AES.ECB, is AES.ECB_NOPADDING -> kCCOptionECBMode
-        else -> throw ImplementationError()
+        else -> throw UnsupportedCryptoException("Supreme does not support symmetric algorithm $this")
     }

@@ -4,6 +4,7 @@ package at.asitplus.signum.supreme.sign
 
 import at.asitplus.awesn1.crypto.X509SignatureValue
 import at.asitplus.signum.dsl.*
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.*
 import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.sign.*
@@ -39,16 +40,20 @@ sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<Sec
         override fun parseSignature(signatureBytes: ByteArray) =
             EcdsaSignature.fromAsn1(X509SignatureValue(signatureBytes)).withCurve(publicKey.curve)
 
-        override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH): ByteArray =
-            corecall {
+        override suspend fun keyAgreement(publicValue: KeyAgreementPublicValue.ECDH): ByteArray {
+            val peer = publicValue.asPublicKey()
+            if (!peer.curve.isBuiltIn) throw UnsupportedCryptoException("iOS ECDH does not support curve ${peer.curve.jwkName}")
+            require(peer.curve === publicKey.curve) { "ECDH peer curve ${peer.curve.jwkName} does not match local curve ${publicKey.curve.jwkName}" }
+            return corecall {
                 SecKeyCopyKeyExchangeResult(
                     privateKey.value,
                     kSecKeyAlgorithmECDHKeyExchangeStandard,
-                    publicValue.asPublicKey().toSecKey().value,
+                    peer.toSecKey().value,
                     parameters = null,
                     error
                 )
             }.takeFromCF<NSData>().toByteArray()
+        }
     }
 
     class RSA internal constructor(
@@ -67,12 +72,13 @@ sealed class SupremeIosEphemeralSigner(internal val privateKey: OwnedCFValue<Sec
 object SupremeIosInMemoryKeysProvider : InMemoryKeysProvider {
     override suspend fun makeEphemeralSigner(config: EphemeralSignerConfiguration): Signer.WithExportableKey? {
         val alg = DSL.options(config.ec, config.rsa) ?: return null
+        if (alg is EphemeralEcdsaConfiguration && !alg.curve.isBuiltIn) return null
         memScoped {
             val attr = createCFDictionary {
                 when (alg) {
                     is EphemeralEcdsaConfiguration -> {
                         kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
-                        kSecAttrKeySizeInBits mapsTo alg.curve.coordinateLength.bits.toInt()
+                        kSecAttrKeySizeInBits mapsTo alg.curve.requireBuiltIn().coordinateLength.bits.toInt()
                     }
 
                     is EphemeralRsaConfiguration -> {
@@ -97,7 +103,7 @@ object SupremeIosInMemoryKeysProvider : InMemoryKeysProvider {
                 is EphemeralEcdsaConfiguration ->
                     SupremeIosEphemeralSigner.EC(
                         privateKey = privateKey,
-                        publicKey = EcdsaPublicKey.fromAnsiX963Bytes(alg.curve, pubkeyBytes),
+                        publicKey = EcdsaPublicKey.fromAnsiX963Bytes(alg.curve.requireBuiltIn(), pubkeyBytes),
                         signatureAlgorithm = EcdsaAlgorithm(alg.digest, alg.curve)
                     )
 
@@ -122,6 +128,8 @@ object SupremeIosInMemoryKeysProvider : InMemoryKeysProvider {
             is EcdsaAlgorithm -> {
                 require(privateKey is EcdsaPrivateKey.WithPublicKey)
                     { "Trying to use a non-ECDSA private key (${privateKey::class.simpleName}) with $algorithm" }
+                if (!privateKey.curve.isBuiltIn) return null
+                require(algorithm.matchesRequiredCurve(privateKey.curve)) { "ECDSA requires ${algorithm.requiredCurve}, key uses ${privateKey.curve}" }
                 SupremeIosEphemeralSigner.EC(privateKey.toSecKey(), privateKey.publicKey, algorithm)
             }
             is RsaAlgorithm -> {

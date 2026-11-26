@@ -20,6 +20,9 @@ class EcdsaAlgorithm(
     val requiredCurve: ECCurve? = null,
 ) : SignatureAlgorithm, Enumerable {
 
+    /** Whether this algorithm permits [curve], comparing any requested curve by object identity. */
+    fun matchesRequiredCurve(curve: ECCurve): Boolean = requiredCurve == null || requiredCurve === curve
+
     override val sourceRepresentation = SourceRepresentationStorage()
 
     override val preHashedSignatureFormat get() = digest

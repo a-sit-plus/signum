@@ -27,7 +27,7 @@ private fun RsaAlgorithm.Parameters.PssPadded.requireSupportedIosPssParameters()
 
 object IndispensableIosExtensionProvider : IosMappingProvider {
     override fun signatureAlgorithmToSecKeyAlgorithm(algorithm: SignatureAlgorithm) = when (algorithm) {
-        is EcdsaAlgorithm -> {
+        is EcdsaAlgorithm -> if (algorithm.requiredCurve?.isBuiltIn == false) null else {
             when (algorithm.digest) {
                 Digest.SHA1 -> kSecKeyAlgorithmECDSASignatureMessageX962SHA1
                 Digest.SHA256 -> kSecKeyAlgorithmECDSASignatureMessageX962SHA256
@@ -64,7 +64,7 @@ object IndispensableIosExtensionProvider : IosMappingProvider {
     }
 
     override fun signatureAlgorithmToSecKeyAlgorithmPreHashed(algorithm: SignatureAlgorithm) = when (algorithm) {
-        is EcdsaAlgorithm -> {
+        is EcdsaAlgorithm -> if (algorithm.requiredCurve?.isBuiltIn == false) null else {
             when (algorithm.digest) {
                 Digest.SHA1 -> kSecKeyAlgorithmECDSASignatureDigestX962SHA1
                 Digest.SHA256 -> kSecKeyAlgorithmECDSASignatureDigestX962SHA256
@@ -101,7 +101,8 @@ object IndispensableIosExtensionProvider : IosMappingProvider {
     }
 
     override fun parseSignatureBytes(algorithm: SignatureAlgorithm, sigBytes: ByteArray) = when (algorithm) {
-        is EcdsaAlgorithm -> EcdsaSignature.fromRawSignatureValue(sigBytes)
+        is EcdsaAlgorithm ->
+            if (algorithm.requiredCurve?.isBuiltIn == false) null else EcdsaSignature.fromRawSignatureValue(sigBytes)
         is RsaAlgorithm -> RsaSignature.fromRawSignatureValue(sigBytes)
         else -> null
     }
@@ -113,7 +114,10 @@ object IndispensableIosExtensionProvider : IosMappingProvider {
 
     override fun publicKeyToSecKey(key: PublicKey): OwnedCFValue<SecKeyRef>? {
         val (keyType, keyBytes) = when (key) {
-            is EcdsaPublicKey -> Pair(kSecAttrKeyTypeECSECPrimeRandom, key.iosEncoded)
+            is EcdsaPublicKey -> {
+                if (!key.curve.isBuiltIn) return null
+                Pair(kSecAttrKeyTypeECSECPrimeRandom, key.iosEncoded)
+            }
             is RsaPublicKey -> Pair(kSecAttrKeyTypeRSA, key.iosEncoded)
             else -> return null
         }
@@ -138,7 +142,7 @@ object IndispensableIosExtensionProvider : IosMappingProvider {
                     EcdsaPublicKey.fromAnsiX963Bytes(
                         src = bytes,
                         curve = ECCurve.fromIosEncodedPublicKeyLength(bytes.size)
-                            ?: throw IllegalArgumentException("Unknown curve in iOS raw key"))
+                            ?: throw UnsupportedCryptoException("Unknown curve in iOS raw key"))
                 }
                 else -> return null
             }
@@ -151,8 +155,10 @@ object IndispensableIosExtensionProvider : IosMappingProvider {
     override fun privateKeyToSecKey(key: PrivateKey.WithPublicKey): OwnedCFValue<SecKeyRef>? {
         memScoped {
             val (keyType, keySize, keyBytes) = when (key) {
-                is EcdsaPrivateKey.WithPublicKey ->
+                is EcdsaPrivateKey.WithPublicKey -> {
+                    if (!key.curve.isBuiltIn) return null
                     Triple(kSecAttrKeyTypeECSECPrimeRandom, key.curve.coordinateLength.bits.toInt(), key.publicKey.iosEncoded+key.privateKeyBytes)
+                }
                 is RsaPrivateKey ->
                     Triple(kSecAttrKeyTypeRSA, key.publicKey.bits.number.toInt(), key.asn1.pkcs1.toDer())
                 else -> return null

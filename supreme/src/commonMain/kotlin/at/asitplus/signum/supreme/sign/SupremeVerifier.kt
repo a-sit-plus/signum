@@ -7,6 +7,7 @@ import at.asitplus.signum.dsl.jvm
 import at.asitplus.signum.ecmath.straussShamir
 import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.Signature
+import at.asitplus.signum.indispensable.isBuiltIn
 import at.asitplus.signum.indispensable.sign.EcdsaVerifier
 import at.asitplus.signum.indispensable.sign.EcdsaAlgorithm
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
@@ -59,6 +60,8 @@ object SupremeKotlinVerifierProvider : SignatureVerifierProvider {
         if (algorithm !is EcdsaAlgorithm) return null
         if (key !is EcdsaPublicKey)
             throw IllegalArgumentException("Non-EC public key passed to ECDSA algorithm")
+        if (!key.curve.isBuiltIn) return null
+        require(algorithm.matchesRequiredCurve(key.curve)) { "ECDSA requires ${algorithm.requiredCurve}, key uses ${key.curve}" }
         return KotlinEcdsaVerifier(algorithm, key)
     }
 }

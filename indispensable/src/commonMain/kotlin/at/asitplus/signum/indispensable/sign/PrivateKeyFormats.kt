@@ -2,6 +2,7 @@ package at.asitplus.signum.indispensable.sign
 
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.Pkcs8PrivateKeyInfo
+import at.asitplus.signum.ServiceLoader
 import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.ecmath.times
 import at.asitplus.signum.indispensable.*
@@ -104,6 +105,22 @@ class RsaPrivateKey(
 
 }
 
+/** Derives the public point for ECDSA private keys on external short-Weierstrass curves. */
+interface EcdsaPublicKeyDerivationProvider {
+    /** Returns the public point on [curve], or null when this provider does not support the curve. */
+    fun derivePublicPoint(curve: ShortWeierstrassCurve, privateKey: BigInteger): ShortWeierstrassCurve.Point.Normalized?
+}
+
+private fun deriveEcdsaPublicPoint(curve: ShortWeierstrassCurve, privateKey: BigInteger): ShortWeierstrassCurve.Point {
+    if (curve.isBuiltIn) return privateKey * curve.generator
+    require(privateKey > BigInteger.ZERO && privateKey < curve.order) { "EC private scalar is out of range" }
+    return ServiceLoader.load<EcdsaPublicKeyDerivationProvider>().get(curve) {
+        derivePublicPoint(it, privateKey)?.also { point ->
+            require(point.curve === curve) { "Derived public point uses a different curve" }
+        }
+    }
+}
+
 sealed class EcdsaPrivateKey private constructor(
     val privateKey: BigInteger
 ) : PrivateKey {
@@ -127,20 +144,20 @@ sealed class EcdsaPrivateKey private constructor(
         KeyAgreementPrivateValue.ECDH {
 
         init {
-            require(publicKey.publicPoint == privateKey.times(publicKey.curve.generator)) {
+            require(publicKey.publicPoint == deriveEcdsaPublicPoint(curve, privateKey)) {
                 "Public key must match the private key!"
             }
         }
 
         constructor(
             privateKey: BigInteger,
-            curve: ECCurve,
+            curve: ShortWeierstrassCurve,
         ) : this(
             privateKey,
-            curve.generator.times(privateKey).asPublicKey(preferCompressed = true),
+            deriveEcdsaPublicPoint(curve, privateKey).asPublicKey(preferCompressed = curve.isBuiltIn),
         )
 
-        val curve: ECCurve get() = publicKey.curve
+        val curve: ShortWeierstrassCurve get() = publicKey.curve
 
         override val privateKeyBytes: ByteArray
             get() = privateKey.toByteArray().ensureSize(curve.scalarLength.bytes)
@@ -157,7 +174,7 @@ sealed class EcdsaPrivateKey private constructor(
     ) : EcdsaPrivateKey(privateKey) {
 
         fun withCurve(
-            curve: ECCurve,
+            curve: ShortWeierstrassCurve,
         ): WithPublicKey {
             require(curve.scalarLength.bytes.toInt() == curveOrderLengthInBytes) {
                 "Encoded private key was padded to $curveOrderLengthInBytes bytes, but curve $curve needs padding to ${curve.scalarLength.bytes.toInt()} bytes"
@@ -212,7 +229,8 @@ internal fun positive(value: BigInteger): Asn1Integer.Positive =
 object IndispensableAsn1PrivateKeyFormatsProvider : Asn1PrivateKeyFormatProvider {
     override fun encodeToAsn1(value: PrivateKey): Pkcs8PrivateKeyInfo? = when (value) {
         is RsaPrivateKey -> value.asn1.toRepresentation()
-        is EcdsaPrivateKey -> value.asn1.toRepresentation()
+        is EcdsaPrivateKey.WithPublicKey -> if (value.curve.isBuiltIn) value.asn1.toRepresentation() else null
+        is EcdsaPrivateKey.WithoutPublicKey -> value.asn1.toRepresentation()
         else -> null
     }
 
@@ -220,7 +238,11 @@ object IndispensableAsn1PrivateKeyFormatsProvider : Asn1PrivateKeyFormatProvider
         require(privateKeyInfo.version == Pkcs8PrivateKeyInfo.Version.V1) { "PKCS#8 Private Key VERSION must be 1" }
         return when (privateKeyInfo.algorithmOid) {
             RsaPrivateKey.oid -> RsaPrivateKey.fromAsn1(privateKeyInfo)
-            EcdsaPrivateKey.oid -> EcdsaPrivateKey.fromAsn1(privateKeyInfo)
+            EcdsaPrivateKey.oid -> {
+                val curveOid = (privateKeyInfo.algorithmParameters as? Asn1Primitive)?.let(ObjectIdentifier::decodeFromTlv)
+                if (curveOid != null && ECCurve.entries.none { it.oid == curveOid }) null
+                else EcdsaPrivateKey.fromAsn1(privateKeyInfo)
+            }
             else -> null
         }
     }

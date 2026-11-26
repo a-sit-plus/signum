@@ -14,20 +14,13 @@ import at.asitplus.signum.indispensable.mac.HMAC
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
-import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.serialization.SerializationException
-import org.bouncycastle.asn1.ASN1ObjectIdentifier
-import org.bouncycastle.asn1.ASN1Sequence
-import org.bouncycastle.asn1.sec.SECNamedCurves
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
-import org.bouncycastle.jce.ECNamedCurveTable
-import org.bouncycastle.jce.provider.JCEECPublicKey
-import org.bouncycastle.jce.spec.ECPublicKeySpec
 import java.security.*
 import java.security.cert.CertificateFactory
+import java.security.interfaces.ECPrivateKey
+import java.security.interfaces.ECPublicKey
 import java.security.spec.*
 import javax.crypto.Cipher
 import javax.crypto.spec.OAEPParameterSpec
@@ -115,6 +108,12 @@ interface JcaMappingProvider {
 
     /** Maps this JCA PrivateKey instance to a PrivateKey. */
     fun jcaPrivateKeyToPrivateKey(privateKey: JCAPrivateKey): PrivateKey.WithPublicKey? { return null }
+
+    /** Resolves a JCA curve name, or returns null when the provider does not recognize it. */
+    fun curveForJcaName(name: String): ECCurve? = null
+
+    /** Returns the JCA name of a supported curve, or null when the provider does not recognize it. */
+    fun jcaNameForCurve(curve: ECCurve): String? = null
 }
 
 /** Get a pre-configured JCA [MessageDigest] instance for this digest */
@@ -220,26 +219,35 @@ internal val WellKnownDigest?.jcaAlgorithmComponent
         is WellKnownDigest.SHA512 -> "SHA512"
     }
 
-val ECCurve.jcaName
-    get() = when (this) {
-        ECCurve.SECP_256_R_1 -> "secp256r1"
-        ECCurve.SECP_384_R_1 -> "secp384r1"
-        ECCurve.SECP_521_R_1 -> "secp521r1"
+/** Resolves a curve's JCA name using installed mappings and the built-in curve names. */
+val ECCurve.jcaName: String
+    get() = try {
+        ServiceLoader.load<JcaMappingProvider>().get(this, JcaMappingProvider::jcaNameForCurve)
+    } catch (failure: UnsupportedCryptoException) {
+        IndispensableJcaExtensionProvider.jcaNameForCurve(this) ?: throw failure
     }
 
-fun ECCurve.Companion.byJcaName(name: String): ECCurve? = ECCurve.entries.find { it.jcaName == name }
+/** Resolves a JCA curve name using installed mappings and the built-in curve names. */
+fun ECCurve.Companion.byJcaName(name: String): ECCurve? = try {
+    ServiceLoader.load<JcaMappingProvider>().get(name, JcaMappingProvider::curveForJcaName)
+} catch (_: UnsupportedCryptoException) {
+    IndispensableJcaExtensionProvider.curveForJcaName(name)
+}
 
 fun PublicKey.toJcaPublicKey() =
     ServiceLoader.load<JcaMappingProvider>().get(this, JcaMappingProvider::publicKeyToJcaPublicKey)
 
-fun EcdsaPublicKey.toJcaPublicKey(): java.security.interfaces.ECPublicKey {
-    val parameterSpec = ECNamedCurveTable.getParameterSpec(curve.jwkName)
-    val x = x.residue.toJavaBigInteger()
-    val y = y.residue.toJavaBigInteger()
-    val ecPoint = parameterSpec.curve.createPoint(x, y)
-    val ecPublicKeySpec = ECPublicKeySpec(ecPoint, parameterSpec)
-    return JCEECPublicKey("EC", ecPublicKeySpec)
+private inline fun <reified Key, Result : Any> mapTypedEcKey(
+    key: Key,
+    mapping: JcaMappingProvider.(Key) -> Result?,
+): Result {
+    val providers = ServiceLoader.load<JcaMappingProvider>()
+    if (providers.none()) IndispensableJcaExtensionProvider.mapping(key)?.let { return it }
+    return providers.get(key, mapping)
 }
+
+fun EcdsaPublicKey.toJcaPublicKey(): ECPublicKey =
+    mapTypedEcKey(this) { publicKeyToJcaPublicKey(it) as? ECPublicKey }
 
 private val rsaFactory = KeyFactory.getInstance("RSA")
 
@@ -248,23 +256,8 @@ fun RsaPublicKey.toJcaPublicKey(): java.security.interfaces.RSAPublicKey =
         RSAPublicKeySpec(n.toJavaBigInteger(), e.toJavaBigInteger())
     ) as java.security.interfaces.RSAPublicKey
 
-fun java.security.interfaces.ECPublicKey.toPublicKey(): EcdsaPublicKey {
-    // TODO: this assumes SPKI encoding then uses bouncycastle on it to find the curve
-    // this breaks for non-SPKI encoded ECDSA public keys
-    // leaving it untouched for now but we should revisit it
-    val curve = ECCurve.byJcaName(
-        SECNamedCurves.getName(
-            SubjectPublicKeyInfo.getInstance(
-                ASN1Sequence.getInstance(encoded)
-            ).algorithm.parameters as ASN1ObjectIdentifier
-        )
-    ) ?: throw SerializationException("Unknown Jca name")
-    return EcdsaPublicKey.fromUncompressed(
-        curve,
-        w.affineX.toByteArray(),
-        w.affineY.toByteArray()
-    )
-}
+fun ECPublicKey.toPublicKey(): EcdsaPublicKey =
+    mapTypedEcKey(this) { jcaPublicKeyToPublicKey(it) as? EcdsaPublicKey }
 
 fun java.security.interfaces.RSAPublicKey.toPublicKey(): RsaPublicKey =
     RsaPublicKey(modulus.toAsn1Integer(), publicExponent.toAsn1Integer())
@@ -300,10 +293,8 @@ fun PrivateKey.toJcaPrivateKey() =
     ServiceLoader.load<JcaMappingProvider>()
         .get(this) { privateKeyToJcaPrivateKey(it) }
 
-fun EcdsaPrivateKey.toJcaPrivateKey() =
-    KeyFactory.getInstance("EC")
-        .generatePrivate(PKCS8EncodedKeySpec(this@toJcaPrivateKey.asn1.toDer()))
-            as java.security.interfaces.ECPrivateKey
+fun EcdsaPrivateKey.toJcaPrivateKey(): ECPrivateKey =
+    mapTypedEcKey(this) { privateKeyToJcaPrivateKey(it) as? ECPrivateKey }
 
 fun RsaPrivateKey.toJcaPrivateKey() =
     KeyFactory.getInstance("RSA")
@@ -314,8 +305,8 @@ fun JCAPrivateKey.toPrivateKey() =
     ServiceLoader.load<JcaMappingProvider>()
         .get(this) { jcaPrivateKeyToPrivateKey(it) }
 
-fun java.security.interfaces.ECPrivateKey.toPrivateKey(): EcdsaPrivateKey.WithPublicKey =
-    EcdsaPrivateKey.fromAsn1(encoded) as EcdsaPrivateKey.WithPublicKey
+fun ECPrivateKey.toPrivateKey(): EcdsaPrivateKey.WithPublicKey =
+    mapTypedEcKey(this) { jcaPrivateKeyToPrivateKey(it) as? EcdsaPrivateKey.WithPublicKey }
 
 fun java.security.interfaces.RSAPrivateKey.toPrivateKey(): RsaPrivateKey =
     RsaPrivateKey.fromAsn1(encoded)
@@ -342,19 +333,26 @@ val SymmetricEncryptionAlgorithm<*, *>.jcaName: String
     @OptIn(HazardousMaterials::class)
     get() = when (this) {
         is SymmetricEncryptionAlgorithm.AES.GCM -> "AES/GCM/NoPadding"
-        is SymmetricEncryptionAlgorithm.AES.CBC<*> -> "AES/CBC/PKCS5Padding"
+        is SymmetricEncryptionAlgorithm.AES.CBC.Unauthenticated,
+        is SymmetricEncryptionAlgorithm.AES.CBC.HMAC -> "AES/CBC/PKCS5Padding"
         is SymmetricEncryptionAlgorithm.AES.ECB -> "AES/ECB/PKCS5Padding"
         is SymmetricEncryptionAlgorithm.AES.ECB_NOPADDING -> "AES/ECB/NoPadding"
         is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> "AESWrap"
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20-Poly1305"
-        //else -> TODO("$this is unsupported")
+        else -> throw UnsupportedCryptoException("Unsupported JCA symmetric encryption algorithm $this")
     }
 
 val SymmetricEncryptionAlgorithm<*, *>.jcaKeySpec: String
+    @OptIn(HazardousMaterials::class)
     get() = when (this) {
-        is SymmetricEncryptionAlgorithm.AES<*, *> -> "AES"
+        is SymmetricEncryptionAlgorithm.AES.GCM,
+        is SymmetricEncryptionAlgorithm.AES.CBC.Unauthenticated,
+        is SymmetricEncryptionAlgorithm.AES.CBC.HMAC,
+        is SymmetricEncryptionAlgorithm.AES.ECB,
+        is SymmetricEncryptionAlgorithm.AES.ECB_NOPADDING,
+        is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394 -> "AES"
         is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> "ChaCha20"
-        //else -> TODO("$this keyspec is unsupported UNSUPPORTED")
+        else -> throw UnsupportedCryptoException("Unsupported JCA symmetric encryption algorithm $this")
     }
 val HMAC.jcaName: String
     get() = when (this) {
@@ -362,7 +360,7 @@ val HMAC.jcaName: String
         HMAC.SHA256 -> "HmacSHA256"
         HMAC.SHA384 -> "HmacSHA384"
         HMAC.SHA512 -> "HmacSHA512"
-        else -> TODO("unuspported")
+        else -> throw UnsupportedCryptoException("Unsupported JCA MAC algorithm $this")
     }
 /**
  * An encryption algorithm's JCA name. This is publicly exposed because it could come in handy under _very specific_ circumstances.
@@ -383,6 +381,7 @@ val AsymmetricEncryptionAlgorithm.jcaName: String
             @OptIn(HazardousMaterials::class)
             at.asitplus.signum.indispensable.asymmetric.RSAPadding.NONE -> "RSA/ECB/NoPadding"
         }
+        else -> throw UnsupportedCryptoException("Unsupported JCA asymmetric encryption algorithm $this")
     }
 
 /**
@@ -429,6 +428,7 @@ val AsymmetricEncryptionAlgorithm.jcaParameterSpec: AlgorithmParameterSpec?
                 @OptIn(HazardousMaterials::class)
                 at.asitplus.signum.indispensable.asymmetric.RSAPadding.PKCS1 -> null
             }
+            else -> throw UnsupportedCryptoException("Unsupported JCA asymmetric encryption algorithm $this")
         }
 
 /** Get a pre-configured JCA Cipher instance for this algorithm to use for **encryption** */

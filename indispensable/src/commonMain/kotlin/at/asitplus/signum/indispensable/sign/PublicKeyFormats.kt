@@ -2,11 +2,14 @@ package at.asitplus.signum.indispensable.sign
 
 import at.asitplus.awesn1.*
 import at.asitplus.awesn1.crypto.SubjectPublicKeyInfo
+import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo
 import at.asitplus.catchingUnwrapped
 import at.asitplus.io.UVarInt
 import at.asitplus.io.UVarInt.Companion.varint
 import at.asitplus.signum.SignumInternals
+import at.asitplus.signum.Signum
 import at.asitplus.signum.indispensable.*
+import at.asitplus.signum.indispensable.ShortWeierstrassCurve.Point
 import at.asitplus.signum.indispensable.agree.KeyAgreementPublicValue
 import at.asitplus.signum.indispensable.misc.ANSIECPrefix
 import com.ionspin.kotlin.bignum.integer.BigInteger
@@ -92,7 +95,7 @@ class RsaPublicKey(
  */
 @SerialName("EC")
 class EcdsaPublicKey(
-    val publicPoint: ECPoint.Normalized,
+    val publicPoint: Point.Normalized,
     // TODO: remove this once COSE/JOSE are source formats
     val preferCompressedRepresentation: Boolean,
 ) : PublicKey, KeyAgreementPublicValue.ECDH {
@@ -122,6 +125,7 @@ class EcdsaPublicKey(
         ECCurve.SECP_256_R_1 -> DID_KEY_CODEC_P256
         ECCurve.SECP_384_R_1 -> DID_KEY_CODEC_P384
         ECCurve.SECP_521_R_1 -> DID_KEY_CODEC_P521
+        else -> throw at.asitplus.signum.UnsupportedCryptoException("DID key encoding does not support ${curve.jwkName}")
     }
     override val didKeyBytes get() = toAnsiX963Encoded(useCompressed = true)
 
@@ -143,28 +147,28 @@ class EcdsaPublicKey(
         val DID_KEY_CODEC_P384 = 0x1201u.varint
         val DID_KEY_CODEC_P521 = 0x1202u.varint
 
-        fun ECPoint.asPublicKey(preferCompressed: Boolean = false): EcdsaPublicKey {
+        fun Point.asPublicKey(preferCompressed: Boolean = false): EcdsaPublicKey {
             return EcdsaPublicKey(this.normalize(), preferCompressed)
         }
 
         /** Decodes key from big-endian X and sign of Y */
         @Suppress("NOTHING_TO_INLINE")
-        inline fun fromCompressed(curve: ECCurve, x: ByteArray, sign: Sign) =
-            ECPoint.fromCompressed(curve, x, sign).asPublicKey(true)
+        inline fun fromCompressed(curve: ShortWeierstrassCurve, x: ByteArray, sign: Sign) =
+            Point.fromCompressed(curve, x, sign).asPublicKey(true)
 
         /** Decodes key from big-endian X and sign of Y */
         @Suppress("NOTHING_TO_INLINE")
-        inline fun fromCompressed(curve: ECCurve, x: ByteArray, usePositiveY: Boolean) =
-            ECPoint.fromCompressed(curve, x, usePositiveY).asPublicKey(true)
+        inline fun fromCompressed(curve: ShortWeierstrassCurve, x: ByteArray, usePositiveY: Boolean) =
+            Point.fromCompressed(curve, x, usePositiveY).asPublicKey(true)
 
         /** Decodes key from big-endian X and big-endian Y */
         @Suppress("NOTHING_TO_INLINE")
-        inline fun fromUncompressed(curve: ECCurve, x: ByteArray, y: ByteArray) =
-            ECPoint.fromUncompressed(curve, x, y).asPublicKey(false)
+        inline fun fromUncompressed(curve: ShortWeierstrassCurve, x: ByteArray, y: ByteArray) =
+            Point.fromUncompressed(curve, x, y).asPublicKey(false)
 
         /** Decodes a key from its ANSI X9.63 representation */
         @Throws(Throwable::class)
-        fun fromAnsiX963Bytes(curve: ECCurve, src: ByteArray): EcdsaPublicKey {
+        fun fromAnsiX963Bytes(curve: ShortWeierstrassCurve, src: ByteArray): EcdsaPublicKey {
             val numBytes = curve.coordinateLength.bytes.toInt()
 
             val prefix = catchingUnwrapped { ANSIECPrefix.fromPrefixByte(src[0]) }
@@ -197,12 +201,16 @@ class EcdsaPublicKey(
 object IndispensableAsn1PublicKeyFormatsProvider : Asn1PublicKeyFormatProvider {
     override fun encodeToAsn1(value: PublicKey): SubjectPublicKeyInfo? = when (value) {
         is RsaPublicKey -> value.asn1.toRepresentation()
-        is EcdsaPublicKey -> value.asn1.toRepresentation()
+        is EcdsaPublicKey -> if (value.curve.isBuiltIn) value.asn1.toRepresentation() else null
         else -> null
     }
 
     override fun decodeFromAsn1(publicKeyInfo: SubjectPublicKeyInfo) = when(publicKeyInfo.algorithmOid) {
-        EcdsaPublicKey.oid -> EcdsaPublicKey.fromAsn1(publicKeyInfo)
+        EcdsaPublicKey.oid -> {
+            val spki = Sec1EcPublicKeyInfo.of(publicKeyInfo, Signum.Der)
+            if (ECCurve.entries.none { it.oid == spki.curveOid }) null
+            else EcdsaPublicKey.fromAsn1.SEC1(spki)
+        }
         RsaPublicKey.oid -> RsaPublicKey.fromAsn1(publicKeyInfo)
         else -> null
     }

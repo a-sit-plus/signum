@@ -4,6 +4,7 @@ import at.asitplus.signum.HazardousMaterials
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.supreme.symmetric.Encryptor
+import at.asitplus.signum.supreme.symmetric.requireSupremeSymmetricBuiltin
 import kotlin.jvm.JvmName
 
 
@@ -25,6 +26,7 @@ suspend fun <E: SymmetricEncryptionAlgorithm.AuthenticatedRequiringNonce> KeyWit
     authenticatedData: ByteArray? = null
 ): SealedBox<E> {
     val second = second
+    second.algorithm.requireSupremeSymmetricBuiltin()
     return Encryptor(
         second.algorithm,
         if (second.hasDedicatedMacKey()) second.encryptionKey else second.secretKey,
@@ -50,6 +52,7 @@ suspend fun <E: SymmetricEncryptionAlgorithm.RequiringNonce<*>> KeyWithNonce<E>.
     data: ByteArray
 ): SealedBox<E> {
     val first = first
+    first.algorithm.requireSupremeSymmetricBuiltin()
     return Encryptor(
         first.algorithm,
         if (first.hasDedicatedMacKey()) first.encryptionKey else first.secretKey,
@@ -67,6 +70,7 @@ suspend fun <E: SymmetricEncryptionAlgorithm.RequiringNonce<*>> KeyWithNonce<E>.
 @HazardousMaterials("Nonce/IV re-use can have catastrophic consequences!")
 @Throws(Throwable::class)
 fun <E: SymmetricEncryptionAlgorithm.RequiringNonce<*>> SymmetricKey<E>.andPredefinedNonce(nonce: ByteArray): KeyWithNonce<E> {
+    algorithm.requireSupremeSymmetricBuiltin()
     require(nonce.size == algorithm.nonceSize.bytes.toInt()) { "$algorithm requires a nonce of size ${algorithm.nonceSize}!" }
     return KeyWithNonce(this, nonce)
 }
@@ -82,6 +86,7 @@ fun <E: SymmetricEncryptionAlgorithm.RequiringNonce<*>> SymmetricKey<E>.andPrede
 fun <E: SymmetricEncryptionAlgorithm.AuthenticatedRequiringNonce> SymmetricKey<E>.andPredefinedNonce(
     nonce: ByteArray
 ): KeyWithNonceAuthenticating<E> {
+    algorithm.requireSupremeSymmetricBuiltin()
     require(nonce.size == algorithm.nonceSize.bytes.toInt()) { "$algorithm requires a nonce of size ${algorithm.nonceSize}!" }
     return KeyWithNonceAuthenticating(nonce, this)
 }

@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.symmetric.*
 import javax.crypto.Cipher
 
@@ -10,7 +11,10 @@ internal actual suspend fun <E: SymmetricEncryptionAlgorithm<*, *>> initCipher(
     key: ByteArray,
     nonce: ByteArray?,
     aad: ByteArray?
-): PlatformCipher<E> = JcaPlatformCipher(mode, algorithm, key, nonce, aad)
+): PlatformCipher<E> {
+    algorithm.requireSupremeSymmetricBuiltin()
+    return JcaPlatformCipher(mode, algorithm, key, nonce, aad)
+}
 
 internal class JcaPlatformCipher<out E: SymmetricEncryptionAlgorithm<*, *>>(
     override val mode: PlatformCipher.Mode,
@@ -29,13 +33,14 @@ internal class JcaPlatformCipher<out E: SymmetricEncryptionAlgorithm<*, *>>(
                 when (algorithm) {
                     is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaJVM.initCipher(mode, key, nonce, aad)
                     is SymmetricEncryptionAlgorithm.AES<*, *> -> AESJCA.initCipher(mode, algorithm, key, nonce, aad)
+                    else -> throw UnsupportedCryptoException("Supreme does not support symmetric algorithm $algorithm")
                 }
             }
 
             else -> {
                 @OptIn(HazardousMaterials::class)
                 if ((algorithm !is SymmetricEncryptionAlgorithm.AES.ECB) && (algorithm !is SymmetricEncryptionAlgorithm.AES.WRAP.RFC3394) && (algorithm !is SymmetricEncryptionAlgorithm.AES.ECB_NOPADDING))
-                    TODO("$algorithm is UNSUPPORTED")
+                    throw UnsupportedCryptoException("Supreme does not support symmetric algorithm $algorithm")
                 AESJCA.initCipher(mode, algorithm, key, nonce, aad)
             }
         }

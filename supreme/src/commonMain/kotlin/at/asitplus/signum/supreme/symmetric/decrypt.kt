@@ -5,6 +5,10 @@ import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
 import kotlin.jvm.JvmName
 
+private fun SealedBox<*>.requireSupportedAlgorithms(key: SymmetricKey<*>) {
+    algorithm.requireSupremeSymmetricBuiltin()
+    key.algorithm.requireSupremeSymmetricBuiltin()
+}
 
 /**
  * Attempts to decrypt this ciphertext (which may also hold an IV/nonce, and in case of an authenticated ciphertext, authenticated data and auth tag) using the provided [key].
@@ -15,6 +19,7 @@ import kotlin.jvm.JvmName
 @JvmName("decryptGeneric")
 @Throws(Throwable::class)
 suspend fun <E: SymmetricEncryptionAlgorithm<*, *>> SealedBox<E>.decrypt(key: SymmetricKey<E>): ByteArray {
+    requireSupportedAlgorithms(key)
     require(algorithm == key.algorithm) { "Algorithm mismatch! expected: $algorithm, actual: ${key.algorithm}" }
     return if (!key.hasDedicatedMacKey()) {
         require(!hasMacKey())
@@ -54,6 +59,7 @@ suspend fun <E: SymmetricEncryptionAlgorithm.EncryptThenMAC<*>> SealedBox<E>.dec
     key: SymmetricKey<E>,
     authenticatedData: ByteArray = byteArrayOf()
 ): ByteArray {
+    requireSupportedAlgorithms(key)
     return decryptInternal(
         @OptIn(SecretExposure::class)
         key.encryptionKey,
@@ -78,6 +84,7 @@ private suspend fun SealedBox.Authenticated<*>.decryptAuthenticated(
     key: SymmetricKey.Authenticating<*>,
     authenticatedData: ByteArray
 ): ByteArray {
+    requireSupportedAlgorithms(key)
     require(algorithm == key.algorithm) { "Algorithm mismatch! expected: $algorithm, actual: ${key.algorithm}" }
     return if (!key.hasDedicatedMacKey()) {
         require(!hasMacKey())
@@ -104,6 +111,7 @@ private suspend fun SealedBox.Authenticated<*>.decryptAuthenticated(
 suspend fun <E: SymmetricEncryptionAlgorithm.Unauthenticated<*>> SealedBox<E>.decrypt(
     key: SymmetricKey<E>
 ): ByteArray {
+    requireSupportedAlgorithms(key)
     require(algorithm == key.algorithm) { "Algorithm mismatch! expected: $algorithm, actual: ${key.algorithm}" }
     return decryptInternal(@OptIn(SecretExposure::class) key.secretKey)
 }
@@ -151,7 +159,7 @@ private suspend fun SealedBox<SymmetricEncryptionAlgorithm.EncryptThenMAC<*>>.de
 suspend fun SymmetricKey<SymmetricEncryptionAlgorithm.UnauthenticatedRequiringNonce>.decrypt(
     nonce: ByteArray,
     encryptedData: ByteArray
-): ByteArray = algorithm.sealedBox.withNonce(nonce).from(encryptedData).decrypt(this)
+): ByteArray = algorithm.requireSupremeSymmetricBuiltin().sealedBox.withNonce(nonce).from(encryptedData).decrypt(this)
 
 
 /**
@@ -161,7 +169,7 @@ suspend fun SymmetricKey<SymmetricEncryptionAlgorithm.UnauthenticatedRequiringNo
 @Throws(Throwable::class)
 suspend fun SymmetricKey<SymmetricEncryptionAlgorithm.UnauthenticatedWithoutNonce>.decrypt(
     encryptedData: ByteArray
-): ByteArray = algorithm.sealedBox.from(encryptedData).decrypt(this)
+): ByteArray = algorithm.requireSupremeSymmetricBuiltin().sealedBox.from(encryptedData).decrypt(this)
 
 
 /**
@@ -176,7 +184,8 @@ suspend fun SymmetricKey<SymmetricEncryptionAlgorithm.AuthenticatedRequiringNonc
     authTag: ByteArray,
     authenticatedData: ByteArray = byteArrayOf()
 ): ByteArray =
-    algorithm.sealedBox.withNonce(nonce).from(encryptedData, authTag).decryptAuthenticated(this, authenticatedData)
+    algorithm.requireSupremeSymmetricBuiltin().sealedBox.withNonce(nonce).from(encryptedData, authTag)
+        .decryptAuthenticated(this, authenticatedData)
 
 /**
  * Directly decrypts raw [encryptedData], feeding [authTag], and [authenticatedData] into the decryption process.
@@ -189,4 +198,5 @@ suspend fun SymmetricKey<SymmetricEncryptionAlgorithm.AuthenticatedWithoutNonce>
     authTag: ByteArray,
     authenticatedData: ByteArray = byteArrayOf()
 ): ByteArray =
-    algorithm.sealedBox.from(encryptedData, authTag).decryptAuthenticated(this, authenticatedData)
+    algorithm.requireSupremeSymmetricBuiltin().sealedBox.from(encryptedData, authTag)
+        .decryptAuthenticated(this, authenticatedData)
