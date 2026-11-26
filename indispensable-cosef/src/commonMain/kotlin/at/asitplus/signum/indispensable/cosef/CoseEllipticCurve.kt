@@ -1,5 +1,6 @@
 package at.asitplus.signum.indispensable.cosef
 
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.ECCurve
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -49,10 +50,11 @@ enum class CoseEllipticCurve(val value: Int) {
 
 }
 
-fun ECCurve.toCoseCurve(): CoseEllipticCurve = when (this) {
-    ECCurve.SECP_256_R_1 -> CoseEllipticCurve.P256
-    ECCurve.SECP_384_R_1 -> CoseEllipticCurve.P384
-    ECCurve.SECP_521_R_1 -> CoseEllipticCurve.P521
+fun ECCurve.toCoseCurve(): CoseEllipticCurve = when {
+    this === ECCurve.SECP_256_R_1 -> CoseEllipticCurve.P256
+    this === ECCurve.SECP_384_R_1 -> CoseEllipticCurve.P384
+    this === ECCurve.SECP_521_R_1 -> CoseEllipticCurve.P521
+    else -> throw UnsupportedCryptoException("$this has no COSE curve mapping")
 }
 
 

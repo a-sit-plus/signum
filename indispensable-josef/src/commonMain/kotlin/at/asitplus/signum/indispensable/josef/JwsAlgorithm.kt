@@ -196,8 +196,12 @@ fun SignatureAlgorithm.toJwsAlgorithm(): JwsAlgorithm =
             Digest.SHA512 -> JwsAlgorithm.Signature.ES512
             else -> throw IllegalArgumentException("ECDSA with ${this.digest} is unsupported by JWS")
         }.also {
+            val curve = requiredCurve
+            if (curve != null && !ECCurve.entries.any { it === curve }) {
+                throw UnsupportedCryptoException("ECDSA with ${this.digest} and $curve is unsupported by JWS")
+            }
             // if the curve is set, it must match the spec's curve
-            require(requiredCurve?.equals(it.ecCurve) != false)
+            require(curve == null || curve === it.ecCurve)
                 { "ECDSA with ${this.digest} and ${this.requiredCurve} does not map to JWS (${it.ecCurve} is required)" }
         }
 

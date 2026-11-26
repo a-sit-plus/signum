@@ -174,14 +174,14 @@ sealed class JweAlgorithm(override val identifier: String) : JsonWebAlgorithm, E
  */
 @Throws(Throwable::class)
 fun SymmetricEncryptionAlgorithm<*, *>.toJweKwAlgorithm(): JweAlgorithm.Symmetric =
-    when (this) {
-        SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394 -> JweAlgorithm.A128KW
-        SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394 -> JweAlgorithm.A192KW
-        SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394 -> JweAlgorithm.A256KW
+    when {
+        this === SymmetricEncryptionAlgorithm.AES_128.WRAP.RFC3394 -> JweAlgorithm.A128KW
+        this === SymmetricEncryptionAlgorithm.AES_192.WRAP.RFC3394 -> JweAlgorithm.A192KW
+        this === SymmetricEncryptionAlgorithm.AES_256.WRAP.RFC3394 -> JweAlgorithm.A256KW
 
-        SymmetricEncryptionAlgorithm.AES_128.GCM -> JweAlgorithm.A128GCMKW
-        SymmetricEncryptionAlgorithm.AES_192.GCM -> JweAlgorithm.A192GCMKW
-        SymmetricEncryptionAlgorithm.AES_256.GCM -> JweAlgorithm.A256GCMKW
+        this === SymmetricEncryptionAlgorithm.AES_128.GCM -> JweAlgorithm.A128GCMKW
+        this === SymmetricEncryptionAlgorithm.AES_192.GCM -> JweAlgorithm.A192GCMKW
+        this === SymmetricEncryptionAlgorithm.AES_256.GCM -> JweAlgorithm.A256GCMKW
 
         else -> throw UnsupportedCryptoException("$this is not a a supported key wrapping algorithm for JWE")
     }

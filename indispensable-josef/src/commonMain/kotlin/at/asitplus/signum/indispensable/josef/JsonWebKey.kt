@@ -5,6 +5,7 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.catchingUnwrapped
 import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.ECCurveSerializer
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.SpecializedPublicKey
 import at.asitplus.awesn1.Asn1Integer
@@ -48,6 +49,7 @@ data class JsonWebKey(
      * Set for EC keys only
      */
     @SerialName("crv")
+    @Serializable(with = ECCurveSerializer::class)
     val curve: ECCurve? = null,
 
     /**
@@ -296,8 +298,12 @@ data class JsonWebKey(
     override fun toPublicKey(): PublicKey =
         when (type) {
             JwkType.EC -> {
+                val curve = curve ?: throw IllegalArgumentException("Missing or invalid curve")
+                if (!ECCurve.entries.any { it === curve }) {
+                    throw UnsupportedCryptoException("Custom curves are unsupported by JWK public key conversion")
+                }
                 EcdsaPublicKey.fromUncompressed(
-                    curve = curve ?: throw IllegalArgumentException("Missing or invalid curve"),
+                    curve = curve,
                     x = x ?: throw IllegalArgumentException("Missing x-coordinate"),
                     y = y ?: throw IllegalArgumentException("Missing y-coordinate")
                 ).apply { jwkId = keyId }
@@ -398,7 +404,10 @@ val SymmetricKey<*>.jsonWebKeyBytes
  */
 fun PublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
     when (this) {
-        is EcdsaPublicKey ->
+        is EcdsaPublicKey -> {
+            if (!ECCurve.entries.any { it === curve }) {
+                throw UnsupportedCryptoException("Custom curves are unsupported by JWK public key conversion")
+            }
             JsonWebKey(
                 type = JwkType.EC,
                 keyId = keyId,
@@ -406,6 +415,7 @@ fun PublicKey.toJsonWebKey(keyId: String? = this.jwkId): JsonWebKey =
                 x = xBytes,
                 y = yBytes
             )
+        }
 
 
         is RsaPublicKey ->

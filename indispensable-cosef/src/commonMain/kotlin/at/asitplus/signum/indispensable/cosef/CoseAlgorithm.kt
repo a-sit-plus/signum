@@ -351,21 +351,21 @@ object CoseHashAlgorithmSerializer : KSerializer<CoseAlgorithm.Hash> {
 fun SignatureAlgorithm.toCoseAlgorithm(): CoseAlgorithm.Signature =
     when (this) {
         is EcdsaAlgorithm -> when (this.digest) {
-            Digest.SHA256 -> when (this.requiredCurve) {
-                ECCurve.SECP_256_R_1 -> CoseAlgorithm.Signature.ESP256
-                null -> CoseAlgorithm.Signature.ES256
+            Digest.SHA256 -> when {
+                requiredCurve === ECCurve.SECP_256_R_1 -> CoseAlgorithm.Signature.ESP256
+                requiredCurve == null -> CoseAlgorithm.Signature.ES256
                 else -> throw UnsupportedCryptoException("ECDSA with ${this.digest} and $requiredCurve is unsupported by COSE")
             }
 
-            Digest.SHA384 -> when (this.requiredCurve) {
-                ECCurve.SECP_384_R_1 -> CoseAlgorithm.Signature.ESP384
-                null -> CoseAlgorithm.Signature.ES384
+            Digest.SHA384 -> when {
+                requiredCurve === ECCurve.SECP_384_R_1 -> CoseAlgorithm.Signature.ESP384
+                requiredCurve == null -> CoseAlgorithm.Signature.ES384
                 else -> throw UnsupportedCryptoException("ECDSA with ${this.digest} and $requiredCurve is unsupported by COSE")
             }
 
-            Digest.SHA512 -> when (this.requiredCurve) {
-                ECCurve.SECP_521_R_1 -> CoseAlgorithm.Signature.ESP512
-                null -> CoseAlgorithm.Signature.ES512
+            Digest.SHA512 -> when {
+                requiredCurve === ECCurve.SECP_521_R_1 -> CoseAlgorithm.Signature.ESP512
+                requiredCurve == null -> CoseAlgorithm.Signature.ES512
                 else -> throw UnsupportedCryptoException("ECDSA with ${this.digest} and $requiredCurve is unsupported by COSE")
             }
 
@@ -412,11 +412,11 @@ fun MessageAuthenticationCode.toCoseAlgorithm(): CoseAlgorithm.MAC =
 /** Tries to find a matching COSE algorithm. Note that only AES-GCM and ChaCha/Poly are supported. */
 @Throws(Throwable::class)
 fun SymmetricEncryptionAlgorithm<*, *>.toCoseAlgorithm(): CoseAlgorithm.SymmetricEncryption =
-    when (this) {
-        SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> CoseAlgorithm.SymmetricEncryption.ChaCha20Poly1305
-        SymmetricEncryptionAlgorithm.AES_128.GCM -> CoseAlgorithm.SymmetricEncryption.A128GCM
-        SymmetricEncryptionAlgorithm.AES_192.GCM -> CoseAlgorithm.SymmetricEncryption.A192GCM
-        SymmetricEncryptionAlgorithm.AES_256.GCM -> CoseAlgorithm.SymmetricEncryption.A256GCM
+    when {
+        this === SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> CoseAlgorithm.SymmetricEncryption.ChaCha20Poly1305
+        this === SymmetricEncryptionAlgorithm.AES_128.GCM -> CoseAlgorithm.SymmetricEncryption.A128GCM
+        this === SymmetricEncryptionAlgorithm.AES_192.GCM -> CoseAlgorithm.SymmetricEncryption.A192GCM
+        this === SymmetricEncryptionAlgorithm.AES_256.GCM -> CoseAlgorithm.SymmetricEncryption.A256GCM
         else -> throw UnsupportedCryptoException("$this has no COSE algorithm mapping")
     }
 
