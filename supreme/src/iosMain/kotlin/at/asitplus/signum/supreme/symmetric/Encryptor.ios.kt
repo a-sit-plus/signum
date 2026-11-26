@@ -1,6 +1,7 @@
 package at.asitplus.signum.supreme.symmetric
 
 import at.asitplus.signum.HazardousMaterials
+import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.symmetric.*
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm.AES
 import at.asitplus.signum.internals.ImplementationError
@@ -13,7 +14,10 @@ internal actual suspend fun <E: SymmetricEncryptionAlgorithm<*, *>> initCipher(
     key: ByteArray,
     nonce: ByteArray?,
     aad: ByteArray?
-): PlatformCipher<E> = IosPlatformCipher(mode, algorithm, key, nonce, aad)
+): PlatformCipher<E> {
+    algorithm.requireSupremeSymmetricBuiltin()
+    return IosPlatformCipher(mode, algorithm, key, nonce, aad)
+}
 
 
 private class IosPlatformCipher<out E: SymmetricEncryptionAlgorithm<*, *>>(
@@ -32,7 +36,7 @@ private class IosPlatformCipher<out E: SymmetricEncryptionAlgorithm<*, *>>(
         return when (algorithm.isAuthenticated()) {
             true -> {
                 if (!algorithm.isIntegrated()) throw ImplementationError("iOS AEAD algorithm mapping")
-                if (!algorithm.requiresNonce()) TODO("ALGORITHM $algorithm UNSUPPORTED")
+                if (!algorithm.requiresNonce()) throw UnsupportedCryptoException("Supreme does not support symmetric algorithm $algorithm")
                 when (algorithm) {
                     is AES<*, *> -> AESIOS.gcmDecrypt(data, key, nonce!!, authTag!!, aad)
                     is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaIOS.decrypt(
@@ -42,11 +46,14 @@ private class IosPlatformCipher<out E: SymmetricEncryptionAlgorithm<*, *>>(
                         authTag!!,
                         aad
                     )
+                    else -> throw UnsupportedCryptoException("Supreme does not support symmetric algorithm $algorithm")
                 }
             }
 
             false -> {
-                require(algorithm is AES<*, AuthCapability.Unauthenticated>) { "Only AES is supported" }
+                if (algorithm !is AES<*, AuthCapability.Unauthenticated>) {
+                    throw UnsupportedCryptoException("Supreme does not support symmetric algorithm $algorithm")
+                }
                 AESIOS.cbcEcbCrypt(
                   algorithm,
                     encrypt = false,
@@ -65,6 +72,7 @@ private class IosPlatformCipher<out E: SymmetricEncryptionAlgorithm<*, *>>(
         return when (algorithm) {
             is AES<*, *> -> AESIOS.encrypt(algorithm, data, key, nonce, aad)
             is SymmetricEncryptionAlgorithm.ChaCha20Poly1305 -> ChaChaIOS.encrypt(algorithm, data, key, nonce!!, aad)
+            else -> throw UnsupportedCryptoException("Supreme does not support symmetric algorithm $algorithm")
         }
     }
 }

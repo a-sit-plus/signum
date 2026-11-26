@@ -18,6 +18,7 @@ internal class Decryptor<out I: NonceTrait<*>, out E: SymmetricEncryptionAlgorit
             authTag: ByteArray?,
             aad: ByteArray?
         ): Decryptor<I, E> {
+            algorithm.requireSupremeSymmetricBuiltin()
             //while it could be argued that we should not check here. we are only calling this chained with decrypt(), so it is fine to fail fast
             val actualAlgorithm = if (algorithm.hasDedicatedMac()) algorithm.innerCipher else algorithm
             return Decryptor(
