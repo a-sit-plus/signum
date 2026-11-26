@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalForeignApi::class)
+@file:OptIn(ExperimentalForeignApi::class, at.asitplus.signum.SignumInternals::class)
 package at.asitplus.signum.supreme.os
 
 import at.asitplus.awesn1.crypto.X509SignatureValue
@@ -20,6 +20,8 @@ import at.asitplus.signum.supreme.swiftasync
 import io.github.aakira.napier.Napier
 import kotlinx.cinterop.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -30,15 +32,38 @@ import platform.CoreFoundation.*
 import platform.DeviceCheck.DCAppAttestService
 import platform.Foundation.NSBundle
 import platform.Foundation.NSData
+import platform.Security.kSecClassGenericPassword
+import platform.Security.kSecAttrService
+import platform.Security.kSecAttrAccount
+import platform.Security.kSecValueData
+import platform.Security.kSecAttrAccessible
+import platform.Security.kSecAttrAccessibleAlways
+import platform.Security.kSecAttrAccessibleAlwaysThisDeviceOnly
+import platform.Security.kSecAttrAccessibleAfterFirstUnlock
+import platform.Security.kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+import platform.Security.kSecAttrAccessibleWhenUnlocked
+import platform.Security.kSecAttrAccessibleWhenUnlockedThisDeviceOnly
 import platform.LocalAuthentication.*
 import platform.Security.*
 import kotlin.math.min
+import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.TimeSource
 import at.asitplus.signum.indispensable.sign.RsaAlgorithm.Padding as RSAPadding
 
 @OptIn(DelicateCoroutinesApi::class)
 private val dispatcher = Dispatchers.IO.limitedParallelism(1, "iOS Keychain Operations")
+
+private object OpaqueAliasNamespace {
+    const val SERVICE = "at.asitplus.signum.opaque-signing-key.v1"
+}
+
+private sealed interface IosKeyBackendChoice {
+    data class Opaque(val backend: OpaqueIosKeyBackend) : IosKeyBackendChoice
+    data class SecKey(val attributes: Pair<CFMutableDictionaryRef, JsonElement?>) : IosKeyBackendChoice
+}
+
+private fun newOpaqueRecordId() = Random.nextBytes(32).toHexString()
 
 private object KeychainTags {
     /** Bundle-id-free tags used for all newly created keys; tried first on retrieval and deletion. */
@@ -129,7 +154,7 @@ sealed class IosSigner(final override val alias: String,
     protected interface PrivateKeyManager { suspend fun get(operation: Long?, algorithm: SecKeyAlgorithm?, signingConfig: IosSignerSigningConfiguration): OwnedCFValue<SecKeyRef> }
     @SignumInternals
     /** For InternalsAccessor ONLY!!! */
-    internal val DONOTUSEsecKeyRef get() = runBlocking { privateKeyManager.get(null, null, IosSignerSigningConfiguration()) }
+    internal val DONOTUSEsecKeyRef get() = if (this is Opaque) null else runBlocking { privateKeyManager.get(null, null, IosSignerSigningConfiguration()) }
     protected val privateKeyManager = object : PrivateKeyManager {
         private var storedKey: OwnedCFValue<SecKeyRef>? = null
         override suspend fun get(operation: Long?, algorithm: SecKeyAlgorithm?, signingConfig: IosSignerSigningConfiguration) = withContext(dispatcher) {
@@ -179,6 +204,7 @@ sealed class IosSigner(final override val alias: String,
                         kSecAttrApplicationLabel mapsTo alias
                         kSecAttrApplicationTag mapsTo tag
                         when (this@IosSigner) {
+                            is Opaque -> throw UnsupportedCryptoException("Opaque signer has no SecKeyRef")
                             is ECDSA -> kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
                             is RSA -> kSecAttrKeyType mapsTo kSecAttrKeyTypeRSA
                         }
@@ -237,6 +263,8 @@ sealed class IosSigner(final override val alias: String,
     }
 
     final override suspend fun trySetupUninterruptedSigning(configure: DSLConfigureFn<IosSignerSigningConfiguration>) {
+        if (this is Opaque && needsAuthentication)
+            throw UnsupportedCryptoException("Opaque authentication prewarming is disabled until the iOS policy path is wired")
         if (needsAuthentication && !needsAuthenticationForEveryUse) {
             val config = DSL.resolve(::IosSignerSigningConfiguration, configure)
             val _ = privateKeyManager.get(null, null, config)
@@ -244,11 +272,30 @@ sealed class IosSigner(final override val alias: String,
     }
 
     protected abstract fun bytesToSignature(sigBytes: ByteArray): Signature
+
+    @SignumInternals
+    class Opaque internal constructor(
+        alias: String,
+        override val publicKey: PublicKey,
+        internal val record: OpaqueIosAliasRecord,
+        internal val backend: OpaqueIosKeyBackend,
+        config: IosSignerConfiguration,
+    ) : IosSigner(alias, record.metadata.copy(allowSigning = record.allowSigning), config) {
+        override val signatureAlgorithm: SignatureAlgorithm = backend.signatureAlgorithm(publicKey, config)
+        override fun bytesToSignature(sigBytes: ByteArray): Signature =
+            throw UnsupportedCryptoException("Opaque signatures are returned directly by the backend")
+    }
+
     override suspend fun sign(data: SignatureInput, configure: DSLConfigureFn<IosSignerSigningConfiguration>): SignatureResult<*> =
     SignatureResult.make {
         require(data.format == null) { "Pre-hashed data is unsupported on iOS" }
         require(metadata.allowSigning) { "Signing key purpose not set! Signing disallowed!" }
         val signingConfig = DSL.resolve(::IosSignerSigningConfiguration, configure)
+        if (this is Opaque) {
+            throw UnsupportedCryptoException(
+                "Opaque signing is disabled until iOS authentication policy is wired; iOS 2 must reopen, compare OpenedKey.publicKey, then call OpenedKey.sign"
+            )
+        }
         val (algorithm, inputFormat) = signatureAlgorithm.suitableSecKeyAlgAndFormat
         val plaintext = data.convertTo(inputFormat).collapsed().data.single().toNSData()
         val signatureBytes = try {
@@ -405,6 +452,88 @@ interface IosKeychainOperationsProvider {
     }
 
     fun makeIosSigner(alias: String, publicKey: PublicKey, metadata: IosKeyMetadata, config: IosSignerConfiguration): IosSigner?
+
+    /** Optional opaque-key backend. The additive default preserves existing providers. */
+    @SignumInternals
+    val opaqueKeyBackend: OpaqueIosKeyBackend? get() = null
+}
+
+/**
+ * Narrow adapter contract for an opaque iOS private-key representation. Adapters return owned
+ * material and do not create, persist, log, or delete alias records. [SecAccessControlRef] and
+ * [LAContext] arguments are borrowed and must not be released by the adapter.
+ */
+@SignumInternals
+interface OpaqueIosKeyBackend {
+    /** Stable, namespaced identifier persisted in Supreme's alias record. */
+    val backendId: String
+
+    /** Side-effect-free capability check, evaluated in provider registration order. */
+    fun supports(config: IosSigningKeyConfiguration): Boolean
+
+    /** Generates the configured key under Supreme's resolved access control. accessControl is borrowed. */
+    suspend fun generate(config: IosSigningKeyConfiguration, accessControl: SecAccessControlRef): OpaqueIosKeyMaterial
+
+    /** Reopen by exact backend ID. Verify OpenedKey.publicKey before invoking sign. */
+    /** authenticationContext is borrowed and must not be released by the backend. */
+    suspend fun reopen(representationVersion: Int, representation: ByteArray, authenticationContext: LAContext?): OpenedKey
+
+    /** Resolve the signer algorithm from stored public-key/configuration metadata without reopening native key state. */
+    fun signatureAlgorithm(publicKey: PublicKey, config: IosSignerConfiguration): SignatureAlgorithm
+}
+
+@SignumInternals
+data class OpaqueIosKeyMaterial(
+    val representation: ByteArray,
+    val publicKey: PublicKey,
+    val allowSigning: Boolean = true,
+    val representationVersion: Int = 1,
+) {
+    override fun toString() = "OpaqueIosKeyMaterial(publicKey=$publicKey, allowSigning=$allowSigning, representation=<redacted>)"
+}
+
+@SignumInternals
+interface OpenedKey {
+    val publicKey: PublicKey
+    suspend fun sign(message: ByteArray): Signature
+}
+
+/** Versioned private record; opaque representation remains inside Supreme's Keychain item. */
+@Serializable
+internal data class OpaqueIosAliasRecord(
+    val version: Int = 1,
+    val recordId: String,
+    val backendId: String,
+    val representationVersion: Int,
+    val representation: ByteArray,
+    val publicKeySpki: ByteArray,
+    val metadata: IosKeyMetadata,
+    val allowSigning: Boolean,
+) {
+    override fun toString() = "OpaqueIosAliasRecord(version=$version, recordId=$recordId, backendId=$backendId, representation=<redacted>)"
+}
+
+internal fun validateOpaqueBackendId(id: String): String {
+    require(id.length in 3..200 && ('.' in id || ':' in id) && id.matches(Regex("[A-Za-z0-9][A-Za-z0-9._:-]*"))) {
+        "Opaque iOS backend ID must be a stable namespaced identifier"
+    }
+    return id
+}
+
+internal fun createOpaqueAliasRecord(
+    backendId: String, material: OpaqueIosKeyMaterial, metadata: IosKeyMetadata,
+): OpaqueIosAliasRecord {
+    validateOpaqueBackendId(backendId)
+    require(material.representationVersion > 0) { "Opaque representation version must be positive" }
+    return OpaqueIosAliasRecord(
+        recordId = newOpaqueRecordId(),
+        backendId = backendId,
+        representationVersion = material.representationVersion,
+        representation = material.representation,
+        publicKeySpki = material.publicKey.asn1.toDer(),
+        metadata = metadata.copy(allowSigning = material.allowSigning),
+        allowSigning = material.allowSigning,
+    )
 }
 
 object SupremeIosKeychainOperationsProvider: IosKeychainOperationsProvider {
@@ -465,6 +594,163 @@ object SupremeIosKeychainOperationsProvider: IosKeychainOperationsProvider {
  */
 @OptIn(ExperimentalForeignApi::class)
 object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfiguration, IosSigningKeyConfiguration> {
+    private val aliasMutationMutex = Mutex()
+
+    private fun opaqueRecordExists(alias: String): Boolean = memScoped {
+        val result = alloc<CFTypeRefVar>()
+        when (val status = SecItemCopyMatching(createCFDictionary {
+            kSecClass mapsTo kSecClassGenericPassword
+            kSecAttrService mapsTo OpaqueAliasNamespace.SERVICE
+            kSecAttrAccount mapsTo alias
+            kSecReturnAttributes mapsTo true
+            kSecMatchLimit mapsTo kSecMatchLimitOne
+        }, result.ptr)) {
+            errSecSuccess -> { result.value?.let { CFRelease(it) }; true }
+            errSecItemNotFound -> false
+            else -> throw CFCryptoOperationFailed("check opaque alias record", status)
+        }
+    }
+
+    private fun readOpaqueRecord(alias: String): OpaqueIosAliasRecord? = memScoped {
+        val result = alloc<CFTypeRefVar>()
+        val status = SecItemCopyMatching(createCFDictionary {
+            kSecClass mapsTo kSecClassGenericPassword
+            kSecAttrService mapsTo OpaqueAliasNamespace.SERVICE
+            kSecAttrAccount mapsTo alias
+            kSecReturnData mapsTo true
+            kSecMatchLimit mapsTo kSecMatchLimitOne
+        }, result.ptr)
+        when (status) {
+            errSecItemNotFound -> null
+            errSecSuccess -> {
+                val data = result.value?.takeFromCF<NSData>() ?: error("Opaque alias record had no data")
+                val decoded = try {
+                    Json.decodeFromString<OpaqueIosAliasRecord>(data.toByteArray().decodeToString())
+                } catch (_: kotlinx.serialization.SerializationException) {
+                    throw UnsupportedCryptoException("Opaque iOS alias record is malformed")
+                }
+                decoded.also { record ->
+                    require(record.version == 1) { "Unsupported opaque alias record version ${record.version}" }
+                    validateOpaqueBackendId(record.backendId)
+                    require(record.recordId.isNotBlank() && record.representationVersion > 0) { "Invalid opaque alias record identity/version" }
+                }
+            }
+            else -> throw CFCryptoOperationFailed("retrieve opaque alias record", status)
+        }
+    }
+
+    private fun hasSecKeyAlias(alias: String): Boolean = memScoped {
+        if (getPublicKey(alias) != null) return@memScoped true
+        KeychainTags.PRIVATE_KEYS.any { tag ->
+            val result = alloc<CFTypeRefVar>()
+            when (val status = SecItemCopyMatching(createCFDictionary {
+                kSecClass mapsTo kSecClassKey
+                kSecAttrKeyClass mapsTo kSecAttrKeyClassPrivate
+                kSecAttrApplicationLabel mapsTo alias
+                kSecAttrApplicationTag mapsTo tag
+                kSecReturnAttributes mapsTo true
+                kSecMatchLimit mapsTo kSecMatchLimitOne
+            }, result.ptr)) {
+                errSecSuccess -> { result.value?.let { CFRelease(it) }; true }
+                errSecItemNotFound -> false
+                else -> throw CFCryptoOperationFailed("check private key alias", status)
+            }
+        }
+    }
+
+    private fun generatedSecKeyReference(alias: String, keyClass: CFStringRef?, tag: String): NSData = memScoped {
+        val result = alloc<CFTypeRefVar>()
+        val status = SecItemCopyMatching(createCFDictionary {
+            kSecClass mapsTo kSecClassKey
+            kSecAttrKeyClass mapsTo keyClass
+            kSecAttrApplicationLabel mapsTo alias
+            kSecAttrApplicationTag mapsTo tag
+            kSecReturnPersistentRef mapsTo true
+        }, result.ptr)
+        if (status != errSecSuccess) throw CFCryptoOperationFailed("identify generated SecKey", status)
+        result.value.takeFromCF<NSData>()
+    }
+
+    private fun deleteSecKeyByReference(reference: NSData) = memScoped {
+        val status = SecItemDelete(createCFDictionary { kSecValuePersistentRef mapsTo reference })
+        if (status != errSecSuccess && status != errSecItemNotFound)
+            throw CFCryptoOperationFailed("rollback generated SecKey", status)
+    }
+
+    private fun addOpaqueRecord(alias: String, record: OpaqueIosAliasRecord, config: IosSigningKeyConfiguration) = memScoped {
+        val availability = config.hardware.v.let { c -> when (c.availability) {
+            IosSecureEnclaveConfiguration.Availability.ALWAYS -> if (c.allowBackup) kSecAttrAccessibleAlways else kSecAttrAccessibleAlwaysThisDeviceOnly
+            IosSecureEnclaveConfiguration.Availability.AFTER_FIRST_UNLOCK -> if (c.allowBackup) kSecAttrAccessibleAfterFirstUnlock else kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+            IosSecureEnclaveConfiguration.Availability.WHILE_UNLOCKED -> if (c.allowBackup) kSecAttrAccessibleWhenUnlocked else kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+        } }
+        val bytes = Json.encodeToString(record).encodeToByteArray().toNSData()
+        val status = SecItemAdd(createCFDictionary {
+            kSecClass mapsTo kSecClassGenericPassword
+            kSecAttrService mapsTo OpaqueAliasNamespace.SERVICE
+            kSecAttrAccount mapsTo alias
+            kSecAttrAccessible mapsTo availability
+            kSecValueData mapsTo bytes.giveToCF()
+        }, null)
+        if (status != errSecSuccess) throw CFCryptoOperationFailed("store opaque alias record", status)
+    }
+
+    private fun deleteOpaqueRecord(alias: String, expectedRecordId: String? = null) = memScoped {
+        if (expectedRecordId != null && readOpaqueRecord(alias)?.recordId != expectedRecordId) return@memScoped
+        val status = SecItemDelete(createCFDictionary {
+            kSecClass mapsTo kSecClassGenericPassword
+            kSecAttrService mapsTo OpaqueAliasNamespace.SERVICE
+            kSecAttrAccount mapsTo alias
+        })
+        if (status != errSecSuccess && status != errSecItemNotFound)
+            throw CFCryptoOperationFailed("delete opaque alias record", status)
+    }
+
+    internal fun requireCurrentOpaqueRecord(alias: String, expectedRecordId: String) {
+        val current = readOpaqueRecord(alias)
+        require(current?.recordId == expectedRecordId) { "Opaque key alias '$alias' changed after signer lookup" }
+    }
+
+    internal suspend fun <T> withCurrentOpaqueRecord(
+        alias: String, expectedRecordId: String, operation: suspend () -> T,
+    ): T = aliasMutationMutex.withLock {
+        withContext(dispatcher) {
+            requireCurrentOpaqueRecord(alias, expectedRecordId)
+            operation()
+        }
+    }
+
+    private suspend fun persistOpaqueRecordUnderLock(
+        alias: String, record: OpaqueIosAliasRecord, config: IosSigningKeyConfiguration, afterPersist: suspend () -> Unit = {},
+    ) {
+        check(!hasSecKeyAlias(alias) && !opaqueRecordExists(alias)) {
+            "Key with alias $alias already exists"
+        }
+        val ownedRecord = if (record.recordId.isBlank()) record.copy(recordId = newOpaqueRecordId()) else record
+        validateOpaqueBackendId(ownedRecord.backendId)
+        require(ownedRecord.version == 1 && ownedRecord.representationVersion > 0) { "Unsupported opaque record version" }
+        try {
+            addOpaqueRecord(alias, ownedRecord, config)
+            afterPersist()
+        } catch (failure: Throwable) {
+            try { deleteOpaqueRecord(alias, ownedRecord.recordId) } catch (cleanup: Throwable) { failure.addSuppressed(cleanup) }
+            throw failure
+        }
+    }
+
+    internal suspend fun storeOpaqueRecordForTest(
+        alias: String, record: OpaqueIosAliasRecord, config: IosSigningKeyConfiguration, afterPersist: suspend () -> Unit = {},
+    ) = aliasMutationMutex.withLock { withContext(dispatcher) { persistOpaqueRecordUnderLock(alias, record, config, afterPersist) } }
+
+    internal fun readOpaqueRecordForTest(alias: String): OpaqueIosAliasRecord? = readOpaqueRecord(alias)
+
+    private fun backendForId(id: String): OpaqueIosKeyBackend? {
+        val matches = ServiceLoader.load<IosKeychainOperationsProvider>().mapNotNull { provider ->
+            provider.opaqueKeyBackend?.takeIf { it.backendId == id }
+        }.toList()
+        check(matches.size <= 1) { "Opaque backend ID '$id' is registered more than once" }
+        return matches.singleOrNull()
+    }
+
     context (scope: MemScope)
     private fun getPublicKey(alias: String): OwnedCFValue<SecKeyRef>? {
         // try the new bundle-id-free tag first, then fall back to the legacy bundle-id-scoped tag
@@ -531,18 +817,25 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
     override suspend fun createSigningKey(
         alias: String,
         configure: DSLConfigureFn<IosSigningKeyConfiguration>
-    ): IosSigner = withContext(dispatcher) {
+    ): IosSigner = aliasMutationMutex.withLock { withContext(dispatcher) {
         memScoped {
             // also catches legacy bundle-id-tagged keys, so we never shadow an existing key
-            if (getPublicKey(alias) != null)
+            if (hasSecKeyAlias(alias) || opaqueRecordExists(alias))
                 throw NoSuchElementException("Key with alias $alias already exists")
         }
 
-        // ok, the key does not exist, create it
-        try {
-            deleteSigningKey(alias) /* make sure there are no leftover private keys */
+        val config: IosSigningKeyConfiguration = DSL.resolve(::IosSigningKeyConfiguration, configure)
 
-            val config: IosSigningKeyConfiguration = DSL.resolve(::IosSigningKeyConfiguration, configure)
+        // ok, the key does not exist, create it
+        val createdKeyReferences = mutableListOf<NSData>()
+        fun rollbackSecKeys(failure: Throwable) {
+            createdKeyReferences.forEach { reference ->
+                try { deleteSecKeyByReference(reference) }
+                catch (cleanup: Throwable) { failure.addSuppressed(cleanup.nonFatalOrThrow()) }
+            }
+            createdKeyReferences.clear()
+        }
+        try {
             val usedSecureEnclave: Boolean
             val publicKey: PublicKey
             val allowKeyAgreement: Boolean
@@ -550,10 +843,22 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             val allowSigning: Boolean
             val algSpecificMetadata: JsonElement?
             memScoped {
+                val choice = ServiceLoader.load<IosKeychainOperationsProvider>().get(alias) {
+                    val opaque = opaqueKeyBackend?.takeIf { it.supports(config) }
+                    if (opaque != null) IosKeyBackendChoice.Opaque(opaque)
+                    else makeKeyAttributes(alias, config)?.let(IosKeyBackendChoice::SecKey)
+                }
                 val attr: CFMutableDictionaryRef
-                ServiceLoader.load<IosKeychainOperationsProvider>()
-                    .get(alias) { makeKeyAttributes(it, config) }
-                    .let { attr = it.first; algSpecificMetadata = it.second }
+                when (choice) {
+                    is IosKeyBackendChoice.Opaque -> {
+                        validateOpaqueBackendId(choice.backend.backendId)
+                        throw UnsupportedCryptoException("Opaque iOS backend '${choice.backend.backendId}' is selected but its protection and attestation policy path is not yet available")
+                    }
+                    is IosKeyBackendChoice.SecKey -> {
+                        attr = choice.attributes.first
+                        algSpecificMetadata = choice.attributes.second
+                    }
+                }
 
                 attr.get<CFDictionaryRef>(kSecPrivateKeyAttrs).value.let { privateAttrs ->
                     allowSigning = privateAttrs.getAndTake<Boolean?>(kSecAttrCanSign) ?: true
@@ -593,22 +898,23 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                         val pubkeyVar = alloc<SecKeyRefVar>()
                         val privkeyVar = alloc<SecKeyRefVar>()
                         val status = SecKeyGeneratePair(attr, pubkeyVar.ptr, privkeyVar.ptr)
-                        val pubkey = pubkeyVar.value
-                        val privkey = privkeyVar.value
+                        val public = pubkeyVar.value?.adopt()
+                        val private = privkeyVar.value?.adopt()
+                        if (public != null) createdKeyReferences +=
+                            generatedSecKeyReference(alias, kSecAttrKeyClassPublic, KeychainTags.NEW_PUBLIC_KEYS)
+                        if (private != null) createdKeyReferences +=
+                            generatedSecKeyReference(alias, kSecAttrKeyClassPrivate, KeychainTags.NEW_PRIVATE_KEYS)
 
-                        if ((status == errSecSuccess) && (pubkey != null) && (privkey != null)) {
+                        if (status == errSecSuccess && public != null && private != null) {
                             Napier.v { "Successfully generated iOS keypair for alias $alias (secure enclave? $useSecureEnclave)" }
-                            return KeyPair(public = pubkey.adopt(), private = privkey.adopt())
-                        } else {
-                            if (pubkey != null) CFRelease(pubkey)
-                            if (privkey != null) CFRelease(privkey)
-                            val x = CFCryptoOperationFailed(thing = "generate key", osStatus = status)
-                            if ((status == -50) && useSecureEnclave)
-                            {
-                                throw UnsupportedCryptoException("The iOS Secure Enclave does not support this configuration.", x)
-                            }
-                            throw x
+                            return KeyPair(public, private)
                         }
+                        val failure = CFCryptoOperationFailed("generate key", status)
+                        rollbackSecKeys(failure)
+                        if (status == -50 && useSecureEnclave && failure.suppressedExceptions.isEmpty()) {
+                            throw UnsupportedCryptoException("The iOS Secure Enclave does not support this configuration.", failure)
+                        }
+                        throw failure
                     }
                 }
 
@@ -678,17 +984,26 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             val signerConfiguration = DSL.resolve(::IosSignerConfiguration, config.signer.v)
             return@withContext getSignerInternal(alias, publicKey, metadata, signerConfiguration)
         } catch (e: Throwable) {
-            // get rid of any "partial" keys
-            try { deleteSigningKey(alias) } catch (x: Throwable) { e.addSuppressed(x.nonFatalOrThrow()) }
+            rollbackSecKeys(e)
             throw e
         }
-    }
+    } }
 
     override suspend fun getSignerForKey(
         alias: String,
         configure: DSLConfigureFn<IosSignerConfiguration>
-    ): IosSigner = withContext(dispatcher) {
+    ): IosSigner = aliasMutationMutex.withLock { withContext(dispatcher) {
         val config = DSL.resolve(::IosSignerConfiguration, configure)
+        val opaqueRecord = readOpaqueRecord(alias)
+        if (opaqueRecord != null) {
+            val secKeyAliasExists = hasSecKeyAlias(alias)
+            check(!secKeyAliasExists) { "Alias '$alias' exists in both the opaque and SecKey stores" }
+            val backend = backendForId(opaqueRecord.backendId)
+                ?: throw UnsupportedCryptoException("Opaque iOS key backend '${opaqueRecord.backendId}' is unavailable; alias remains deletable")
+            val publicKey = PublicKey.fromAsn1(opaqueRecord.publicKeySpki)
+            if (!opaqueRecord.allowSigning) { /* retained on signer metadata and enforced at sign time */ }
+            return@withContext IosSigner.Opaque(alias, publicKey, opaqueRecord, backend, config)
+        }
         val publicKey =
             memScoped {
                 getPublicKey(alias)
@@ -696,9 +1011,12 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             }.value.toPublicKey()
         val metadata = getKeyMetadata(alias)
         return@withContext getSignerInternal(alias, publicKey, metadata, config)
-    }
+    } }
 
-    override suspend fun deleteSigningKey(alias: String) = withContext(dispatcher) {
+    override suspend fun deleteSigningKey(alias: String) = aliasMutationMutex.withLock { withContext(dispatcher) { deleteSigningKeyInternal(alias) } }
+
+    private fun deleteSigningKeyInternal(alias: String) {
+        deleteOpaqueRecord(alias)
         memScoped {
             // Deletes both the new bundle-id-free tag and the legacy bundle-id-scoped tag.
             listOf(
