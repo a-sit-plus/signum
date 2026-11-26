@@ -32,9 +32,10 @@ import kotlinx.coroutines.runBlocking
 import org.bouncycastle.asn1.nist.NISTObjectIdentifiers
 import org.bouncycastle.asn1.teletrust.TeleTrusTNamedCurves
 import org.bouncycastle.jce.provider.BouncyCastleProvider
+import org.bouncycastle.jce.spec.ECNamedCurveSpec
 import java.security.KeyFactory
-import java.security.KeyPair
 import java.security.KeyPairGenerator
+import java.security.interfaces.ECPublicKey
 import java.security.PrivateKey as JcaPrivateKey
 import java.security.PublicKey as JcaPublicKey
 import java.security.Signature as JcaSignature
@@ -56,10 +57,17 @@ internal object ExternalCertificateScenarios {
     @JvmStatic
     fun brainpoolCertificate() = runBlocking {
         installProviders()
+        ServiceLoader.register<JcaMappingProvider>(CertificateAddon)
         val pair = KeyPairGenerator.getInstance("EC", bc).apply {
             initialize(ECGenParameterSpec(brainpool.name))
         }.generateKeyPair()
-        val certificate = verifySelfSigned(EcdsaAlgorithm(Digest.SHA256, brainpool), pair)
+        // Simulate a JCA key without an encoding so the DER fallback cannot supply the mapping.
+        val jcaKey = object : ECPublicKey by (pair.public as ECPublicKey) {
+            override fun getEncoded(): ByteArray? = null
+            override fun getFormat(): String? = null
+        }
+        val publicKey: EcdsaPublicKey = jcaKey.toPublicKey()
+        val certificate = verifySelfSigned(EcdsaAlgorithm(Digest.SHA256, brainpool), BcPrivateKey(pair.private, publicKey))
         (certificate.publicKey.shouldBeInstanceOf<EcdsaPublicKey>().curve === brainpool) shouldBe true
         brainpool.IDENTITY.isPointAtInfinity shouldBe true
         verifyNistDispatch()
@@ -69,7 +77,9 @@ internal object ExternalCertificateScenarios {
     fun mlDsaCertificate() = runBlocking {
         installProviders()
         val pair = KeyPairGenerator.getInstance(ML_DSA_44, bc).generateKeyPair()
-        val certificate = verifySelfSigned(MlDsa44, pair)
+        val decoded = PublicKey.fromAsn1(pair.public.encoded).shouldBeInstanceOf<MlDsaPublicKey>()
+        // Rebuild the decoded key so certificate creation calls the add-on encoder.
+        val certificate = verifySelfSigned(MlDsa44, BcPrivateKey(pair.private, MlDsaPublicKey(decoded.spki)))
         certificate.signatureAlgorithm shouldBe MlDsa44
         val _ = certificate.publicKey.shouldBeInstanceOf<MlDsaPublicKey>()
         val _ = certificate.signature.shouldBeInstanceOf<MlDsaSignature>()
@@ -86,14 +96,7 @@ internal object ExternalCertificateScenarios {
         ServiceLoader.register<SignatureFormatProvider>(CertificateAddon)
     }
 
-    private suspend fun verifySelfSigned(algorithm: SignatureAlgorithm, pair: KeyPair): Certificate {
-        // Decoded keys retain their source SPKI. Rebuild the key so certificate creation calls the add-on encoder.
-        val publicKey = when (val decoded = PublicKey.fromAsn1(pair.public.encoded)) {
-            is EcdsaPublicKey -> EcdsaPublicKey(decoded.publicPoint, decoded.preferCompressedRepresentation)
-            is MlDsaPublicKey -> MlDsaPublicKey(decoded.spki)
-            else -> error("Expected a public key decoded by the certificate add-on")
-        }
-        val key = BcPrivateKey(pair.private, publicKey)
+    private suspend fun verifySelfSigned(algorithm: SignatureAlgorithm, key: BcPrivateKey): Certificate {
         val signer = algorithm.signerFor(key).shouldBeInstanceOf<BcSigner>()
         val name = Name.fromString("CN=Provider Test")
         val start = Instant.parse("2026-01-01T00:00:00Z")
@@ -118,6 +121,7 @@ internal object ExternalCertificateScenarios {
             val signer = Signer.Ephemeral { ec { this.curve = curve } }.shouldBeInstanceOf<SupremeEphemeralJvmSigner.EC>()
             val verifier = signer.makeVerifier().shouldBeInstanceOf<SupremeJVMVerifier.Ecdsa>()
             (signer.publicKey.curve === curve) shouldBe true
+            signer.publicKey.toJcaPublicKey().toPublicKey().curve shouldBe curve
             verifier.verify(message, signer.sign(message).signature) shouldBe SignatureVerifier.Success
         }
     }
@@ -213,7 +217,7 @@ private fun JcaSignature.updateFrom(input: SignatureInput) {
 }
 
 private object CertificateAddon : InMemoryKeysProvider, SignatureVerifierProvider,
-    Asn1PublicKeyFormatProvider, Asn1SignatureAlgorithmProvider, SignatureFormatProvider {
+    Asn1PublicKeyFormatProvider, Asn1SignatureAlgorithmProvider, SignatureFormatProvider, JcaMappingProvider {
 
     override suspend fun makeEphemeralSigner(config: EphemeralSignerConfiguration) = null
 
@@ -226,9 +230,21 @@ private object CertificateAddon : InMemoryKeysProvider, SignatureVerifierProvide
 
     override fun verifierFor(algorithm: SignatureAlgorithm, key: PublicKey, config: VerifierConfiguration): BcVerifier? {
         val name = jcaName(algorithm, key) ?: return null
-        val jcaKey = KeyFactory.getInstance(if (key is EcdsaPublicKey) "EC" else ML_DSA_44, bc)
-            .generatePublic(X509EncodedKeySpec(key.asn1.toDer()))
+        val jcaKey = when (key) {
+            is EcdsaPublicKey -> key.toJcaPublicKey()
+            else -> KeyFactory.getInstance(ML_DSA_44, bc).generatePublic(X509EncodedKeySpec(key.asn1.toDer()))
+        }
         return BcVerifier(algorithm, key, jcaKey, name)
+    }
+
+    override fun jcaPublicKeyToPublicKey(publicKey: JcaPublicKey): EcdsaPublicKey? {
+        if (publicKey !is ECPublicKey || (publicKey.params as? ECNamedCurveSpec)?.name != brainpool.name) return null
+        return EcdsaPublicKey.fromUncompressed(brainpool, publicKey.w.affineX.toByteArray(), publicKey.w.affineY.toByteArray())
+    }
+
+    override fun publicKeyToJcaPublicKey(publicKey: PublicKey): ECPublicKey? {
+        if (publicKey !is EcdsaPublicKey || publicKey.curve !== brainpool) return null
+        return KeyFactory.getInstance("EC", bc).generatePublic(X509EncodedKeySpec(publicKey.asn1.toDer())) as ECPublicKey
     }
 
     private fun jcaName(algorithm: SignatureAlgorithm, key: PublicKey): String? = when {

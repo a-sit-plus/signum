@@ -1,6 +1,5 @@
 package at.asitplus.signum.indispensable
 
-import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.toAsn1Integer
 import at.asitplus.awesn1.toJavaBigInteger
 import at.asitplus.signum.HazardousMaterials
@@ -15,18 +14,13 @@ import at.asitplus.signum.indispensable.mac.HMAC
 import at.asitplus.signum.indispensable.pki.Certificate
 import at.asitplus.signum.indispensable.sign.*
 import at.asitplus.signum.indispensable.symmetric.SymmetricEncryptionAlgorithm
-import com.ionspin.kotlin.bignum.integer.base63.toJavaBigInteger
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.bouncycastle.asn1.ASN1ObjectIdentifier
-import org.bouncycastle.asn1.ASN1Sequence
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
-import org.bouncycastle.jce.ECNamedCurveTable
-import org.bouncycastle.jce.provider.JCEECPublicKey
-import org.bouncycastle.jce.spec.ECPublicKeySpec
 import java.security.*
 import java.security.cert.CertificateFactory
+import java.security.interfaces.ECPrivateKey
+import java.security.interfaces.ECPublicKey
 import java.security.spec.*
 import javax.crypto.Cipher
 import javax.crypto.spec.OAEPParameterSpec
@@ -243,14 +237,17 @@ fun ECCurve.Companion.byJcaName(name: String): ECCurve? = try {
 fun PublicKey.toJcaPublicKey() =
     ServiceLoader.load<JcaMappingProvider>().get(this, JcaMappingProvider::publicKeyToJcaPublicKey)
 
-fun EcdsaPublicKey.toJcaPublicKey(): java.security.interfaces.ECPublicKey {
-    val parameterSpec = ECNamedCurveTable.getParameterSpec(curve.requireBuiltIn().jwkName)
-    val x = x.residue.toJavaBigInteger()
-    val y = y.residue.toJavaBigInteger()
-    val ecPoint = parameterSpec.curve.createPoint(x, y)
-    val ecPublicKeySpec = ECPublicKeySpec(ecPoint, parameterSpec)
-    return JCEECPublicKey("EC", ecPublicKeySpec)
+private inline fun <reified Key, Result : Any> mapTypedEcKey(
+    key: Key,
+    mapping: JcaMappingProvider.(Key) -> Result?,
+): Result {
+    val providers = ServiceLoader.load<JcaMappingProvider>()
+    if (providers.none()) IndispensableJcaExtensionProvider.mapping(key)?.let { return it }
+    return providers.get(key, mapping)
 }
+
+fun EcdsaPublicKey.toJcaPublicKey(): ECPublicKey =
+    mapTypedEcKey(this) { publicKeyToJcaPublicKey(it) as? ECPublicKey }
 
 private val rsaFactory = KeyFactory.getInstance("RSA")
 
@@ -259,22 +256,8 @@ fun RsaPublicKey.toJcaPublicKey(): java.security.interfaces.RSAPublicKey =
         RSAPublicKeySpec(n.toJavaBigInteger(), e.toJavaBigInteger())
     ) as java.security.interfaces.RSAPublicKey
 
-fun java.security.interfaces.ECPublicKey.toPublicKey(): EcdsaPublicKey {
-    // TODO: this assumes SPKI encoding then uses bouncycastle on it to find the curve
-    // this breaks for non-SPKI encoded ECDSA public keys
-    // leaving it untouched for now but we should revisit it
-    val spki = SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(encoded))
-    val curveOid = spki.algorithm.parameters as? ASN1ObjectIdentifier
-        ?: throw UnsupportedCryptoException("Expected a named JCA EC curve")
-    val oid = ObjectIdentifier(curveOid.id)
-    val curve = ECCurve.entries.find { it.oid == oid }
-        ?: throw UnsupportedCryptoException("Unsupported JCA EC curve $curveOid")
-    return EcdsaPublicKey.fromUncompressed(
-        curve,
-        w.affineX.toByteArray(),
-        w.affineY.toByteArray()
-    )
-}
+fun ECPublicKey.toPublicKey(): EcdsaPublicKey =
+    mapTypedEcKey(this) { jcaPublicKeyToPublicKey(it) as? EcdsaPublicKey }
 
 fun java.security.interfaces.RSAPublicKey.toPublicKey(): RsaPublicKey =
     RsaPublicKey(modulus.toAsn1Integer(), publicExponent.toAsn1Integer())
@@ -310,12 +293,8 @@ fun PrivateKey.toJcaPrivateKey() =
     ServiceLoader.load<JcaMappingProvider>()
         .get(this) { privateKeyToJcaPrivateKey(it) }
 
-fun EcdsaPrivateKey.toJcaPrivateKey(): java.security.interfaces.ECPrivateKey {
-    if (this is EcdsaPrivateKey.WithPublicKey) curve.requireBuiltIn()
-    return KeyFactory.getInstance("EC")
-        .generatePrivate(PKCS8EncodedKeySpec(asn1.toDer()))
-            as java.security.interfaces.ECPrivateKey
-}
+fun EcdsaPrivateKey.toJcaPrivateKey(): ECPrivateKey =
+    mapTypedEcKey(this) { privateKeyToJcaPrivateKey(it) as? ECPrivateKey }
 
 fun RsaPrivateKey.toJcaPrivateKey() =
     KeyFactory.getInstance("RSA")
@@ -326,9 +305,8 @@ fun JCAPrivateKey.toPrivateKey() =
     ServiceLoader.load<JcaMappingProvider>()
         .get(this) { jcaPrivateKeyToPrivateKey(it) }
 
-fun java.security.interfaces.ECPrivateKey.toPrivateKey(): EcdsaPrivateKey.WithPublicKey =
-    EcdsaPrivateKey.fromAsn1(encoded) as? EcdsaPrivateKey.WithPublicKey
-        ?: throw UnsupportedCryptoException("Missing named curve in JCA EC private key")
+fun ECPrivateKey.toPrivateKey(): EcdsaPrivateKey.WithPublicKey =
+    mapTypedEcKey(this) { jcaPrivateKeyToPrivateKey(it) as? EcdsaPrivateKey.WithPublicKey }
 
 fun java.security.interfaces.RSAPrivateKey.toPrivateKey(): RsaPrivateKey =
     RsaPrivateKey.fromAsn1(encoded)
