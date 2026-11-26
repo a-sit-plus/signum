@@ -135,13 +135,13 @@ sealed class EcdsaPrivateKey private constructor(
 
         constructor(
             privateKey: BigInteger,
-            curve: ECCurve,
+            curve: ShortWeierstrassCurve,
         ) : this(
             privateKey,
             curve.requireBuiltIn().generator.times(privateKey).asPublicKey(preferCompressed = true),
         )
 
-        val curve: ECCurve get() = publicKey.curve
+        val curve: ShortWeierstrassCurve get() = publicKey.curve
 
         override val privateKeyBytes: ByteArray
             get() = privateKey.toByteArray().ensureSize(curve.scalarLength.bytes)
@@ -158,7 +158,7 @@ sealed class EcdsaPrivateKey private constructor(
     ) : EcdsaPrivateKey(privateKey) {
 
         fun withCurve(
-            curve: ECCurve,
+            curve: ShortWeierstrassCurve,
         ): WithPublicKey {
             curve.requireBuiltIn()
             require(curve.scalarLength.bytes.toInt() == curveOrderLengthInBytes) {

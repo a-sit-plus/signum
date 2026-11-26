@@ -61,8 +61,8 @@ It contains essentials such as:
     * RSA keys also support PKCS#1 encoding (`.asn1.pkcs1`)
     * EC keys also support SEC1 encoding (`.asn1.sec1`)
 * `Digest` containing an enumeration of supported digests
-* `ECCurve` representing an EC Curve
-* `ECPoint` representing a point on an elliptic curve
+* `ECCurve` describes the domain parameters shared by named elliptic curves.
+* `ECPoint` associates a point representation with its curve. `ShortWeierstrassCurve.Point` models the homogeneous points used by Signum's ECDSA keys and EC arithmetic.
 * `CryptoSignatre` representing a cryptographic signature including descriptive information regarding the algorithms and signature data
 * `SignatureAlgorithm` containing an enumeration of supported signature algorithms
     * `X509SignatureAlgorithm` enumeration of supported X.509 signature algorithms (maps to and from `SignatureAlgorithm`)

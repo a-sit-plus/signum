@@ -61,6 +61,7 @@ internal object ExternalCertificateScenarios {
         }.generateKeyPair()
         val certificate = verifySelfSigned(EcdsaAlgorithm(Digest.SHA256, brainpool), pair)
         (certificate.publicKey.shouldBeInstanceOf<EcdsaPublicKey>().curve === brainpool) shouldBe true
+        brainpool.IDENTITY.isPointAtInfinity shouldBe true
         verifyNistDispatch()
     }
 
@@ -128,7 +129,7 @@ private val mlDsaIdentifier = X509AlgorithmIdentifier(ObjectIdentifier(NISTObjec
 
 private fun java.math.BigInteger.toSignumInteger() = BigInteger.fromByteArray(toByteArray(), Sign.POSITIVE)
 
-private val brainpool = object : ECCurve {
+private val brainpool = object : ShortWeierstrassCurve {
     override val name = "brainpoolP256r1"
     override val jwkName = name
     override val oid = ObjectIdentifier(TeleTrusTNamedCurves.getOID(name).id)
@@ -143,9 +144,8 @@ private val brainpool = object : ECCurve {
     override val b = coordinateCreator.fromBigInteger(parameters.curve.b.toBigInteger().toSignumInteger())
     override val generator by lazy {
         val point = parameters.g.normalize()
-        ECPoint.fromXY(this, point.affineXCoord.toBigInteger().toSignumInteger(), point.affineYCoord.toBigInteger().toSignumInteger())
+        ShortWeierstrassCurve.Point.fromXY(this, point.affineXCoord.toBigInteger().toSignumInteger(), point.affineYCoord.toBigInteger().toSignumInteger())
     }
-    override val IDENTITY: ECPoint get() = error("Point arithmetic is outside this fixture")
     override fun toString() = name
 }
 private val brainpoolIdentifier = X509AlgorithmIdentifier(EcdsaPublicKey.oid, brainpool.oid.encodeToTlv())

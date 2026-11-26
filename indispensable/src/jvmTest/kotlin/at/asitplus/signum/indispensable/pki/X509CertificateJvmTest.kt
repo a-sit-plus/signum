@@ -60,7 +60,7 @@ val X509CertificateJvmTest by matrixSuite(matrixConfig { execution = ExecutionMo
     val keyGen = KeyPairGenerator.getInstance("EC").also {
         it.initialize(256)
     }
-    val ecCurve: ECCurve = ECCurve.SECP_256_R_1
+    val ecCurve = ECCurve.SECP_256_R_1
 
     "PSS" {
         val pssCertFromJvm = generateRsaPssCertificate()

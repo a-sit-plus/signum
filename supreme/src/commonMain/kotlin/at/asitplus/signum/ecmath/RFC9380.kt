@@ -2,7 +2,8 @@ package at.asitplus.signum.ecmath
 
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.ECPoint
+import at.asitplus.signum.indispensable.ShortWeierstrassCurve
+import at.asitplus.signum.indispensable.ShortWeierstrassCurve.Point
 import at.asitplus.signum.indispensable.digest.digest
 import at.asitplus.signum.indispensable.nativeDigest
 import at.asitplus.signum.indispensable.isBuiltIn
@@ -19,12 +20,12 @@ import kotlin.jvm.JvmInline
 import kotlin.native.HiddenFromObjC
 
 private typealias HashToFieldFn = suspend (msg: Sequence<ByteArray>, count: Int) -> Array<ModularBigInteger>
-private typealias MapToCurveFn = (ModularBigInteger) -> ECPoint
-private typealias ClearCofactorFn = (ECPoint) -> ECPoint
+private typealias MapToCurveFn = (ModularBigInteger) -> Point
+private typealias ClearCofactorFn = (Point) -> Point
 private typealias ExpandMessageFn = suspend (msg: Sequence<ByteArray>, domain: ByteArray, lenInBytes: Int) -> Buffer
 
 /** RFC 9380 8.2ff */
-private inline val ECCurve.Z get(): ModularBigInteger {
+private inline val ShortWeierstrassCurve.Z get(): ModularBigInteger {
     requireBuiltIn()
     val z = when (this) {
         ECCurve.SECP_256_R_1 -> -10
@@ -40,9 +41,9 @@ private inline fun ModularBigInteger.sqrt() =
     pow(modulus.plus(1).div(4))
 
 @Suppress("NOTHING_TO_INLINE")
-private inline val ECCurve.c1 get() = this.modulus.minus(3).div(4)
+private inline val ShortWeierstrassCurve.c1 get() = this.modulus.minus(3).div(4)
 @Suppress("NOTHING_TO_INLINE")
-private inline val ECCurve.c2 get() = (-Z).sqrt()
+private inline val ShortWeierstrassCurve.c2 get() = (-Z).sqrt()
 
 /** log2(modulus) * (3/2), this matches RFC9380 NIST curve suites, and also matches RFC9497 */
 @Suppress("NOTHING_TO_INLINE")
@@ -63,7 +64,7 @@ fun ECCurve.randomScalar(L: Int = this.L) = CryptoRand.Default.nextBytes(ByteArr
     .let { BigInteger.fromByteArray(it, Sign.POSITIVE).toModularBigInteger(this.order) }
 
 @Suppress("NOTHING_TO_INLINE")
-private inline fun clearCofactorTrivial(p: ECPoint) = p.curve.cofactor * p
+private inline fun clearCofactorTrivial(p: Point) = p.curve.cofactor * p
 
 private infix fun ByteArray.xor(other: ByteArray): ByteArray {
     check(this.size == other.size)
@@ -129,14 +130,14 @@ private inline fun hashToFieldRFC9380ForPrimeField
     }
 
 private inline fun hashToFieldRFC9380ForPrimeField
-            (crossinline em: ExpandMessageFn, curve: ECCurve, domain: ByteArray): HashToFieldFn =
+            (crossinline em: ExpandMessageFn, curve: ShortWeierstrassCurve, domain: ByteArray): HashToFieldFn =
     hashToFieldRFC9380ForPrimeField(em, curve.modulus, curve.L, domain)
 
 @Suppress("NOTHING_TO_INLINE")
 private inline fun sgn0ForPrimeFields(a: ModularBigInteger): Int = a.toBigInteger().mod(BigInteger.TWO).intValue()
 /** RFC9380: appendix F.2.1.2. (sqrt_ratio_3mod4); only works for p mod 4 = 3 */
 @Suppress("NOTHING_TO_INLINE")
-private inline fun ECCurve.sqrtRatio3mod4(u: ModularBigInteger, v: ModularBigInteger): Pair<Boolean, ModularBigInteger> {
+private inline fun ShortWeierstrassCurve.sqrtRatio3mod4(u: ModularBigInteger, v: ModularBigInteger): Pair<Boolean, ModularBigInteger> {
     var tv1: ModularBigInteger; var tv2: ModularBigInteger; var tv3: ModularBigInteger;
     var y1: ModularBigInteger;  val y2: ModularBigInteger; val y: ModularBigInteger
     tv1 = v*v
@@ -154,7 +155,7 @@ private inline fun ECCurve.sqrtRatio3mod4(u: ModularBigInteger, v: ModularBigInt
 
 /** this only works for weierstrass curves with A != 0, B != 0; taken from RFC9380 appendix F.2  */
 @Suppress("NOTHING_TO_INLINE")
-private inline fun mapToCurveSimplifiedSWUWeierstrassABNonZero(curve: ECCurve)
+private inline fun mapToCurveSimplifiedSWUWeierstrassABNonZero(curve: ShortWeierstrassCurve)
         : MapToCurveFn
 {
     val Z = curve.Z
@@ -189,7 +190,7 @@ private inline fun mapToCurveSimplifiedSWUWeierstrassABNonZero(curve: ECCurve)
 /* 23.*/val e1 = sgn0ForPrimeFields(u) == sgn0ForPrimeFields(y)
 /* 24.*/  y = CMOV(-y, y, e1)
 /* 25.*/  x = x / tv4
-        /* return */ ECPoint.fromXY(curve, x, y)
+        /* return */ Point.fromXY(curve, x, y)
     }
 }
 
@@ -232,7 +233,7 @@ object RFC9380 {
     }
 
     @JvmInline
-    value class HashToEllipticCurve(private val fn: suspend (Sequence<ByteArray>)->ECPoint) {
+    value class HashToEllipticCurve(private val fn: suspend (Sequence<ByteArray>)->Point) {
         suspend operator fun invoke(data: Sequence<ByteArray>) = fn(data)
         suspend operator fun invoke(data: ByteArray) = fn(sequenceOf(data))
         suspend operator fun invoke(data: Iterable<ByteArray>) = fn(data.asSequence())
@@ -248,18 +249,12 @@ object RFC9380 {
     /** the hash_to_field construction as specified in RFC9380;
      *   Usage: `hash_to_field(params)(input)`
      *
-     *  Note that this produces an element of the underlying field (mod [ECCurve.modulus]).<br/>
+     *  Note that this produces an element of the underlying field (mod [ShortWeierstrassCurve.modulus]).<br/>
      *   It does **not** produce a random scalar multiplier (mod [ECCurve.order]).
      *
      *  @see ECCurve.hashToScalar */
-    fun hash_to_field(expandMessage: ExpandMessageFn, curve: ECCurve, domain: ByteArray): HashToECScalar {
-        curve.requireBuiltIn()
-        return when (curve) {
-        ECCurve.SECP_256_R_1, ECCurve.SECP_384_R_1, ECCurve.SECP_521_R_1 ->
-            HashToECScalar(hashToFieldRFC9380ForPrimeField(expandMessage, curve, domain))
-        else -> error("unreachable")
-        }
-    }
+    fun hash_to_field(expandMessage: ExpandMessageFn, curve: ECCurve, domain: ByteArray): HashToECScalar =
+        HashToECScalar(hashToFieldRFC9380ForPrimeField(expandMessage, curve.requireBuiltIn(), domain))
 
     /** the expand_message_xmd function as specified in RFC9380;
      *   Usage: `expand_message_xmd(params)(input)` */
@@ -267,14 +262,8 @@ object RFC9380 {
         expandMessageXMD(digest)
 
     /** the map_to_curve_simple_swu function as specified in RFC9380 */
-    fun map_to_curve_simple_swu(curve: ECCurve): MapToCurveFn {
-        curve.requireBuiltIn()
-        return when (curve) {
-        ECCurve.SECP_256_R_1, ECCurve.SECP_384_R_1, ECCurve.SECP_521_R_1 ->
-            mapToCurveSimplifiedSWUWeierstrassABNonZero(curve)
-        else -> error("unreachable")
-        }
-    }
+    fun map_to_curve_simple_swu(curve: ECCurve): MapToCurveFn =
+        mapToCurveSimplifiedSWUWeierstrassABNonZero(curve.requireBuiltIn())
 
     /** The P256_XMD:SHA-256_SSWU_RO_ suite as defined in RFC9380;
      *   Usage: `suite(dst)(input)`
@@ -374,5 +363,5 @@ inline fun ECCurve.hashToCurve(domain: ByteArray) = when {
     ECCurve.SECP_521_R_1 -> RFC9380.`P521_XMD∶SHA-512_SSWU_RO_`(domain)
     else -> error("unreachable")
     }
-    else -> throw at.asitplus.signum.UnsupportedCryptoException("RFC 9380 is not supported for curve $jwkName")
+    else -> throw at.asitplus.signum.UnsupportedCryptoException("RFC 9380 is not supported for curve $name")
 }

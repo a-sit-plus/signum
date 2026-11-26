@@ -227,7 +227,7 @@ val ECCurve.jcaName
         else -> throw UnsupportedCryptoException("Unsupported JCA EC curve $this")
     }
 
-fun ECCurve.Companion.byJcaName(name: String): ECCurve? = ECCurve.entries.find { it.jcaName == name }
+fun ECCurve.Companion.byJcaName(name: String): ShortWeierstrassCurve? = ECCurve.entries.find { it.jcaName == name }
 
 fun PublicKey.toJcaPublicKey() =
     ServiceLoader.load<JcaMappingProvider>().get(this, JcaMappingProvider::publicKeyToJcaPublicKey)

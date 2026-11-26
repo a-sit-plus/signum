@@ -127,7 +127,7 @@ private data class ExternalProviderPublicKey(val value: UByte) : PublicKey {
     override val didKeyBytes: ByteArray get() = byteArrayOf(value.toByte())
 }
 
-private val sameSizeCurve = object : ECCurve by ECCurve.SECP_256_R_1 {
+private val sameSizeCurve = object : ShortWeierstrassCurve by ECCurve.SECP_256_R_1 {
     override val oid = ObjectIdentifier("1.3.6.1.4.1.55555.2")
 }
 

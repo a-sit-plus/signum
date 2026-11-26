@@ -108,7 +108,7 @@ class EcdsaPrivateKeyAsn1Converters(self: EcdsaPrivateKey) :
 
 val EcdsaPrivateKey.asn1 get() = EcdsaPrivateKeyAsn1Converters(this)
 
-private fun decodeEcCurve(oid: ObjectIdentifier): ECCurve =
+private fun decodeEcCurve(oid: ObjectIdentifier): ShortWeierstrassCurve =
     ECCurve.entries.firstOrNull { it.oid == oid } ?: throw UnsupportedCryptoException("Unsupported EC curve $oid")
 
 val PssPadded.Companion.fromAsn1 get() = asn1Decoders<RsaSsaPssParams,_> { src ->

@@ -411,7 +411,7 @@ object SupremeIosKeychainOperationsProvider: IosKeychainOperationsProvider {
     private class ECDSAOps(val config: PlatformSigningKeyConfigurationBase.ECConfiguration) : IosKeychainOperationsProvider.OperationsBundle {
         override fun CFDictionaryInitScope.initTopLevelDictionary() {
             kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
-            kSecAttrKeySizeInBits mapsTo config.curve.coordinateLength.bits.toInt()
+            kSecAttrKeySizeInBits mapsTo config.curve.requireBuiltIn().coordinateLength.bits.toInt()
         }
 
         override fun CFDictionaryInitScope.initPrivateKeyDictionary() {

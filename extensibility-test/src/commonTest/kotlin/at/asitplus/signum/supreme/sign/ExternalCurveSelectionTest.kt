@@ -9,7 +9,9 @@ import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.ecmath.double
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.ECCurveSerializer
+import at.asitplus.signum.indispensable.ECPoint
 import at.asitplus.signum.indispensable.PublicKey
+import at.asitplus.signum.indispensable.ShortWeierstrassCurve
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.iosEncodedPublicKeyLength
 import at.asitplus.signum.indispensable.sign.*
@@ -22,7 +24,7 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
 private val builtInCurve = ECCurve.SECP_256_R_1
-private val externalCurve = object : ECCurve by builtInCurve {
+private val externalCurve = object : ShortWeierstrassCurve by builtInCurve {
     override val oid = ObjectIdentifier("1.3.6.1.4.1.55555.3")
 }
 
@@ -48,6 +50,20 @@ val ExternalCurveSelectionTest by matrixSuite {
     ServiceLoader.register<SignatureVerifierProvider>(ExternalCurveVerifierProvider)
     val builtInPrivateKey = EcdsaPrivateKey.WithPublicKey(1.toBigInteger(), builtInCurve)
 
+    "a curve provider can define its own point representation" {
+        val model = object : ECCurve {
+            override val name = "Custom model"
+            override val oid = ObjectIdentifier("1.3.6.1.4.1.55555.4")
+            override val order = builtInCurve.order
+            override val cofactor = 1
+        }
+        val point: ECPoint = object : ECPoint {
+            override val curve = model
+        }
+        point.curve shouldBe model
+        shouldThrow<UnsupportedCryptoException> { Signer.Ephemeral { ec { curve = model } } }
+    }
+
     "the direct curve serializer keeps the legacy names and descriptor" {
         ECCurveSerializer.descriptor.serialName shouldBe "EcCurveSerializer"
         for ((name, curve) in listOf(
@@ -58,6 +74,8 @@ val ExternalCurveSelectionTest by matrixSuite {
             val wire = "\"$name\""
             Json.encodeToString(ECCurveSerializer, curve) shouldBe wire
             (Json.decodeFromString(ECCurveSerializer, wire) === curve) shouldBe true
+            Json.encodeToString(curve) shouldBe wire
+            (Json.decodeFromString<ShortWeierstrassCurve>(wire) === curve) shouldBe true
         }
         shouldThrow<SerializationException> { Json.encodeToString(ECCurveSerializer, externalCurve) }
     }

@@ -1,6 +1,6 @@
 package at.asitplus.signum.ecmath
 
-import at.asitplus.signum.indispensable.ECPoint
+import at.asitplus.signum.indispensable.ShortWeierstrassCurve.Point
 import at.asitplus.signum.indispensable.requireBuiltIn
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
@@ -8,7 +8,7 @@ import kotlin.math.max
 
 /** adds `other` to `this` and returns the result */
 /* Algorithm 4 from https://eprint.iacr.org/2015/1060.pdf */
-operator fun ECPoint.plus(other: ECPoint): ECPoint {
+operator fun Point.plus(other: Point): Point {
     require(this.curve === other.curve)
     curve.requireBuiltIn()
     val b = this.curve.b
@@ -69,12 +69,12 @@ operator fun ECPoint.plus(other: ECPoint): ECPoint {
     /* 41. */ Z3 = t4 * Z3
     /* 42. */ t1 = t3 * t0
     /* 43. */ Z3 = Z3 + t1
-    return ECPoint.General.unsafeFromXYZ(curve, X3, Y3, Z3)
+    return Point.General.unsafeFromXYZ(curve, X3, Y3, Z3)
 }
 
 /** adds `this` to `this` and returns the result */
 /* Algorithm 6 from https://eprint.iacr.org/2015/1060.pdf */
-fun ECPoint.double(): ECPoint {
+fun Point.double(): Point {
     curve.requireBuiltIn()
     val b = this.curve.b
     val X = this.homX
@@ -121,26 +121,26 @@ fun ECPoint.double(): ECPoint {
     /* 32. */ Z3 = t0 * t1
     /* 33. */ Z3 = Z3 + Z3
     /* 34. */ Z3 = Z3 + Z3
-    return ECPoint.General.unsafeFromXYZ(curve, X3, Y3, Z3)
+    return Point.General.unsafeFromXYZ(curve, X3, Y3, Z3)
 }
 
 @Suppress("NOTHING_TO_INLINE")
-inline operator fun ECPoint.unaryPlus() = this
+inline operator fun Point.unaryPlus() = this
 
 @Suppress("NOTHING_TO_INLINE")
-inline operator fun ECPoint.unaryMinus() =
-    curve.requireBuiltIn().let { ECPoint.General.unsafeFromXYZ(curve, homX, -homY, homZ) }
+inline operator fun Point.unaryMinus() =
+    curve.requireBuiltIn().let { Point.General.unsafeFromXYZ(curve, homX, -homY, homZ) }
 
 @Suppress("NOTHING_TO_INLINE")
-inline operator fun ECPoint.Normalized.unaryMinus() =
-    curve.requireBuiltIn().let { ECPoint.Normalized.unsafeFromXY(curve, x, -y) }
+inline operator fun Point.Normalized.unaryMinus() =
+    curve.requireBuiltIn().let { Point.Normalized.unsafeFromXY(curve, x, -y) }
 
 @Suppress("NOTHING_TO_INLINE")
-inline operator fun ECPoint.minus(other: ECPoint) = this + (-other)
+inline operator fun Point.minus(other: Point) = this + (-other)
 
 // TODO: i'm sure this could be smarter (keyword: "comb")
 // i'm also sure this isn't resistant to timing side channels if that is something you care about
-operator fun BigInteger.times(point: ECPoint): ECPoint {
+operator fun BigInteger.times(point: Point): Point {
     point.curve.requireBuiltIn()
     var o = point
     var sum = if (this.bitAt(0)) point else point.curve.IDENTITY
@@ -155,48 +155,48 @@ operator fun BigInteger.times(point: ECPoint): ECPoint {
 }
 
 @Suppress("NOTHING_TO_INLINE")
-inline operator fun Int.times(point: ECPoint) =
+inline operator fun Int.times(point: Point) =
     BigInteger.fromInt(this).times(point)
 
 @Suppress("NOTHING_TO_INLINE")
-inline operator fun Long.times(point: ECPoint) =
+inline operator fun Long.times(point: Point) =
     BigInteger.fromLong(this).times(point)
 
 @Suppress("NOTHING_TO_INLINE")
-inline operator fun UInt.times(point: ECPoint) =
+inline operator fun UInt.times(point: Point) =
     BigInteger.fromUInt(this).times(point)
 
 @Suppress("NOTHING_TO_INLINE")
-inline operator fun ULong.times(point: ECPoint) =
+inline operator fun ULong.times(point: Point) =
     BigInteger.fromULong(this).times(point)
 
 @Suppress("NOTHING_TO_INLINE")
-inline operator fun ModularBigInteger.times(point: ECPoint): ECPoint {
+inline operator fun ModularBigInteger.times(point: Point): Point {
     require(this.modulus == point.curve.order)
     return this.residue.times(point)
 }
 
 /* these are intentionally not operator functions! */
 @Suppress("NOTHING_TO_INLINE")
-inline fun ECPoint.times(v: BigInteger) = v * this
+inline fun Point.times(v: BigInteger) = v * this
 
 @Suppress("NOTHING_TO_INLINE")
-inline fun ECPoint.times(v: ModularBigInteger) = v * this
+inline fun Point.times(v: ModularBigInteger) = v * this
 
 @Suppress("NOTHING_TO_INLINE")
-inline fun ECPoint.times(v: Int) = v * this
+inline fun Point.times(v: Int) = v * this
 
 @Suppress("NOTHING_TO_INLINE")
-inline fun ECPoint.times(v: UInt) = v * this
+inline fun Point.times(v: UInt) = v * this
 
 @Suppress("NOTHING_TO_INLINE")
-inline fun ECPoint.times(v: Long) = v * this
+inline fun Point.times(v: Long) = v * this
 
 @Suppress("NOTHING_TO_INLINE")
-inline fun ECPoint.times(v: ULong) = v * this
+inline fun Point.times(v: ULong) = v * this
 
 /** computes uG+vQ */
-fun straussShamir(u: BigInteger, G: ECPoint, v: BigInteger, Q: ECPoint): ECPoint {
+fun straussShamir(u: BigInteger, G: Point, v: BigInteger, Q: Point): Point {
     val H = G+Q
     val uL = u.bitLength()
     val vL = v.bitLength()
@@ -214,7 +214,7 @@ fun straussShamir(u: BigInteger, G: ECPoint, v: BigInteger, Q: ECPoint): ECPoint
 }
 
 /** computes pQ in constant time */
-fun montgomeryMul(k: BigInteger, P: ECPoint): ECPoint {
+fun montgomeryMul(k: BigInteger, P: Point): Point {
     var R0 = P
     var R1 = P.double()
     var i = k.bitLength().toLong()-1

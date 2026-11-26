@@ -155,10 +155,11 @@ Your signature format class should implement `Signature`.
 Your public key class should implement `PublicKey`.
 Your private key class should implement `PrivateKey`, and likely `PrivateKey.WithPublicKey`.
 
-Implement `ECCurve` to describe an external named short-Weierstrass curve. Use your own key and
-signing implementations through the existing providers. Signum's built-in EC arithmetic and Supreme's
-built-in operations support P-256, P-384, and P-521. `ECCurveSerializer` retains the existing wire
-names for those curves.
+Use `ECCurve` for named curve parameters and `ECPoint` for a curve-specific point representation.
+Implement `ShortWeierstrassCurve` to use `ShortWeierstrassCurve.Point` with an external curve over a
+prime field. External curves can use their own key formats and signing through the existing providers.
+Signum's built-in EC arithmetic and Supreme's built-in operations support P-256, P-384, and P-521.
+`ECCurveSerializer` retains the existing wire names for those curves.
 
 `Asn1SignatureAlgorithmProvider` should implement `decodeFromAsn1` to map an `X509AlgorithmIdentifier` to your algorithm identifier.
 `SignatureFormatProvider` should implement `parseSignature` to parse `X509SignatureValue`s given an algorithm identifier.

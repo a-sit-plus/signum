@@ -23,7 +23,7 @@ private fun ByteArray.trimLeadingZeros() =
 
 val JsonWebKeyJvmTest by matrixSuite {
 
-    val ecCurve: ECCurve = ECCurve.SECP_256_R_1
+    val ecCurve = ECCurve.SECP_256_R_1
     val keyGenEC = KeyPairGenerator.getInstance("EC").also { it.initialize(256) }
     var keyGenRSA = KeyPairGenerator.getInstance("RSA").also { it.initialize(2048) }
 

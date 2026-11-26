@@ -1,7 +1,8 @@
 package at.asitplus.signum.ecmath
 
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.ECPoint
+import at.asitplus.signum.indispensable.ShortWeierstrassCurve
+import at.asitplus.signum.indispensable.ShortWeierstrassCurve.Point
 import com.ionspin.kotlin.bignum.integer.BigInteger
 import com.ionspin.kotlin.bignum.integer.Quadruple
 import com.ionspin.kotlin.bignum.integer.Sign
@@ -20,12 +21,12 @@ import de.infix.testBalloon.framework.core.TestConfig
 import kotlin.time.Duration.Companion.minutes
 import de.infix.testBalloon.framework.core.testScope
 
-private fun ECCurve.randomScalar(): ModularBigInteger =
+private fun ShortWeierstrassCurve.randomScalar(): ModularBigInteger =
     scalarCreator.fromBigInteger(BigInteger.fromByteArray(Random.nextBytes(scalarLength.bytes.toInt()), Sign.POSITIVE))
 
-private fun ECCurve.randomPoint(): ECPoint =
+private fun ShortWeierstrassCurve.randomPoint(): Point =
     generateSequence { runCatching {
-        ECPoint.fromCompressed(
+        Point.fromCompressed(
             this, Random.nextBytes(coordinateLength.bytes.toInt()), Random.nextBoolean())
     }}.firstNotNullOf { it.getOrNull() }
 
@@ -721,7 +722,7 @@ val ECMathTest  by matrixSuite {
                 }.genKeyPair()
                 val s = BigInteger.fromTwosComplementByteArray((keyPair.private as ECPrivateKey).s.toByteArray())
                 val w = (keyPair.public as ECPublicKey).w.let {
-                    ECPoint.fromUncompressed(curve, it.affineX.toByteArray(), it.affineY.toByteArray())
+                    Point.fromUncompressed(curve, it.affineX.toByteArray(), it.affineY.toByteArray())
                 }
                 Pair(s, w)
             }.take(10)) test { (s, w) ->

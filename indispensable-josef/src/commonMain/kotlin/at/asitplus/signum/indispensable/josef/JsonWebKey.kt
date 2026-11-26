@@ -8,6 +8,7 @@ import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.ECCurveSerializer
 import at.asitplus.signum.indispensable.SecretExposure
 import at.asitplus.signum.indispensable.SpecializedPublicKey
+import at.asitplus.signum.indispensable.requireBuiltIn
 import at.asitplus.awesn1.Asn1Integer
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
@@ -299,11 +300,8 @@ data class JsonWebKey(
         when (type) {
             JwkType.EC -> {
                 val curve = curve ?: throw IllegalArgumentException("Missing or invalid curve")
-                if (!ECCurve.entries.any { it === curve }) {
-                    throw UnsupportedCryptoException("Custom curves are unsupported by JWK public key conversion")
-                }
                 EcdsaPublicKey.fromUncompressed(
-                    curve = curve,
+                    curve = curve.requireBuiltIn(),
                     x = x ?: throw IllegalArgumentException("Missing x-coordinate"),
                     y = y ?: throw IllegalArgumentException("Missing y-coordinate")
                 ).apply { jwkId = keyId }
@@ -352,7 +350,7 @@ data class JsonWebKey(
 
         @Throws(Throwable::class)
         fun fromCoordinates(curve: ECCurve, x: ByteArray, y: ByteArray): JsonWebKey =
-            EcdsaPublicKey.fromUncompressed(curve, x, y).toJsonWebKey()
+            EcdsaPublicKey.fromUncompressed(curve.requireBuiltIn(), x, y).toJsonWebKey()
     }
 
     /**

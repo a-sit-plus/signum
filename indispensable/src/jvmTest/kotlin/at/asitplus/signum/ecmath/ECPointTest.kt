@@ -1,7 +1,7 @@
 package at.asitplus.signum.indispensable.ecmath
 
 import at.asitplus.signum.indispensable.ECCurve
-import at.asitplus.signum.indispensable.ECPoint
+import at.asitplus.signum.indispensable.ShortWeierstrassCurve.Point
 import com.ionspin.kotlin.bignum.integer.Sign
 import com.ionspin.kotlin.bignum.modular.ModularBigInteger
 import io.kotest.assertions.throwables.shouldNotThrowAny
@@ -20,7 +20,7 @@ val ECPointTest  by matrixSuite {
         p1 shouldBe p1
         p1.hashCode() shouldBe p1.hashCode()
 
-        val p11 = Json.decodeFromString<ECPoint.Normalized>(Json.encodeToString(p1))
+        val p11 = Json.decodeFromString<Point.Normalized>(Json.encodeToString(p1))
         p1 shouldBe p11
         p1.hashCode() shouldBe p11.hashCode()
 
@@ -31,13 +31,13 @@ val ECPointTest  by matrixSuite {
         p1 shouldNotBe p2
         p1.hashCode() shouldNotBe p2.hashCode()
 
-        val p3 = ECPoint.fromCompressed(ECCurve.SECP_384_R_1, byteArrayOf(0x0a), Sign.POSITIVE)
+        val p3 = Point.fromCompressed(ECCurve.SECP_384_R_1, byteArrayOf(0x0a), Sign.POSITIVE)
         p3 shouldBe p3
         p3.hashCode() shouldBe p3.hashCode()
         p3 shouldNotBe p1
         p3.hashCode() shouldNotBe p1.hashCode()
 
-        val p4 = ECPoint.fromCompressed(ECCurve.SECP_384_R_1, byteArrayOf(0x0a), Sign.NEGATIVE)
+        val p4 = Point.fromCompressed(ECCurve.SECP_384_R_1, byteArrayOf(0x0a), Sign.NEGATIVE)
         p4 shouldBe p4
         p4.hashCode() shouldBe p4.hashCode()
         p4 shouldNotBe p3
@@ -53,25 +53,25 @@ val ECPointTest  by matrixSuite {
         data(ECCurve.entries) test { curve ->
 
             val g = curve.generator
-            shouldNotThrowAny { ECPoint.fromXY(curve, g.x, g.y) }
-            shouldNotThrowAny { ECPoint.fromXY(curve, g.x.residue, g.y.residue) }
-            shouldNotThrowAny { ECPoint.fromXY(curve, g.x, -g.y) }
-            shouldNotThrowAny { ECPoint.fromXY(curve, g.x.residue, -(g.y.residue)) }
-            shouldNotThrowAny { ECPoint.fromXY(curve, g.x.residue, (-g.y).residue) }
+            shouldNotThrowAny { Point.fromXY(curve, g.x, g.y) }
+            shouldNotThrowAny { Point.fromXY(curve, g.x.residue, g.y.residue) }
+            shouldNotThrowAny { Point.fromXY(curve, g.x, -g.y) }
+            shouldNotThrowAny { Point.fromXY(curve, g.x.residue, -(g.y.residue)) }
+            shouldNotThrowAny { Point.fromXY(curve, g.x.residue, (-g.y).residue) }
 
             fun wrongMod(v: ModularBigInteger) =
                 ModularBigInteger.creatorForModulo(v.modulus + 1).fromBigInteger(v.residue)
 
-            shouldThrow<IllegalArgumentException> { ECPoint.fromXY(curve, wrongMod(g.x), g.y) }
-            shouldThrow<IllegalArgumentException> { ECPoint.fromXY(curve, g.x, wrongMod(g.y)) }
-            shouldThrow<IllegalArgumentException> { ECPoint.fromXY(curve, wrongMod(g.x), wrongMod(g.y)) }
+            shouldThrow<IllegalArgumentException> { Point.fromXY(curve, wrongMod(g.x), g.y) }
+            shouldThrow<IllegalArgumentException> { Point.fromXY(curve, g.x, wrongMod(g.y)) }
+            shouldThrow<IllegalArgumentException> { Point.fromXY(curve, wrongMod(g.x), wrongMod(g.y)) }
 
-            shouldThrow<IllegalArgumentException> { ECPoint.fromXY(curve, g.x + 1, g.y) }
-            shouldThrow<IllegalArgumentException> { ECPoint.fromXY(curve, g.x, g.y + 1) }
-            shouldThrow<IllegalArgumentException> { ECPoint.fromXY(curve, g.x.residue + 1, g.y.residue) }
+            shouldThrow<IllegalArgumentException> { Point.fromXY(curve, g.x + 1, g.y) }
+            shouldThrow<IllegalArgumentException> { Point.fromXY(curve, g.x, g.y + 1) }
+            shouldThrow<IllegalArgumentException> { Point.fromXY(curve, g.x.residue + 1, g.y.residue) }
 
-            shouldNotThrowAny { ECPoint.fromUncompressed(curve, g.xBytes, g.yBytes) }
-            shouldThrow<IllegalArgumentException> { ECPoint.fromUncompressed(curve, g.xBytes, byteArrayOf(0)) }
+            shouldNotThrowAny { Point.fromUncompressed(curve, g.xBytes, g.yBytes) }
+            shouldThrow<IllegalArgumentException> { Point.fromUncompressed(curve, g.xBytes, byteArrayOf(0)) }
         }
     }
 }

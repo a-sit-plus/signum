@@ -62,7 +62,7 @@ internal fun SignatureAlgorithm.getContentSigner(key: PrivateKey): ContentSigner
 @OptIn(ExperimentalStdlibApi::class)
 val Pkcs10CertificationRequestJvmTest by matrixSuite {
 
-    val ecCurve: ECCurve = ECCurve.SECP_256_R_1
+    val ecCurve = ECCurve.SECP_256_R_1
     val keyGen = KeyPairGenerator.getInstance("EC").also {
         it.initialize(ecCurve.coordinateLength.bits.toInt())
     }

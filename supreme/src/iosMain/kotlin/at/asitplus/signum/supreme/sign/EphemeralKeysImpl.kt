@@ -78,7 +78,7 @@ object SupremeIosInMemoryKeysProvider : InMemoryKeysProvider {
                 when (alg) {
                     is EphemeralEcdsaConfiguration -> {
                         kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
-                        kSecAttrKeySizeInBits mapsTo alg.curve.coordinateLength.bits.toInt()
+                        kSecAttrKeySizeInBits mapsTo alg.curve.requireBuiltIn().coordinateLength.bits.toInt()
                     }
 
                     is EphemeralRsaConfiguration -> {
@@ -103,7 +103,7 @@ object SupremeIosInMemoryKeysProvider : InMemoryKeysProvider {
                 is EphemeralEcdsaConfiguration ->
                     SupremeIosEphemeralSigner.EC(
                         privateKey = privateKey,
-                        publicKey = EcdsaPublicKey.fromAnsiX963Bytes(alg.curve, pubkeyBytes),
+                        publicKey = EcdsaPublicKey.fromAnsiX963Bytes(alg.curve.requireBuiltIn(), pubkeyBytes),
                         signatureAlgorithm = EcdsaAlgorithm(alg.digest, alg.curve)
                     )
 
