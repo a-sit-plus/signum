@@ -1,7 +1,6 @@
 package at.asitplus.signum.indispensable
 
 import at.asitplus.awesn1.Asn1BitString
-import at.asitplus.awesn1.Asn1Exception
 import at.asitplus.awesn1.Asn1Null
 import at.asitplus.awesn1.ObjectIdentifier
 import at.asitplus.awesn1.crypto.Sec1EcPublicKeyInfo
@@ -97,7 +96,7 @@ val AttestationClientDataTest by matrixSuite {
             }
         }
         val legacyRawKey = Base64.getUrlEncoder().withoutPadding().encodeToString(legacyKey.iosEncoded)
-        shouldThrow<Asn1Exception> {
+        shouldThrow<SerializationException> {
             Json.decodeFromString<IosHomebrewAttestation.ClientData>(
                 """{"purpose":"${IosHomebrewAttestation.THE_PURPOSE}","publicKey":"$legacyRawKey","challenge":"AQI","version":2}"""
             )

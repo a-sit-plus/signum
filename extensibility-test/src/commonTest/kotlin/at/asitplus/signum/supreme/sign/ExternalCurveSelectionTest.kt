@@ -8,6 +8,7 @@ import at.asitplus.signum.dsl.VerifierConfiguration
 import at.asitplus.signum.dsl.ec
 import at.asitplus.signum.ecmath.double
 import at.asitplus.signum.indispensable.ECCurve
+import at.asitplus.signum.indispensable.ECCurveSerializer
 import at.asitplus.signum.indispensable.PublicKey
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.iosEncodedPublicKeyLength
@@ -17,6 +18,8 @@ import at.asitplus.testballoon.matrix.matrixSuite
 import com.ionspin.kotlin.bignum.integer.toBigInteger
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
 
 private val builtInCurve = ECCurve.SECP_256_R_1
 private val externalCurve = object : ECCurve by builtInCurve {
@@ -44,6 +47,20 @@ val ExternalCurveSelectionTest by matrixSuite {
     Signum.installSupreme()
     ServiceLoader.register<SignatureVerifierProvider>(ExternalCurveVerifierProvider)
     val builtInPrivateKey = EcdsaPrivateKey.WithPublicKey(1.toBigInteger(), builtInCurve)
+
+    "the direct curve serializer keeps the legacy names and descriptor" {
+        ECCurveSerializer.descriptor.serialName shouldBe "EcCurveSerializer"
+        for ((name, curve) in listOf(
+            "P-256" to ECCurve.SECP_256_R_1,
+            "P-384" to ECCurve.SECP_384_R_1,
+            "P-521" to ECCurve.SECP_521_R_1,
+        )) {
+            val wire = "\"$name\""
+            Json.encodeToString(ECCurveSerializer, curve) shouldBe wire
+            (Json.decodeFromString(ECCurveSerializer, wire) === curve) shouldBe true
+        }
+        shouldThrow<SerializationException> { Json.encodeToString(ECCurveSerializer, externalCurve) }
+    }
 
     "same-size custom EC keys can select an external verifier" {
         val publicKey = EcdsaPublicKey.fromUncompressed(
