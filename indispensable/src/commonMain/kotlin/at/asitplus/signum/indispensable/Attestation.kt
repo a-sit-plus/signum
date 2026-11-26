@@ -1,14 +1,30 @@
 package at.asitplus.signum.indispensable
 
+import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.CertificateChainBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.IosPublicKeySerializer
 import at.asitplus.signum.indispensable.io.X509CertificateBase64UrlSerializer
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.Certificate
+import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
+import at.asitplus.signum.indispensable.sign.RsaPublicKey
+import at.asitplus.signum.indispensable.sign.asn1
+import at.asitplus.signum.indispensable.sign.fromAsn1
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonEncoder
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.JsonClassDiscriminator
 
 @Serializable
@@ -45,14 +61,12 @@ data class IosHomebrewAttestation(
 
     companion object { const val THE_PURPOSE = "ios app-attest: secure enclave protected key" }
 
-    @Serializable
+    @Serializable(with = ClientData.Serializer::class)
     @ConsistentCopyVisibility
     data class ClientData private constructor(
         private val purpose: String,
-        @Serializable(with=IosPublicKeySerializer::class)
         val publicKey: PublicKey,
-        @Serializable(with=ByteArrayBase64UrlSerializer::class)
-        val challenge: ByteArray
+        val challenge: ByteArray,
     ) {
         constructor(publicKey: PublicKey, challenge: ByteArray) :
             this(THE_PURPOSE, publicKey, challenge)
@@ -82,6 +96,53 @@ data class IosHomebrewAttestation(
             result = 31 * result + challenge.contentHashCode()
             return result
         }
+
+        @OptIn(SignumInternals::class)
+        object Serializer : KSerializer<ClientData> {
+            override val descriptor: SerialDescriptor = LegacyClientDataWire.serializer().descriptor
+
+            override fun serialize(encoder: Encoder, value: ClientData) {
+                val jsonEncoder = encoder as? JsonEncoder
+                    ?: throw SerializationException("ClientData requires a JSON encoder")
+                val useV1 = value.publicKey.isLegacyIosKey()
+                val element = if (useV1) {
+                    jsonEncoder.json.encodeToJsonElement(
+                        LegacyClientDataWire.serializer(),
+                        LegacyClientDataWire(value.purpose, value.publicKey, value.challenge)
+                    )
+                } else {
+                    jsonEncoder.json.encodeToJsonElement(
+                        Version2ClientDataWire.serializer(),
+                        Version2ClientDataWire(value.purpose, value.publicKey.asn1.toDer(), value.challenge, 2)
+                    )
+                }
+                jsonEncoder.encodeJsonElement(element)
+            }
+
+            override fun deserialize(decoder: Decoder): ClientData {
+                val jsonDecoder = decoder as? JsonDecoder
+                    ?: throw SerializationException("ClientData requires a JSON decoder")
+                val obj = jsonDecoder.decodeJsonElement() as? JsonObject
+                    ?: throw SerializationException("ClientData must be a JSON object")
+                val versionField = obj["version"]
+                val data = if (versionField == null) {
+                    jsonDecoder.json.decodeFromJsonElement(LegacyClientDataWire.serializer(), obj).let {
+                        ClientData(it.purpose, it.publicKey, it.challenge)
+                    }
+                } else {
+                    val primitive = versionField as? JsonPrimitive
+                    if (primitive == null || primitive.isString || primitive.content != "2") {
+                        throw SerializationException("Unsupported ClientData version")
+                    }
+                    val wire = jsonDecoder.json.decodeFromJsonElement(Version2ClientDataWire.serializer(), obj)
+                    val publicKey = PublicKey.fromAsn1(wire.publicKey).also {
+                        if (it is PublicKey.Unknown) throw SerializationException("No key format provider decoded the v2 public key")
+                    }
+                    ClientData(wire.purpose, publicKey, wire.challenge)
+                }
+                return data
+            }
+        }
     }
 
     val parsedClientData: ClientData by lazy {
@@ -102,6 +163,31 @@ data class IosHomebrewAttestation(
         result = 31 * result + clientDataJSON.contentHashCode()
         return result
     }
+}
+
+@Serializable
+private data class LegacyClientDataWire(
+    val purpose: String,
+    @Serializable(with = IosPublicKeySerializer::class)
+    val publicKey: PublicKey,
+    @Serializable(with = ByteArrayBase64UrlSerializer::class)
+    val challenge: ByteArray,
+)
+
+@Serializable
+private data class Version2ClientDataWire(
+    val purpose: String,
+    @Serializable(with = ByteArrayBase64UrlSerializer::class)
+    val publicKey: ByteArray,
+    @Serializable(with = ByteArrayBase64UrlSerializer::class)
+    val challenge: ByteArray,
+    val version: Int,
+)
+
+private fun PublicKey.isLegacyIosKey(): Boolean = when (this) {
+    is RsaPublicKey -> true
+    is EcdsaPublicKey -> curve === ECCurve.SECP_256_R_1 || curve === ECCurve.SECP_384_R_1 || curve === ECCurve.SECP_521_R_1
+    else -> false
 }
 
 val Attestation.jsonEncoded: String get() = Json.encodeToString(this)
