@@ -16,5 +16,8 @@ kotlin {
             implementation(project(":supreme"))
             implementation(project(":indispensable-pkix"))
         }
+        jvmTest.dependencies {
+            implementation(project(":internals-test"))
+        }
     }
 }
