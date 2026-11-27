@@ -1,11 +1,15 @@
+@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class, at.asitplus.signum.SignumInternals::class)
+
 package at.asitplus.signum.supreme.os
 
 import at.asitplus.signum.dsl.IosSignerConfiguration
+import at.asitplus.signum.dsl.signer
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.digest.Digest
 import at.asitplus.signum.indispensable.sign.EcdsaPublicKey
 import at.asitplus.signum.supreme.azString
 import at.asitplus.testballoon.matrix.*
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
@@ -38,6 +42,21 @@ val IosKeychainProviderTest by matrixSuite {
             signer.authenticationTimeout shouldBe authenticationTimeout
             signer.needsAuthentication shouldBe (authenticationTimeout != null)
             signer.needsAuthenticationForEveryUse shouldBe (authenticationTimeout == Duration.ZERO)
+        }
+    }
+
+    "SecKey signer setup failure deletes only the generated key pair" {
+        val alias = Random.azString(32)
+        try {
+            shouldThrow<IllegalStateException> {
+                IosKeychainProvider.createSigningKey(alias) {
+                    signer { error("signer setup failed after generation") }
+                }
+            }
+            shouldThrow<NoSuchElementException> { IosKeychainProvider.getSignerForKey(alias) }
+            IosKeychainProvider.createSigningKey(alias).alias shouldBe alias
+        } finally {
+            IosKeychainProvider.deleteSigningKey(alias)
         }
     }
 

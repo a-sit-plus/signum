@@ -20,6 +20,8 @@ import at.asitplus.signum.supreme.swiftasync
 import io.github.aakira.napier.Napier
 import kotlinx.cinterop.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -100,10 +102,15 @@ private object LAContextStorage {
  * RSA-PSS supports only MGF1 using the signature digest, a salt length equal to the digest output length, and trailer
  * field `1`, as required by the iOS Security framework.
  */
-sealed class IosSigner(final override val alias: String,
+@OptIn(SignumInternals::class)
+abstract class IosSigner @SignumInternals protected constructor(final override val alias: String,
                        protected val metadata: IosKeyMetadata,
                        private val signerConfig: IosSignerConfiguration)
     : PlatformSigningProviderSigner<IosSignerSigningConfiguration, IosHomebrewAttestation> {
+
+    /** Native key type used to look up this signer's private key in the Keychain. */
+    @SignumInternals
+    protected abstract val secKeyType: CFStringRef?
 
     override val mayRequireUserUnlock get() = needsAuthentication
 
@@ -178,10 +185,7 @@ sealed class IosSigner(final override val alias: String,
                         kSecAttrKeyClass mapsTo kSecAttrKeyClassPrivate
                         kSecAttrApplicationLabel mapsTo alias
                         kSecAttrApplicationTag mapsTo tag
-                        when (this@IosSigner) {
-                            is ECDSA -> kSecAttrKeyType mapsTo kSecAttrKeyTypeEC
-                            is RSA -> kSecAttrKeyType mapsTo kSecAttrKeyTypeRSA
-                        }
+                        kSecAttrKeyType mapsTo secKeyType
                         kSecMatchLimit mapsTo kSecMatchLimitOne
                         kSecReturnRef mapsTo true
 
@@ -275,6 +279,7 @@ sealed class IosSigner(final override val alias: String,
         : IosSigner(alias, metadata, config),
             PlatformSigningProviderSigner.ECDSA<IosSignerSigningConfiguration, IosHomebrewAttestation>
     {
+        override val secKeyType get() = kSecAttrKeyTypeEC
         override val signatureAlgorithm: EcdsaAlgorithm
         init {
             val algMetadata = Json.decodeFromJsonElement<IosKeyAlgSpecificMetadata.ECDSA>(metadata.algSpecific!!)
@@ -314,6 +319,7 @@ sealed class IosSigner(final override val alias: String,
         (alias: String, override val publicKey: RsaPublicKey, metadata: IosKeyMetadata, config: IosSignerConfiguration)
         : IosSigner(alias, metadata, config), at.asitplus.signum.indispensable.sign.RSASigner
     {
+        override val secKeyType get() = kSecAttrKeyTypeRSA
         override val signatureAlgorithm: RsaAlgorithm
         init {
             val algMetadata = Json.decodeFromJsonElement<IosKeyAlgSpecificMetadata.RSA>(metadata.algSpecific!!)
@@ -465,6 +471,47 @@ object SupremeIosKeychainOperationsProvider: IosKeychainOperationsProvider {
  */
 @OptIn(ExperimentalForeignApi::class)
 object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfiguration, IosSigningKeyConfiguration> {
+    private val aliasMutationMutex = Mutex()
+
+    private fun hasSecKeyAlias(alias: String): Boolean = memScoped {
+        if (getPublicKey(alias) != null) return@memScoped true
+        KeychainTags.PRIVATE_KEYS.any { tag ->
+            val result = alloc<CFTypeRefVar>()
+            when (val status = SecItemCopyMatching(createCFDictionary {
+                kSecClass mapsTo kSecClassKey
+                kSecAttrKeyClass mapsTo kSecAttrKeyClassPrivate
+                kSecAttrApplicationLabel mapsTo alias
+                kSecAttrApplicationTag mapsTo tag
+                kSecReturnAttributes mapsTo true
+                kSecMatchLimit mapsTo kSecMatchLimitOne
+            }, result.ptr)) {
+                errSecSuccess -> { result.value?.let { CFRelease(it) }; true }
+                errSecItemNotFound -> false
+                else -> throw CFCryptoOperationFailed("check private key alias", status)
+            }
+        }
+    }
+
+    private fun generatedSecKeyReference(alias: String, keyClass: CFStringRef?, tag: String): NSData = memScoped {
+        val result = alloc<CFTypeRefVar>()
+        val status = SecItemCopyMatching(createCFDictionary {
+            kSecClass mapsTo kSecClassKey
+            kSecAttrKeyClass mapsTo keyClass
+            kSecAttrApplicationLabel mapsTo alias
+            kSecAttrApplicationTag mapsTo tag
+            kSecReturnPersistentRef mapsTo true
+        }, result.ptr)
+        if (status != errSecSuccess) throw CFCryptoOperationFailed("identify generated SecKey", status)
+        result.value.takeFromCF<NSData>()
+    }
+
+    private fun deleteSecKeyByReference(reference: NSData) = memScoped {
+        val status = SecItemDelete(createCFDictionary { kSecValuePersistentRef mapsTo reference })
+        if (status != errSecSuccess && status != errSecItemNotFound)
+            throw CFCryptoOperationFailed("rollback generated SecKey", status)
+    }
+
+
     context (scope: MemScope)
     private fun getPublicKey(alias: String): OwnedCFValue<SecKeyRef>? {
         // try the new bundle-id-free tag first, then fall back to the legacy bundle-id-scoped tag
@@ -531,18 +578,23 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
     override suspend fun createSigningKey(
         alias: String,
         configure: DSLConfigureFn<IosSigningKeyConfiguration>
-    ): IosSigner = withContext(dispatcher) {
+    ): IosSigner = aliasMutationMutex.withLock { withContext(dispatcher) {
         memScoped {
             // also catches legacy bundle-id-tagged keys, so we never shadow an existing key
-            if (getPublicKey(alias) != null)
+            if (hasSecKeyAlias(alias))
                 throw NoSuchElementException("Key with alias $alias already exists")
         }
 
-        // ok, the key does not exist, create it
+        val config: IosSigningKeyConfiguration = DSL.resolve(::IosSigningKeyConfiguration, configure)
+        val createdKeyReferences = mutableListOf<NSData>()
+        fun rollback(failure: Throwable) {
+            createdKeyReferences.forEach { reference ->
+                try { deleteSecKeyByReference(reference) }
+                catch (cleanup: Throwable) { failure.addSuppressed(cleanup.nonFatalOrThrow()) }
+            }
+            createdKeyReferences.clear()
+        }
         try {
-            deleteSigningKey(alias) /* make sure there are no leftover private keys */
-
-            val config: IosSigningKeyConfiguration = DSL.resolve(::IosSigningKeyConfiguration, configure)
             val usedSecureEnclave: Boolean
             val publicKey: PublicKey
             val allowKeyAgreement: Boolean
@@ -593,22 +645,21 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                         val pubkeyVar = alloc<SecKeyRefVar>()
                         val privkeyVar = alloc<SecKeyRefVar>()
                         val status = SecKeyGeneratePair(attr, pubkeyVar.ptr, privkeyVar.ptr)
-                        val pubkey = pubkeyVar.value
-                        val privkey = privkeyVar.value
+                        val public = pubkeyVar.value?.adopt()
+                        val private = privkeyVar.value?.adopt()
+                        if (public != null) createdKeyReferences +=
+                            generatedSecKeyReference(alias, kSecAttrKeyClassPublic, KeychainTags.NEW_PUBLIC_KEYS)
+                        if (private != null) createdKeyReferences +=
+                            generatedSecKeyReference(alias, kSecAttrKeyClassPrivate, KeychainTags.NEW_PRIVATE_KEYS)
 
-                        if ((status == errSecSuccess) && (pubkey != null) && (privkey != null)) {
-                            Napier.v { "Successfully generated iOS keypair for alias $alias (secure enclave? $useSecureEnclave)" }
-                            return KeyPair(public = pubkey.adopt(), private = privkey.adopt())
-                        } else {
-                            if (pubkey != null) CFRelease(pubkey)
-                            if (privkey != null) CFRelease(privkey)
-                            val x = CFCryptoOperationFailed(thing = "generate key", osStatus = status)
-                            if ((status == -50) && useSecureEnclave)
-                            {
-                                throw UnsupportedCryptoException("The iOS Secure Enclave does not support this configuration.", x)
-                            }
-                            throw x
+                        if (status == errSecSuccess && public != null && private != null) {
+                            return KeyPair(public, private)
                         }
+                        val failure = CFCryptoOperationFailed("generate key", status)
+                        rollback(failure)
+                        if (status == -50 && useSecureEnclave && failure.suppressedExceptions.isEmpty())
+                            throw UnsupportedCryptoException("The iOS Secure Enclave does not support this configuration.", failure)
+                        throw failure
                     }
                 }
 
@@ -664,6 +715,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                 }
             } else null
 
+            currentCoroutineContext().ensureActive()
             val metadata = IosKeyMetadata(
                 attestation = attestation,
                 rawUnlockTimeout = config.hardware.v.protection.v?.timeout,
@@ -678,16 +730,15 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             val signerConfiguration = DSL.resolve(::IosSignerConfiguration, config.signer.v)
             return@withContext getSignerInternal(alias, publicKey, metadata, signerConfiguration)
         } catch (e: Throwable) {
-            // get rid of any "partial" keys
-            try { deleteSigningKey(alias) } catch (x: Throwable) { e.addSuppressed(x.nonFatalOrThrow()) }
+            rollback(e)
             throw e
         }
-    }
+    } }
 
     override suspend fun getSignerForKey(
         alias: String,
         configure: DSLConfigureFn<IosSignerConfiguration>
-    ): IosSigner = withContext(dispatcher) {
+    ): IosSigner = aliasMutationMutex.withLock { withContext(dispatcher) {
         val config = DSL.resolve(::IosSignerConfiguration, configure)
         val publicKey =
             memScoped {
@@ -696,9 +747,9 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
             }.value.toPublicKey()
         val metadata = getKeyMetadata(alias)
         return@withContext getSignerInternal(alias, publicKey, metadata, config)
-    }
+    } }
 
-    override suspend fun deleteSigningKey(alias: String) = withContext(dispatcher) {
+    override suspend fun deleteSigningKey(alias: String) = aliasMutationMutex.withLock { withContext(dispatcher) {
         memScoped {
             // Deletes both the new bundle-id-free tag and the legacy bundle-id-scoped tag.
             listOf(
@@ -722,7 +773,7 @@ object IosKeychainProvider: PlatformSigningProviderI<IosSigner, IosSignerConfigu
                     throw CryptoOperationFailed(it.joinToString(","))
             }
         }
-    }
+    } }
 }
 
 internal actual fun getPlatformSigningProvider(configure: DSLConfigureFn<PlatformSigningProviderConfigurationBase>): PlatformSigningProviderI<*,*,*> =

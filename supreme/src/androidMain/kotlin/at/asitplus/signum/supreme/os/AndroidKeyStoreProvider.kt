@@ -13,6 +13,7 @@ import at.asitplus.awesn1.Asn1StructuralException
 import at.asitplus.catchingUnwrapped
 import at.asitplus.nonFatalOrThrow
 import at.asitplus.signum.ServiceLoader
+import at.asitplus.signum.SignumInternals
 import at.asitplus.signum.UnsupportedCryptoException
 import at.asitplus.signum.dsl.*
 import at.asitplus.signum.indispensable.*
@@ -76,6 +77,10 @@ private inline fun <reified E> resolveOption(what: String, valid: Array<String>,
 
 // @Service
 interface AndroidKeyStoreOperationsProvider {
+    /** Whether the JCA [algorithm] returned by [initKeyGenSpec] supports StrongBox. */
+    @SignumInternals
+    fun supportsStrongBox(algorithm: String): Boolean = true
+
     /**
      * Allows overriding the entire key pair generation process if desired.
      * You will need to handle the entire [config] object, including attestation settings.
@@ -83,8 +88,13 @@ interface AndroidKeyStoreOperationsProvider {
      *
      * If you override this function, [initKeyGenSpec] becomes unused and can be dummied out
      */
+    @OptIn(SignumInternals::class)
     fun generateKeyPair(alias: String, config: AndroidSigningKeyConfiguration): KeyPair? {
         val (algorithm, builder) = initKeyGenSpec(alias, config) ?: return null
+        val strongBoxSupported = supportsStrongBox(algorithm)
+        val strongBoxPreference = config.hardware.v?.strongBox
+        if (!strongBoxSupported && strongBoxPreference == REQUIRED)
+            throw UnsupportedCryptoException("The selected algorithm does not support StrongBox")
         builder.apply {
             setCertificateNotBefore(Date.from(Instant.now()))
             setCertificateSubject(X500Principal("CN=$alias")) // TODO
@@ -119,7 +129,8 @@ interface AndroidKeyStoreOperationsProvider {
             KeyPairGenerator.getInstance(algorithm, "AndroidKeyStore")
                 .apply { initialize(builder.apply { setIsStrongBoxBacked(useStrongBox) }.build()) }
                 .generateKeyPair()
-        return when (config.hardware.v?.strongBox) {
+        if (!strongBoxSupported) return generate(false)
+        return when (strongBoxPreference) {
             REQUIRED ->
                 generate(true)
             PREFERRED ->
@@ -264,24 +275,27 @@ object AndroidKeyStoreProvider:
             throw NoSuchElementException("Key with alias $alias already exists")
         }
         val config = DSL.resolve(::AndroidSigningKeyConfiguration, configure)
-        val _ = ServiceLoader.load<AndroidKeyStoreOperationsProvider>().get(alias) {
-            generateKeyPair(it, config)
+        // Only an explicit decline may select another provider after the generation callback.
+        ServiceLoader.load<AndroidKeyStoreOperationsProvider>()
+            .firstNotNullOfOrNull { it.generateKeyPair(alias, config) }
+            ?: throw UnsupportedCryptoException("No Android Keystore provider supports the key configuration for $alias")
+        try {
+            val signer = getSignerForKey(alias, config.signer.v)
+            config.hardware.v?.let { hw ->
+                if (hw.strongBox == REQUIRED && signer.isStrongBoxBacked == false) {
+                    throw UnsupportedCryptoException("Generated key is not backed by StrongBox")
+                }
+                if ((hw.backing == REQUIRED || hw.strongBox == REQUIRED) && !signer.isInsideSecureHardware) {
+                    throw UnsupportedCryptoException("Generated key is not backed by secure hardware")
+                }
+            }
+            return@withContext signer
+        } catch (failure: Throwable) {
+            try { ks.deleteEntry(alias) } catch (cleanupFailure: Throwable) {
+                failure.addSuppressed(cleanupFailure.nonFatalOrThrow())
+            }
+            throw failure
         }
-        return@withContext getSignerForKey(alias, config.signer.v)
-            .also { signer -> config.hardware.v?.let { hw ->
-                if (hw.strongBox == REQUIRED) {
-                    if (signer.isStrongBoxBacked == false) {
-                        try { ks.deleteEntry(alias) } catch (x: Throwable) { val _ = x.nonFatalOrThrow() }
-                        throw UnsupportedCryptoException("Generated key is not backed by StrongBox")
-                    }
-                }
-                if (hw.backing == REQUIRED || hw.strongBox == REQUIRED) {
-                    if (!signer.isInsideSecureHardware) {
-                        try { ks.deleteEntry(alias) } catch (x: Throwable) { val _ = x.nonFatalOrThrow() }
-                        throw UnsupportedCryptoException("Generated key is not backed by secure hardware")
-                    }
-                }
-            }}
     }
 
     override suspend fun getSignerForKey(
