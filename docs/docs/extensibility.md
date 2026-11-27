@@ -221,28 +221,114 @@ For actual operations, implement the following:
         - If you depend on _Supreme_, you can once again reuse its platform class templates.
           See `SupremeJVMInMemoryKeysProvider` and `SupremeIosInMemoryKeysProvider`.
           You will need to implement the platform conversion providers.
-- If you depend on _Supreme_, you can also integrate with its platform-specific signing providers.
-    - Implement the following classes in platform code:
-        - `AndroidKeyStoreOperationsProvider` to support hardware-backed keys (on Android):
-            - For key creation, override either `initKeyGenSpec` (preferred), or `generateKeyPair`.
-              If you override `generateKeyPair`, you will need to re-implement the security settings, which the default implementation handles for you.
-            - Additionally, override `getAndroidKeystoreSigner` to produce the actual signer object.
-              Your returned object needs to subclass `AndroidKeystoreSigner`, which already implements security handling.
-              Refer to the existing Supreme subclasses for the minimal shim to use. 
-        - `IosKeychainOperationsProvider` to support hardware-backed keys (on iOS):
-            - For key creation, override either `getOperationsBundle` (preferred) or `makeKeyAttributes`.
-              If you override `makeKeyAttributes`, make sure to refer closely to the default implementation to maintain compatibility with the `IosKeychainProvider`.
-            - Additionally, override `makeIosSigner` with a minimal shim.
-              See the existing Supreme implementation for the shim to use.
-        - `JavaKeyStoreOperationsProvider` integration with JKSProvider (on Android+JVM).
-            - For key creation, override `createKeyPair`.
-            - Additionally, override `getJKSSigner` with a minimal shim.
-              See the existing Supreme implementation for the shim to use.
-    - Additionally, in common code, define your DSL extension properties (see [DSL Extensibility]):
-        - Add an `PlatformSigningKeyConfigurationBase<*>._algSpecific` option to select key creation using your algorithm.
-        - Optionally, if your (platform) signers need additional configuration, provide a DSL extension property on `SignerConfiguration` and/or on `PlatformSignerConfigurationBase`.
-        - This extension property should be used by all of your provider integrations.
-          This enables seamless platform-specific key creation and usage from common code.
+
+### Android KeyStore
+
+Implement `AndroidKeyStoreOperationsProvider`. `initKeyGenSpec` receives the resolved configuration and may return `null` to decline it. The default `generateKeyPair` calls `generateAndroidKeystoreKeyPair` with Supreme's StrongBox policy. For a TEE-only algorithm, override `generateKeyPair` and pass `supportsStrongBox = false`. Use the same alias in the `KeyGenParameterSpec.Builder` and the helper call.
+
+```kotlin
+private class ExternalTeeConfiguration : DSL.Data() {
+    var curveName = "secp256r1"
+}
+private val AndroidSigningKeyConfiguration.externalTee
+    get() = _algSpecific.option("EXT_TEST_TEE_ECDSA", ::ExternalTeeConfiguration)
+
+private object ExternalTeeProvider : AndroidKeyStoreOperationsProvider {
+    override fun initKeyGenSpec(
+        alias: String, config: AndroidSigningKeyConfiguration,
+    ): Pair<String, KeyGenParameterSpec.Builder>? {
+        val resolved = config.externalTee.v ?: return null
+        val jcaKeyAlgorithm = KeyProperties.KEY_ALGORITHM_EC
+        val builder = KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_SIGN)
+            .setAlgorithmParameterSpec(ECGenParameterSpec(resolved.curveName))
+            .setDigests(KeyProperties.DIGEST_SHA256)
+        return jcaKeyAlgorithm to builder
+    }
+
+    @OptIn(SignumInternals::class)
+    override fun generateKeyPair(alias: String, config: AndroidSigningKeyConfiguration): KeyPair? {
+        val (jcaKeyAlgorithm, builder) = initKeyGenSpec(alias, config) ?: return null
+        return generateAndroidKeystoreKeyPair(
+            alias, config, jcaKeyAlgorithm, builder, supportsStrongBox = false
+        )
+    }
+
+    override fun getAndroidKeystoreSigner(
+        jcaPrivateKey: PrivateKey, alias: String, keyInfo: KeyInfo,
+        config: AndroidSignerConfiguration, publicKey: PublicKey,
+        attestation: AndroidKeystoreAttestation?,
+    ): AndroidKeystoreSigner? {
+        if (!alias.startsWith("external-tee-") || publicKey !is EcdsaPublicKey) return null
+        return object : AndroidKeystoreSigner(
+            jcaPrivateKey, alias, keyInfo, "SHA256withECDSA", config, attestation
+        ) {
+            override val publicKey = publicKey
+            override val signatureAlgorithm = EcdsaAlgorithm(Digest.SHA256, publicKey.curve)
+            override fun parseSignatureFromJca(bytes: ByteArray) =
+                signatureAlgorithm.parseJCASignature(bytes)
+        }
+    }
+}
+```
+
+After `Signum.installSupreme()`, register your provider with `ServiceLoader.register<AndroidKeyStoreOperationsProvider>(...)`. Key generation tries the most recently registered provider first. A `null` result lets the next provider try. Generation exceptions propagate to the caller. The alias lookup calls `getAndroidKeystoreSigner` with native metadata and the attestation chain when available.
+
+`AndroidKeystoreSigner` supplies the authenticated signing flow. Pass the JCA signature name accepted by Android Keystore and map native signature bytes with `parseJCASignature`. The example opts a P-256 test adapter out of StrongBox. Use your own algorithm and public-key type in an extension. Supreme's helper applies certificate, attestation, authentication, and backing policy. For an algorithm without StrongBox support, `PREFERRED` selects the TEE path and `REQUIRED` fails before generation.
+
+### iOS Keychain
+
+The existing `SecKey` integration uses `getOperationsBundle` and `makeIosSigner`. An adapter for opaque Secure Enclave keys supplies `IosKeychainOperationsProvider.opaqueKeyBackend`. The backend defines its representation format, version, and stable namespaced ID. Supreme keeps those values and the key metadata in a private Keychain alias record.
+
+The application supplies the CryptoKit operations and Signum ML-DSA types used in this adapter.
+
+```kotlin
+private class ExternalMldsaConfiguration : DSL.Data()
+private val IosSigningKeyConfiguration.externalMldsa
+    get() = _algSpecific.option("com.example.mldsa", ::ExternalMldsaConfiguration)
+
+@OptIn(SignumInternals::class, ExperimentalForeignApi::class)
+private object ConsumerMldsaBackend : OpaqueIosKeyBackend {
+    override val backendId = "com.example.wallet.mldsa"
+    override fun supports(config: IosSigningKeyConfiguration) = config.externalMldsa.v != null
+    override suspend fun generate(
+        config: IosSigningKeyConfiguration, accessControl: SecAccessControlRef,
+    ): OpaqueIosKeyMaterial = TODO("Consumer CryptoKit adapter")
+    override suspend fun reopen(
+        representationVersion: Int, representation: ByteArray, authenticationContext: LAContext?,
+    ): OpenedKey = TODO("Consumer CryptoKit adapter")
+    override fun signatureAlgorithm(publicKey: PublicKey, config: IosSignerConfiguration): SignatureAlgorithm =
+        TODO("Consumer Signum algorithm")
+}
+
+@OptIn(SignumInternals::class)
+private object ConsumerIosProvider : IosKeychainOperationsProvider {
+    override val opaqueKeyBackend = ConsumerMldsaBackend
+    override fun getOperationsBundle(config: IosSigningKeyConfiguration) = null
+    override fun makeIosSigner(
+        alias: String, publicKey: PublicKey, metadata: IosKeyMetadata, config: IosSignerConfiguration,
+    ): IosSigner? = null
+}
+
+Signum.installSupreme()
+ServiceLoader.register<IosKeychainOperationsProvider>(ConsumerIosProvider)
+val created = IosKeychainProvider.createSigningKey(alias) {
+    externalMldsa {}
+    hardware { backing = REQUIRED }
+}
+val loaded = IosKeychainProvider.getSignerForKey(alias)
+val signature = loaded.sign(message).signature
+IosKeychainProvider.deleteSigningKey(alias)
+```
+
+The alias API constructs Supreme's `IosSigner` from stored metadata and the exact backend ID. Signing reopens the key and checks its public key against the stored SPKI before calling `OpenedKey.sign`. Supreme lends the access control for generation and the authentication context through the corresponding reopen and sign operation. Keep the native key within that operation. Map native user cancellation, failed authentication, and biometry lockout to `UnlockFailed`.
+
+### JVM and Android JKS
+
+Implement `JavaKeyStoreOperationsProvider.createKeyPair` and `getJKSSigner`. Return `null` for configurations or stored key types your adapter does not support so Supreme's built-in ECDSA and RSA handlers remain available. Map the JCA public key, signature algorithm, and signature bytes through `JcaMappingProvider`; JKS obtains its public key from the stored certificate.
+
+### Shared DSL option
+
+Define one DSL extension property on `PlatformSigningKeyConfigurationBase<*>._algSpecific` for your algorithm (see [DSL Extensibility]) and use it across the platform providers. Add a signer-option extension only when the signer needs additional configuration. This lets common code select the same algorithm on each platform.
 
 ## Certificate extensions and names
 
