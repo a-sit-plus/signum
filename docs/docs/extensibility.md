@@ -224,7 +224,7 @@ For actual operations, implement the following:
 
 ### Android KeyStore
 
-Implement `AndroidKeyStoreOperationsProvider`. `initKeyGenSpec` receives the resolved configuration and may return `null` to decline it. The default `generateKeyPair` calls `generateAndroidKeystoreKeyPair` with Supreme's StrongBox policy. For a TEE-only algorithm, override `generateKeyPair` and pass `supportsStrongBox = false`. Use the same alias in the `KeyGenParameterSpec.Builder` and the helper call.
+Implement `AndroidKeyStoreOperationsProvider`. `initKeyGenSpec` receives the resolved configuration and returns the JCA algorithm and a builder for the supplied alias. Return `null` to decline a configuration. The default `generateKeyPair` applies Supreme's certificate, attestation, authentication, and backing policy to the builder.
 
 ```kotlin
 private class ExternalTeeConfiguration : DSL.Data() {
@@ -234,6 +234,9 @@ private val AndroidSigningKeyConfiguration.externalTee
     get() = _algSpecific.option("EXT_TEST_TEE_ECDSA", ::ExternalTeeConfiguration)
 
 private object ExternalTeeProvider : AndroidKeyStoreOperationsProvider {
+    @OptIn(SignumInternals::class)
+    override fun supportsStrongBox(algorithm: String) = false
+
     override fun initKeyGenSpec(
         alias: String, config: AndroidSigningKeyConfiguration,
     ): Pair<String, KeyGenParameterSpec.Builder>? {
@@ -243,14 +246,6 @@ private object ExternalTeeProvider : AndroidKeyStoreOperationsProvider {
             .setAlgorithmParameterSpec(ECGenParameterSpec(resolved.curveName))
             .setDigests(KeyProperties.DIGEST_SHA256)
         return jcaKeyAlgorithm to builder
-    }
-
-    @OptIn(SignumInternals::class)
-    override fun generateKeyPair(alias: String, config: AndroidSigningKeyConfiguration): KeyPair? {
-        val (jcaKeyAlgorithm, builder) = initKeyGenSpec(alias, config) ?: return null
-        return generateAndroidKeystoreKeyPair(
-            alias, config, jcaKeyAlgorithm, builder, supportsStrongBox = false
-        )
     }
 
     override fun getAndroidKeystoreSigner(
@@ -273,54 +268,46 @@ private object ExternalTeeProvider : AndroidKeyStoreOperationsProvider {
 
 After `Signum.installSupreme()`, register your provider with `ServiceLoader.register<AndroidKeyStoreOperationsProvider>(...)`. Key generation tries the most recently registered provider first. A `null` result lets the next provider try. Generation exceptions propagate to the caller. The alias lookup calls `getAndroidKeystoreSigner` with native metadata and the attestation chain when available.
 
-`AndroidKeystoreSigner` supplies the authenticated signing flow. Pass the JCA signature name accepted by Android Keystore and map native signature bytes with `parseJCASignature`. The example opts a P-256 test adapter out of StrongBox. Use your own algorithm and public-key type in an extension. Supreme's helper applies certificate, attestation, authentication, and backing policy. For an algorithm without StrongBox support, `PREFERRED` selects the TEE path and `REQUIRED` fails before generation.
+`AndroidKeystoreSigner` supplies the authenticated signing flow. Pass the JCA signature name accepted by Android Keystore and map native signature bytes with `parseJCASignature`. This example uses a P-256 test key and an alias prefix to select the fixture. An extension can select its signer using its own public-key type.
+
+Override `supportsStrongBox(algorithm)` to return `false` for a TEE-only algorithm. With `strongBox = PREFERRED`, Supreme skips StrongBox for that algorithm. `REQUIRED` fails before generation. Set `hardware { backing = REQUIRED }` to require hardware backing.
 
 ### iOS Keychain
 
-The existing `SecKey` integration uses `getOperationsBundle` and `makeIosSigner`. An adapter for opaque Secure Enclave keys supplies `IosKeychainOperationsProvider.opaqueKeyBackend`. The backend defines its representation format, version, and stable namespaced ID. Supreme keeps those values and the key metadata in a private Keychain alias record.
+Implement `IosKeychainOperationsProvider.getOperationsBundle` to supply the native key type, size,
+purposes, and algorithm metadata. Supreme adds the alias tags and access control, generates and stores
+the keys, and performs the configured App Attest binding. Return `null` for unsupported configurations.
 
-The application supplies the CryptoKit operations and Signum ML-DSA types used in this adapter.
+Implement `makeIosSigner` to recognize the stored algorithm metadata and construct an `IosSigner`
+subclass. Its protected constructor and `secKeyType` hook require `@OptIn(SignumInternals::class)`.
+Supreme uses that key type when loading the private key. Supply the signature algorithm and implement
+`bytesToSignature` using the existing `IosMappingProvider` signature parser.
+
+The external test adapter uses ECDSA with SHA-224, which Apple's Security framework supports and
+Supreme's built-in iOS ECDSA signer does not select.
 
 ```kotlin
-private class ExternalMldsaConfiguration : DSL.Data()
-private val IosSigningKeyConfiguration.externalMldsa
-    get() = _algSpecific.option("com.example.mldsa", ::ExternalMldsaConfiguration)
-
 @OptIn(SignumInternals::class, ExperimentalForeignApi::class)
-private object ConsumerMldsaBackend : OpaqueIosKeyBackend {
-    override val backendId = "com.example.wallet.mldsa"
-    override fun supports(config: IosSigningKeyConfiguration) = config.externalMldsa.v != null
-    override suspend fun generate(
-        config: IosSigningKeyConfiguration, accessControl: SecAccessControlRef,
-    ): OpaqueIosKeyMaterial = TODO("Consumer CryptoKit adapter")
-    override suspend fun reopen(
-        representationVersion: Int, representation: ByteArray, authenticationContext: LAContext?,
-    ): OpenedKey = TODO("Consumer CryptoKit adapter")
-    override fun signatureAlgorithm(publicKey: PublicKey, config: IosSignerConfiguration): SignatureAlgorithm =
-        TODO("Consumer Signum algorithm")
+private class ExternalSha224Signer(
+    alias: String,
+    override val publicKey: EcdsaPublicKey,
+    metadata: IosKeyMetadata,
+    config: IosSignerConfiguration,
+) : IosSigner(alias, metadata, config) {
+    override val secKeyType get() = kSecAttrKeyTypeEC
+    override val signatureAlgorithm = ExternalSha224
+    override fun bytesToSignature(sigBytes: ByteArray) =
+        signatureAlgorithm.parseSecKeySignature(sigBytes)
 }
-
-@OptIn(SignumInternals::class)
-private object ConsumerIosProvider : IosKeychainOperationsProvider {
-    override val opaqueKeyBackend = ConsumerMldsaBackend
-    override fun getOperationsBundle(config: IosSigningKeyConfiguration) = null
-    override fun makeIosSigner(
-        alias: String, publicKey: PublicKey, metadata: IosKeyMetadata, config: IosSignerConfiguration,
-    ): IosSigner? = null
-}
-
-Signum.installSupreme()
-ServiceLoader.register<IosKeychainOperationsProvider>(ConsumerIosProvider)
-val created = IosKeychainProvider.createSigningKey(alias) {
-    externalMldsa {}
-    hardware { backing = REQUIRED }
-}
-val loaded = IosKeychainProvider.getSignerForKey(alias)
-val signature = loaded.sign(message).signature
-IosKeychainProvider.deleteSigningKey(alias)
 ```
 
-The alias API constructs Supreme's `IosSigner` from stored metadata and the exact backend ID. Signing reopens the key and checks its public key against the stored SPKI before calling `OpenedKey.sign`. Supreme lends the access control for generation and the authentication context through the corresponding reopen and sign operation. Keep the native key within that operation. Map native user cancellation, failed authentication, and biometry lockout to `UnlockFailed`.
+Here `ExternalSha224` is the adapter's `SignatureAlgorithm`. Its `IosMappingProvider` maps it to
+`kSecKeyAlgorithmECDSASignatureMessageX962SHA224` and parses the resulting ECDSA signature bytes.
+The superclass handles private-key retrieval, authentication prompts and reuse, signing permission,
+native signing, and unlock errors. Register the operations and mapping providers after
+`Signum.installSupreme()` and use the existing `IosKeychainProvider` alias methods.
+The [external iOS testcase](https://github.com/a-sit-plus/signum/blob/feature/providerReuse/extensibility-test/src/iosTest/kotlin/at/asitplus/signum/supreme/os/ExternalIosAliasTest.kt)
+exercises creation, fresh signer lookup, signing, verification, and deletion.
 
 ### JVM and Android JKS
 

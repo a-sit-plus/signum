@@ -1,5 +1,3 @@
-@file:OptIn(at.asitplus.signum.SignumInternals::class)
-
 package at.asitplus.signum.extensibility.test
 
 import android.app.KeyguardManager
@@ -24,6 +22,7 @@ import io.kotest.assertions.throwables.shouldThrowAny
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import java.security.KeyPair
+import java.security.NoSuchAlgorithmException
 import java.security.PrivateKey
 import java.security.spec.ECGenParameterSpec
 import java.util.UUID
@@ -33,21 +32,23 @@ private class ExternalTeeConfiguration : DSL.Data()
 private val AndroidSigningKeyConfiguration.externalTee get() =
     _algSpecific.option("EXT_TEST_TEE_ECDSA", ::ExternalTeeConfiguration)
 
+private const val UNSUPPORTED_TEST_ALGORITHM = "SIGNUM_UNSUPPORTED_TEST_ALGORITHM"
+
 private object ExternalTeeProvider : AndroidKeyStoreOperationsProvider {
+    @OptIn(at.asitplus.signum.SignumInternals::class)
+    override fun supportsStrongBox(algorithm: String) = false
+
     override fun initKeyGenSpec(
         alias: String,
         config: AndroidSigningKeyConfiguration,
     ): Pair<String, KeyGenParameterSpec.Builder>? {
         if (config.externalTee.v == null) return null
-        return KeyProperties.KEY_ALGORITHM_EC to KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_SIGN)
+        val algorithm = if (alias.startsWith("external-tee-generation-failure-")) UNSUPPORTED_TEST_ALGORITHM
+        else KeyProperties.KEY_ALGORITHM_EC
+        val builder = KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_SIGN)
             .setAlgorithmParameterSpec(ECGenParameterSpec("secp256r1"))
             .setDigests(KeyProperties.DIGEST_SHA256)
-    }
-
-    override fun generateKeyPair(alias: String, config: AndroidSigningKeyConfiguration): KeyPair? {
-        val (algorithm, builder) = initKeyGenSpec(alias, config) ?: return null
-        check(!alias.startsWith("external-tee-generation-failure-")) { "test generation failure" }
-        return generateAndroidKeystoreKeyPair(alias, config, algorithm, builder, supportsStrongBox = false)
+        return algorithm to builder
     }
 
     override fun getAndroidKeystoreSigner(
@@ -82,7 +83,7 @@ val AndroidProviderReuseTests by matrixSuite {
     ServiceLoader.register<AndroidKeyStoreOperationsProvider>(ExternalTeeProvider)
     val provider = AndroidKeyStoreProvider
 
-    "external TEE provider creates, reloads, signs, and deletes" {
+    "external provider uses default generation and the alias API" {
         val alias = "external-tee-" + UUID.randomUUID()
         val builtinAlias = "builtin-" + UUID.randomUUID()
         try {
@@ -118,7 +119,10 @@ val AndroidProviderReuseTests by matrixSuite {
                     shouldThrow<UnsupportedCryptoException> {
                         provider.createSigningKey(requiredAlias) {
                             externalTee {}
-                            hardware { backing = REQUIRED }
+                            hardware {
+                                backing = REQUIRED
+                                strongBox = DISCOURAGED
+                            }
                         }
                     }
                     shouldThrow<NoSuchElementException> { provider.getSignerForKey(requiredAlias) }
@@ -131,6 +135,18 @@ val AndroidProviderReuseTests by matrixSuite {
             provider.deleteSigningKey(alias)
             provider.deleteSigningKey(builtinAlias)
         }
+        shouldThrow<NoSuchElementException> { provider.getSignerForKey(alias) }
+    }
+
+    "generation failures retain their diagnostic" {
+        val alias = "external-tee-generation-failure-" + UUID.randomUUID()
+        val error = shouldThrow<NoSuchAlgorithmException> {
+            provider.createSigningKey(alias) {
+                externalTee {}
+                hardware { strongBox = PREFERRED }
+            }
+        }
+        error.message.orEmpty().contains(UNSUPPORTED_TEST_ALGORITHM) shouldBe true
         shouldThrow<NoSuchElementException> { provider.getSignerForKey(alias) }
     }
 
@@ -147,18 +163,6 @@ val AndroidProviderReuseTests by matrixSuite {
         } finally {
             provider.deleteSigningKey(alias)
         }
-    }
-
-    "generation failures retain their diagnostic" {
-        val alias = "external-tee-generation-failure-" + UUID.randomUUID()
-        val error = shouldThrow<IllegalStateException> {
-            provider.createSigningKey(alias) {
-                externalTee {}
-                hardware { strongBox = PREFERRED }
-            }
-        }
-        error.message shouldBe "test generation failure"
-        shouldThrow<NoSuchElementException> { provider.getSignerForKey(alias) }
     }
 
     "signer construction failure rolls back the new alias" {
@@ -182,6 +186,7 @@ val AndroidProviderReuseTests by matrixSuite {
         suspend fun createProtected() = provider.createSigningKey(alias) {
             externalTee {}
             hardware {
+                strongBox = DISCOURAGED
                 protection {
                     timeout = 30.seconds
                     factors {
